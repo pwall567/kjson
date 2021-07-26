@@ -11,7 +11,6 @@ import io.kjson.JSONObject
 import io.kjson.JSONString
 import io.kjson.JSONValue
 import net.pwall.text.TextMatcher
-import net.pwall.util.ImmutableList
 import net.pwall.util.ImmutableMap
 
 object Parser {
@@ -40,7 +39,7 @@ object Parser {
         return result
     }
 
-    fun parse(tm: TextMatcher, pointer: String): JSONValue? {
+    private fun parse(tm: TextMatcher, pointer: String): JSONValue? {
         tm.skip(Parser::isSpaceCharacter)
 
         if (tm.match('{')) {
@@ -80,7 +79,7 @@ object Parser {
             if (!tm.match(']')) {
                 while (true) {
                     if (index == array.size) {
-                        val newArray = Array<JSONValue?>(array.size + array.size.coerceAtMost(4096)) { n ->
+                        val newArray = Array(array.size + array.size.coerceAtMost(4096)) { n ->
                             if (n < array.size) array[n] else null
                         }
                         array = newArray
@@ -94,7 +93,7 @@ object Parser {
                 if (!tm.match(']'))
                     throw ParseException(MISSING_CLOSING_BRACKET, pointer)
             }
-            return JSONArray(ImmutableList.listOf(array, index))
+            return JSONArray(array, index)
         }
 
         if (tm.match('"'))
@@ -105,6 +104,9 @@ object Parser {
 
         if (tm.match("false"))
             return JSONBoolean.FALSE
+
+        if (tm.match("null"))
+            return null
 
         val numberStart = tm.index
         val negative = tm.match('-')
@@ -143,7 +145,7 @@ object Parser {
         throw ParseException(ILLEGAL_SYNTAX, pointer)
     }
 
-    fun parseString(tm: TextMatcher, pointer: String): String {
+    private fun parseString(tm: TextMatcher, pointer: String): String {
         val start = tm.index
         while (true) {
             if (tm.isAtEnd)

@@ -42,8 +42,8 @@ class JSONValueTest {
     }
 
     @Test fun `should create JSONArray`() {
-        val testArray = JSONArray(listOf(JSONInt(123), JSONInt(456)))
-        expect(listOf(JSONInt(123), JSONInt(456))) { testArray.value }
+        val testArray = JSONArray(arrayOf(JSONInt(123), JSONInt(456)), 2)
+        expect(2) { testArray.size }
         expect("[123,456]") { testArray.toJSON() }
     }
 

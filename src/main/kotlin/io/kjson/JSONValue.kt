@@ -103,24 +103,24 @@ value class JSONString(val value: String) : JSONValue {
 
 }
 
-@JvmInline
-value class JSONArray(val value: List<JSONValue?>) : JSONValue {
-
-    override fun appendToJSON(a: Appendable) {
-        a.append('[')
-        if (value.isNotEmpty()) {
-            val iterator = value.iterator()
-            while (true) {
-                iterator.next().appendToJSON(a)
-                if (!iterator.hasNext())
-                    break
-                a.append(',')
-            }
-        }
-        a.append(']')
-    }
-
-}
+//@JvmInline
+//value class JSONArray(val value: List<JSONValue?>) : JSONValue {
+//
+//    override fun appendToJSON(a: Appendable) {
+//        a.append('[')
+//        if (value.isNotEmpty()) {
+//            val iterator = value.iterator()
+//            while (true) {
+//                iterator.next().appendToJSON(a)
+//                if (!iterator.hasNext())
+//                    break
+//                a.append(',')
+//            }
+//        }
+//        a.append(']')
+//    }
+//
+//}
 
 @JvmInline
 value class JSONObjectX(val value: Map<String, JSONValue?>) : JSONValue {
