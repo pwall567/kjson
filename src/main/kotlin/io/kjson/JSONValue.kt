@@ -1,15 +1,35 @@
+/*
+ * @(#) JSONValue.kt
+ *
+ * kjson  JSON functions for Kotlin
+ * Copyright (c) 2021 Peter Wall
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package io.kjson
 
 import java.math.BigDecimal
 
-// Is this really worth the effort?
-
-// If a value class object is passed to a function as an implementation of an interface it will be "boxed" anyway
-// (and that is likely to be a frequent or even predominant usage).
-
-interface JSONValue {
-    fun appendToJSON(a: Appendable)
-    fun toJSON(): String = StringBuilder().also { appendToJSON(it) }.toString()
+sealed interface JSONValue {
+    fun appendTo(a: Appendable)
+    fun toJSON(): String = StringBuilder().also { appendTo(it) }.toString()
 }
 
 @JvmInline
@@ -17,7 +37,7 @@ value class JSONInt(val value: Int) : JSONValue {
 
     override fun toString(): String = value.toString()
 
-    override fun appendToJSON(a: Appendable) {
+    override fun appendTo(a: Appendable) {
         a.append(value.toString())
     }
 
@@ -30,7 +50,7 @@ value class JSONLong(val value: Long) : JSONValue {
 
     override fun toJSON(): String = value.toString()
 
-    override fun appendToJSON(a: Appendable) {
+    override fun appendTo(a: Appendable) {
         a.append(value.toString())
     }
 
@@ -44,7 +64,7 @@ data class JSONDecimal(val value: BigDecimal) : JSONValue {
 
     override fun toJSON(): String = value.toString()
 
-    override fun appendToJSON(a: Appendable) {
+    override fun appendTo(a: Appendable) {
         a.append(value.toString())
     }
 
@@ -60,7 +80,7 @@ value class JSONBoolean private constructor(val value: Boolean) : JSONValue {
 
     override fun toJSON(): String = value.toString()
 
-    override fun appendToJSON(a: Appendable) {
+    override fun appendTo(a: Appendable) {
         a.append(value.toString())
     }
 
@@ -74,7 +94,7 @@ value class JSONBoolean private constructor(val value: Boolean) : JSONValue {
 @JvmInline
 value class JSONString(val value: String) : JSONValue {
 
-    override fun appendToJSON(a: Appendable) {
+    override fun appendTo(a: Appendable) {
         a.append('"')
         for (ch in value) {
             when (ch) {
@@ -103,60 +123,18 @@ value class JSONString(val value: String) : JSONValue {
 
 }
 
-//@JvmInline
-//value class JSONArray(val value: List<JSONValue?>) : JSONValue {
-//
-//    override fun appendToJSON(a: Appendable) {
-//        a.append('[')
-//        if (value.isNotEmpty()) {
-//            val iterator = value.iterator()
-//            while (true) {
-//                iterator.next().appendToJSON(a)
-//                if (!iterator.hasNext())
-//                    break
-//                a.append(',')
-//            }
-//        }
-//        a.append(']')
-//    }
-//
-//}
-
-@JvmInline
-value class JSONObjectX(val value: Map<String, JSONValue?>) : JSONValue {
-
-    override fun appendToJSON(a: Appendable) {
-        a.append('{')
-        if (value.isNotEmpty()) {
-            val iterator = value.entries.iterator()
-            while (true) {
-                val entry = iterator.next()
-                JSONString(entry.key).appendToJSON(a)
-                a.append(':')
-                entry.value.appendToJSON(a)
-                if (!iterator.hasNext())
-                    break
-                a.append(',')
-            }
-        }
-        a.append('}')
-    }
-
-}
-
 fun JSONValue?.toJSON(): String = this?.toJSON() ?: "null"
 
-fun JSONValue?.appendToJSON(a: Appendable) {
+fun JSONValue?.appendTo(a: Appendable) {
     if (this == null)
         a.append("null")
     else
-        appendToJSON(a)
+        appendTo(a)
 }
 
-fun Appendable.appendJSON(json: JSONValue?): Appendable {
+fun Appendable.appendJSON(json: JSONValue?) = apply {
     if (json == null)
         append("null")
     else
-        json.appendToJSON(this)
-    return this
+        json.appendTo(this)
 }

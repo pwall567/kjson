@@ -1,5 +1,5 @@
 /*
- * @(#) ParseException.kt
+ * @(#) ParserKeywordTest.kt
  *
  * kjson  JSON functions for Kotlin
  * Copyright (c) 2021 Peter Wall
@@ -25,5 +25,43 @@
 
 package io.kjson.parser
 
-class ParseException(val text: String, val pointer: String = "") :
-        RuntimeException(if (pointer.isEmpty()) text else "$text at $pointer")
+import kotlin.test.Test
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.test.expect
+import io.kjson.JSONBoolean
+import io.kjson.JSONObject
+
+class ParserKeywordTest {
+
+    @Test fun `should parse null`() {
+        assertNull(Parser.parse("null"))
+    }
+
+    @Test fun `should parse true`() {
+        val result = Parser.parse("true")
+        assertTrue(result is JSONBoolean)
+        assertTrue(result.value)
+    }
+
+    @Test fun `should parse false`() {
+        val result = Parser.parse("false")
+        assertTrue(result is JSONBoolean)
+        assertFalse(result.value)
+    }
+
+    @Test fun `should parse keywords in object`() {
+        val result = Parser.parse("""{"aaa":true,"bbb":false,"ccc":null}""")
+        assertTrue(result is JSONObject)
+        expect(3) { result.size }
+        val aaa = result["aaa"]
+        assertTrue(aaa is JSONBoolean)
+        assertTrue(aaa.value)
+        val bbb = result["bbb"]
+        assertTrue(bbb is JSONBoolean)
+        assertFalse(bbb.value)
+        assertNull(result["ccc"])
+    }
+
+}
