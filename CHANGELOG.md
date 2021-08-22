@@ -2,7 +2,12 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [0.2] - 2021-08-14
+## [1.0] - 2021-08-22
+### Changed
+- `pom.xml`: bumped version to 1.0
+- several files: tidy up, improve comments
+
+## [0.2] - 2021-08-22
 ### Changed
 - all files: major reorganisation - many files moved to other projects, other files brought in
 

@@ -77,6 +77,11 @@ import io.kjson.JSONDeserializerFunctions.parseCalendar
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.pointer.JSONPointer
 
+/**
+ * Reflection-based JSON deserialization for Kotlin.
+ *
+ * @author  Peter Wall
+ */
 @OptIn(ExperimentalStdlibApi::class)
 object JSONDeserializer {
 
@@ -471,9 +476,9 @@ object JSONDeserializer {
 
     @Suppress("UNCHECKED_CAST")
     private fun <T: Any> newArray(itemClass: KClass<T>, size: Int): Array<T?> =
-    // there appears to be no way of creating an array of dynamic type in Kotlin
-        // other than to use Java reflection
-        java.lang.reflect.Array.newInstance(itemClass.java, size) as Array<T?>
+            // there appears to be no way of creating an array of dynamic type in Kotlin
+            // other than to use Java reflection
+            java.lang.reflect.Array.newInstance(itemClass.java, size) as Array<T?>
 
     private fun getTypeParam(types: List<KTypeProjection>, n: Int = 0): KType = types.getOrNull(n)?.type ?: anyQType
 
@@ -655,7 +660,7 @@ object JSONDeserializer {
 
     private fun deserializeNested(enclosingType: KType, resultType: KType, json: JSONValue?, pointer: JSONPointer,
             config: JSONConfig): Any? =
-        deserialize(resultType.applyTypeParameters(enclosingType, pointer), json, pointer, config)
+            deserialize(resultType.applyTypeParameters(enclosingType, pointer), json, pointer, config)
 
     private fun KType.applyTypeParameters(enclosingType: KType, pointer: JSONPointer): KType {
         (classifier as? KTypeParameter)?.let { typeParameter ->
@@ -683,7 +688,7 @@ object JSONDeserializer {
     }
 
     private fun KType.classifierAsClass(target: KType, pointer: JSONPointer): KClass<*> =
-        classifier as? KClass<*> ?: fatal("Can't create $target - insufficient type information", pointer)
+            classifier as? KClass<*> ?: fatal("Can't create $target - insufficient type information", pointer)
 
     private val KType.simpleName
         get() = (classifier as? KClass<*>)?.simpleName ?: toString()

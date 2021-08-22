@@ -75,6 +75,29 @@ class JSONFunTest {
         expect("null") { dummy1.stringifyJSON() }
     }
 
+    @Test fun `targetKType should create correct type`() {
+        val listStrings = listOf("abc", "def")
+        val jsonArrayString = JSONArray.build {
+            add("abc")
+            add("def")
+        }
+        expect(listStrings) { JSONDeserializer.deserialize(targetKType(List::class, String::class), jsonArrayString) }
+    }
+
+    @Test fun `targetKType should create correct complex type`() {
+        val listStrings = listOf(listOf("abc", "def"))
+        val jsonArrayArrayString = JSONArray.build {
+            add(JSONArray.build {
+                add("abc")
+                add("def")
+            })
+        }
+        expect(listStrings) {
+            JSONDeserializer.deserialize(targetKType(List::class, targetKType(List::class, String::class)),
+                jsonArrayArrayString)
+        }
+    }
+
     @Test fun `toKType should convert simple class`() {
         val type: Type = JavaClass1::class.java
         expect(JavaClass1::class.starProjectedType) { type.toKType() }

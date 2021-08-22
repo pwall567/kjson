@@ -11,8 +11,8 @@ This library is an evolution of the [json-kotlin](https://github.com/pwall567/js
 Users of that library should find the transition relatively painless &ndash; in most cases just a change to the
 dependency specifications and the `import` statements.
 
-This document provides introductory information on the `kjson` library; fuller information is available in the
-[User Guide](USERGUIDE.md).
+This document provides reflection-based introductory information on the `kjson` library; fuller information is available
+in the [User Guide](USERGUIDE.md).
 
 ## Background
 
@@ -242,25 +242,25 @@ trailing quote or bracket character.
 
 ## Dependency Specification
 
-The latest version of the library is 0.2, and it may be obtained from the Maven Central repository.
+The latest version of the library is 1.0, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>0.2</version>
+      <version>1.0</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:0.2'
+    implementation 'io.kjson:kjson:1.0'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:0.2")
+    implementation("io.kjson:kjson:1.0")
 ```
 
 Peter Wall
 
-2021-08-21
+2021-08-22

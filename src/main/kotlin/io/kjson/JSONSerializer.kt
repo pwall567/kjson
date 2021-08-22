@@ -43,8 +43,20 @@ import io.kjson.JSONSerializerFunctions.findToJSON
 import io.kjson.JSONSerializerFunctions.isSealedSubclass
 import io.kjson.JSONSerializerFunctions.isToStringClass
 
+/**
+ * Reflection-based JSON serialization for Kotlin.
+ *
+ * @author  Peter Wall
+ */
 object JSONSerializer {
 
+    /**
+     * Serialize the given object to a [JSONValue].
+     *
+     * @param   obj         the object to be serialized
+     * @param   config      an optional [JSONConfig]
+     * @return              the [JSONValue] (or `null` if the input is `null`)
+     */
     fun serialize(obj: Any?, config: JSONConfig = JSONConfig.defaultConfig): JSONValue? =
             serialize(obj, config, mutableSetOf())
 
@@ -98,20 +110,18 @@ object JSONSerializer {
             }.build()
     }
 
-    private fun serializePair(pair: Pair<*, *>, config: JSONConfig, references: MutableSet<Any>): JSONValue {
-        return JSONArray.Builder(2) {
-            add(serialize(pair.first, config, references))
-            add(serialize(pair.second, config, references))
-        }.build()
-    }
+    private fun serializePair(pair: Pair<*, *>, config: JSONConfig, references: MutableSet<Any>) =
+            JSONArray.Builder(2) {
+                add(serialize(pair.first, config, references))
+                add(serialize(pair.second, config, references))
+            }.build()
 
-    private fun serializeTriple(triple: Triple<*, *, *>, config: JSONConfig, references: MutableSet<Any>): JSONValue {
-        return JSONArray.Builder(3) {
-            add(serialize(triple.first, config, references))
-            add(serialize(triple.second, config, references))
-            add(serialize(triple.third, config, references))
-        }.build()
-    }
+    private fun serializeTriple(triple: Triple<*, *, *>, config: JSONConfig, references: MutableSet<Any>) =
+            JSONArray.Builder(3) {
+                add(serialize(triple.first, config, references))
+                add(serialize(triple.second, config, references))
+                add(serialize(triple.third, config, references))
+            }.build()
 
     private fun serializeObject(obj: Any, config: JSONConfig, references: MutableSet<Any>): JSONValue? {
         val objClass = obj::class
@@ -204,39 +214,32 @@ object JSONSerializer {
         }
     }
 
-    private fun serializeIterator(iterator: Iterator<*>, size: Int, config: JSONConfig, references: MutableSet<Any>):
-            JSONValue {
-        return JSONArray.Builder(size) {
-            while (iterator.hasNext())
-                add(serialize(iterator.next(), config, references))
-        }.build()
-    }
+    private fun serializeIterator(iterator: Iterator<*>, size: Int, config: JSONConfig, references: MutableSet<Any>) =
+            JSONArray.Builder(size) {
+                while (iterator.hasNext())
+                    add(serialize(iterator.next(), config, references))
+            }.build()
 
-    private fun serializeEnumeration(enumeration: Enumeration<*>, config: JSONConfig, references: MutableSet<Any>):
-            JSONValue {
-        return JSONArray.build {
-            while (enumeration.hasMoreElements())
-                add(serialize(enumeration.nextElement(), config, references))
-        }
-    }
+    private fun serializeEnumeration(enumeration: Enumeration<*>, config: JSONConfig, references: MutableSet<Any>) =
+            JSONArray.build {
+                while (enumeration.hasMoreElements())
+                    add(serialize(enumeration.nextElement(), config, references))
+            }
 
-    private fun serializeMap(map: Map<*, *>, config: JSONConfig, references: MutableSet<Any>): JSONValue {
-        return JSONObject.Builder(map.size) {
-            for (entry in map.entries)
-                add(entry.key.toString(), serialize(entry.value, config, references))
-        }.build()
-    }
+    private fun serializeMap(map: Map<*, *>, config: JSONConfig, references: MutableSet<Any>) =
+            JSONObject.Builder(map.size) {
+                for (entry in map.entries)
+                    add(entry.key.toString(), serialize(entry.value, config, references))
+            }.build()
 
-    private fun serializeCalendar(calendar: Calendar) : JSONValue {
-        return JSONString.of(StringBuilder().apply { appendCalendar(calendar) })
-    }
+    private fun serializeCalendar(calendar: Calendar) : JSONValue =
+            JSONString.of(StringBuilder().apply { appendCalendar(calendar) })
 
-    private fun serializeBitSet(bitSet: BitSet) : JSONValue {
-        return JSONArray.build {
-            for (i in 0 until bitSet.length())
-                if (bitSet.get(i))
-                    add(i)
-        }
-    }
+    private fun serializeBitSet(bitSet: BitSet)  =
+            JSONArray.build {
+                for (i in 0 until bitSet.length())
+                    if (bitSet.get(i))
+                        add(i)
+            }
 
 }

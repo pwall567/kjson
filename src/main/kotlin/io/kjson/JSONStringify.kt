@@ -46,7 +46,7 @@ import io.kjson.JSONSerializerFunctions.isToStringClass
 import net.pwall.json.JSONFunctions
 
 /**
- * JSON auto serialize for Kotlin - serialize direct to `String`.
+ * Reflection-based JSON serialization for Kotlin - serialize direct to `String`.
  *
  * @author  Peter Wall
  */

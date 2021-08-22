@@ -52,6 +52,12 @@ import java.util.LinkedList
 import java.util.UUID
 import net.pwall.json.JSONFunctions
 
+/**
+ * Utility functions for JSON Serialization.  These functions are not expected to be of use outside the `kjson` family
+ * of projects.
+ *
+ * @author  Peter Wall
+ */
 object JSONSerializerFunctions {
 
     private val toStringClasses = setOf(java.sql.Date::class, java.sql.Time::class, java.sql.Timestamp::class,
@@ -89,9 +95,6 @@ object JSONSerializerFunctions {
                     return (function as KFunction<Any?>).apply { toJsonCache[this@findToJSON] = this }
             }
         }
-//        catch (ignore: kotlin.reflect.jvm.internal.KotlinReflectionInternalError) {
-//            // seems like a bug in Kotlin runtime
-//        }
         catch (ignore: Exception) {
         }
         toJsonCache[this] = null

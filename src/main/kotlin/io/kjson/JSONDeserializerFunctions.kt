@@ -28,11 +28,9 @@ package io.kjson
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
-import kotlin.reflect.KType
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.functions
 import kotlin.reflect.full.isSuperclassOf
-import kotlin.reflect.full.isSupertypeOf
 
 import java.util.Calendar
 import java.util.TimeZone
@@ -64,9 +62,6 @@ object JSONDeserializerFunctions {
 
     fun KFunction<*>.hasSingleParameter(paramClass: KClass<*>) =
             parameters.size == 1 && (parameters[0].type.classifier as KClass<*>).isSuperclassOf(paramClass)
-
-    fun KFunction<*>.hasSingleParameter(paramType: KType) =
-            parameters.size == 1 && parameters[0].type.isSupertypeOf(paramType)
 
     fun findParameterName(parameter: KParameter, config: JSONConfig): String? =
             config.findNameFromAnnotation(parameter.annotations) ?: parameter.name

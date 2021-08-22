@@ -4,9 +4,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>kjson</artifactId>
-  <version>0.2</version>
-  <name>JSON functions for Kotlin</name>
-  <description>JSON functions for Kotlin</description>
+  <version>1.0</version>
+  <name>Reflection-based JSON serialization and deserialization for Kotlin</name>
+  <description>Reflection-based JSON serialization and deserialization for Kotlin</description>
   <packaging>jar</packaging>
   <url>https://github.com/pwall567/kjson</url>
 

@@ -1,8 +1,8 @@
 /*
- * @(#) JSONKotlinException.kt
+ * @(#) JSONTypeRef.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2020, 2021 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,43 +25,28 @@
 
 package io.kjson
 
-import io.kjson.pointer.JSONPointer
+import java.lang.reflect.ParameterizedType
 
 /**
- * Exception class for errors in serialization and deserialization.
+ * Implementation of the [TypeReference](https://gafter.blogspot.com/2006/12/super-type-tokens.html) pattern.
  *
- * @author  Peter Wall
+ * @author  Peter Wall (with acknowledgements to the author of the above-referenced article)
+ * @param   T       the target type
  */
-class JSONKotlinException(val text: String, val pointer: JSONPointer? = null) : JSONException(text) {
+open class JSONTypeRef<T>(nullable: Boolean = false) {
 
-    constructor(text: String, pointer: JSONPointer, nested: Exception) : this(text, pointer) {
-        initCause(nested)
-    }
-
-    constructor(text: String, nested: Exception) : this(text) {
-        initCause(nested)
-    }
-
-    override val message: String
-        get() = when (pointer) {
-            null,
-            JSONPointer.root -> text
-            else -> "$text at $pointer"
-        }
+    /** The type reference */
+    val refType = (this::class.java.genericSuperclass as ParameterizedType).actualTypeArguments[0].toKType(nullable)
 
     companion object {
 
-        internal fun fatal(text: String, pointer: JSONPointer? = null): Nothing {
-            throw JSONKotlinException(text, pointer)
-        }
-
-        internal fun fatal(text: String, pointer: JSONPointer, nested: Exception): Nothing {
-            throw JSONKotlinException(text, pointer, nested)
-        }
-
-        internal fun fatal(text: String, nested: Exception): Nothing {
-            throw JSONKotlinException(text, nested)
-        }
+        /**
+         * Create a [JSONTypeRef] for the target type.
+         *
+         * @param   T       the target type
+         * @return          the [JSONTypeRef]
+         */
+        inline fun <reified T> create(nullable: Boolean = false): JSONTypeRef<T> = object : JSONTypeRef<T>(nullable) {}
 
     }
 

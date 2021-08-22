@@ -43,7 +43,7 @@ import io.kjson.annotation.JSONIncludeIfNull
 import io.kjson.annotation.JSONName
 
 /**
- * Configuration class for JSON auto serialize / deserialize for Kotlin.
+ * Configuration class for reflection-based JSON serialization and deserialization for Kotlin.
  *
  * @author  Peter Wall
  */
@@ -99,7 +99,7 @@ class JSONConfig {
     private val toJSONMap: MutableMap<KType, ToJSONMapping> = LinkedHashMap()
 
     private val nameAnnotations: MutableList<Pair<KClass<*>, KProperty.Getter<String>>> =
-        arrayListOf(namePropertyPair(JSONName::class, "name"))
+            arrayListOf(namePropertyPair(JSONName::class, "name"))
 
     private val ignoreAnnotations: MutableList<KClass<*>> = arrayListOf(JSONIgnore::class, Transient::class)
 
@@ -360,7 +360,7 @@ class JSONConfig {
      * @return              `true` if an "include if null" annotation appears in the supplied list
      */
     fun hasIncludeIfNullAnnotation(annotations: List<Annotation>?) =
-        hasBooleanAnnotation(includeIfNullAnnotations, annotations)
+            hasBooleanAnnotation(includeIfNullAnnotations, annotations)
 
     /**
      * Add an annotation specification to the list of annotations that specify that all properties in a class are to be
@@ -380,7 +380,7 @@ class JSONConfig {
      * @return              `true` if an "include all properties" annotation appears in the supplied list
      */
     fun hasIncludeAllPropertiesAnnotation(annotations: List<Annotation>?) =
-        hasBooleanAnnotation(includeAllPropertiesAnnotations, annotations)
+            hasBooleanAnnotation(includeAllPropertiesAnnotations, annotations)
 
     /**
      * Add an annotation specification to the list of annotations that specify that extra properties in a class are to
@@ -401,7 +401,7 @@ class JSONConfig {
      * @return              `true` if an "allow extra properties" annotation appears in the supplied list
      */
     fun hasAllowExtraPropertiesAnnotation(annotations: List<Annotation>?) =
-        hasBooleanAnnotation(allowExtraPropertiesAnnotations, annotations)
+            hasBooleanAnnotation(allowExtraPropertiesAnnotations, annotations)
 
     /**
      * Test whether a property has a boolean annotation matching the specified list.
