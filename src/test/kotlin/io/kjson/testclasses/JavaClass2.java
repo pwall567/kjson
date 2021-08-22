@@ -1,8 +1,8 @@
 /*
- * @(#) JSONObject.kt
+ * @(#) JavaClass2.java
  *
- * kjson  JSON functions for Kotlin
- * Copyright (c) 2021 Peter Wall
+ * kjson  Reflection-based JSON serialization and deserialization for Kotlin
+ * Copyright (c) 2019, 2020, 2021 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,28 +23,21 @@
  * SOFTWARE.
  */
 
-package io.kjson
+package io.kjson.testclasses;
 
-import net.pwall.util.ImmutableMap
+import java.util.List;
 
-class JSONObject internal constructor(array: Array<MapEntry<String, JSONValue?>>, size: Int) : JSONValue,
-        ImmutableMap<String, JSONValue?>(array, size) {
+@SuppressWarnings("unused")
+public class JavaClass2 {
 
-    override fun appendTo(a: Appendable) {
-        a.append('{')
-        if (isNotEmpty()) {
-            val iterator = entries.iterator()
-            while (true) {
-                val entry = iterator.next()
-                JSONString(entry.key).appendTo(a)
-                a.append(':')
-                entry.value.appendTo(a)
-                if (!iterator.hasNext())
-                    break
-                a.append(',')
-            }
-        }
-        a.append('}')
-    }
+    public List<JavaClass1> field1 = null;
+
+    public List<? extends JavaClass1> field2 = null;
+
+    public List<? super JavaClass1> field3 = null;
+
+    public List<List<JavaClass1>> field4 = null;
+
+    public List<List<? extends JavaClass1>> field5 = null;
 
 }

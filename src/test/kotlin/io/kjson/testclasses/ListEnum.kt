@@ -1,8 +1,8 @@
 /*
- * @(#) JSONArray.kt
+ * @(#) ListEnum.kt
  *
- * kjson  JSON functions for Kotlin
- * Copyright (c) 2021 Peter Wall
+ * kjson  Reflection-based JSON serialization and deserialization for Kotlin
+ * Copyright (c) 2019, 2020, 2021 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,25 +23,16 @@
  * SOFTWARE.
  */
 
-package io.kjson
+package io.kjson.testclasses
 
-import net.pwall.util.ImmutableList
+import java.util.Enumeration
 
-class JSONArray internal constructor(array: Array<JSONValue?>, size: Int) : JSONValue,
-        ImmutableList<JSONValue?>(array, size) {
+class ListEnum<T>(private val list: List<T>) : Enumeration<T> {
 
-    override fun appendTo(a: Appendable) {
-        a.append('[')
-        if (isNotEmpty()) {
-            val iterator = iterator()
-            while (true) {
-                iterator.next().appendTo(a)
-                if (!iterator.hasNext())
-                    break
-                a.append(',')
-            }
-        }
-        a.append(']')
-    }
+    private var index = 0
+
+    override fun hasMoreElements(): Boolean = index < list.size
+
+    override fun nextElement(): T = if (hasMoreElements()) list[index++] else throw NoSuchElementException()
 
 }

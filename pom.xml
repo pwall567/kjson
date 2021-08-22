@@ -3,18 +3,17 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.kjson</groupId>
   <artifactId>kjson</artifactId>
-  <version>0.1</version>
+  <version>0.2</version>
   <name>JSON functions for Kotlin</name>
   <description>JSON functions for Kotlin</description>
   <packaging>jar</packaging>
   <url>https://github.com/pwall567/kjson</url>
 
   <parent>
-    <groupId>net.pwall.maven</groupId>
-    <artifactId>maven-kotlin</artifactId>
-    <version>2.1</version>
+    <groupId>io.kjson</groupId>
+    <artifactId>kjson-maven</artifactId>
+    <version>1.0</version>
   </parent>
 
   <properties>
@@ -52,26 +51,56 @@
 
   <pluginRepositories>
     <pluginRepository>
-      <id>jcenter</id>
-      <name>JCenter</name>
-      <url>https://jcenter.bintray.com/</url>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>https://repo1.maven.org/maven2/</url>
     </pluginRepository>
   </pluginRepositories>
 
   <dependencies>
+    <dependency>
+      <groupId>io.kjson</groupId>
+      <artifactId>kjson-core</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.kjson</groupId>
+      <artifactId>kjson-annotations</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.kjson</groupId>
+      <artifactId>kjson-pointer</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>net.pwall.json</groupId>
+      <artifactId>json-functions</artifactId>
+      <version>1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>net.pwall.json</groupId>
+      <artifactId>json-validation</artifactId>
+      <version>1.4</version>
+    </dependency>
     <dependency>
       <groupId>net.pwall.text</groupId>
       <artifactId>textmatcher</artifactId>
       <version>1.0</version>
     </dependency>
     <dependency>
-      <groupId>net.pwall.util</groupId>
-      <artifactId>immutables</artifactId>
-      <version>1.1</version>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-stdlib-jdk8</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
-      <artifactId>kotlin-stdlib-jdk8</artifactId>
+      <artifactId>kotlin-reflect</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.kjson</groupId>
+      <artifactId>kjson-test</artifactId>
+      <version>1.0</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
@@ -87,7 +116,6 @@
       <plugin>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-maven-plugin</artifactId>
-        <version>${kotlin.version}</version>
         <executions>
           <execution>
             <id>compile-kotlin</id>
@@ -105,28 +133,9 @@
           </execution>
         </executions>
         <configuration>
-          <jvmTarget>1.8</jvmTarget>
-          <languageVersion>1.5</languageVersion>
-          <apiVersion>1.5</apiVersion>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version>
-        <executions>
-          <execution>
-            <id>compile-java</id>
-            <phase>compile</phase>
-          </execution>
-          <execution>
-            <id>test-compile-java</id>
-            <phase>test-compile</phase>
-          </execution>
-        </executions>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
+          <args>
+            <arg>-Xopt-in=kotlin.RequiresOptIn</arg>
+          </args>
         </configuration>
       </plugin>
       <plugin>
@@ -136,17 +145,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.8</version>
-        <extensions>true</extensions>
-        <configuration>
-          <serverId>ossrh</serverId>
-          <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-          <autoReleaseAfterClose>true</autoReleaseAfterClose>
-        </configuration>
       </plugin>
     </plugins>
   </build>

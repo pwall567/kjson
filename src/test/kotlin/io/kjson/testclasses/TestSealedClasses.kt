@@ -1,8 +1,8 @@
 /*
- * @(#) ParseException.kt
+ * @(#) TestSealedClasses.kt
  *
- * kjson  JSON functions for Kotlin
- * Copyright (c) 2021 Peter Wall
+ * kjson  Reflection-based JSON serialization and deserialization for Kotlin
+ * Copyright (c) 2019, 2020, 2021 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,17 @@
  * SOFTWARE.
  */
 
-package io.kjson.parser
+package io.kjson.testclasses
 
-class ParseException(val text: String, val pointer: String = "") :
-        RuntimeException(if (pointer.isEmpty()) text else "$text at $pointer")
+// Note - these classes are copied from the Kotlin documentation:
+// https://kotlinlang.org/docs/reference/sealed-classes.html
+
+sealed class Expr
+
+data class Const(val number: Double) : Expr()
+
+@Suppress("unused")
+data class Sum(val e1: Expr, val e2: Expr) : Expr()
+
+@Suppress("unused")
+object NotANumber : Expr()
