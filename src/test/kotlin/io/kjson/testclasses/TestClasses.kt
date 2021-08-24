@@ -263,3 +263,9 @@ class Circular1 {
 class Circular2 {
     var ref: Circular1? = null
 }
+
+open class PolymorphicBase
+
+data class PolymorphicDerived1(val type: String, val extra1: Int) : PolymorphicBase()
+
+data class PolymorphicDerived2(val type: String, val extra2: String) : PolymorphicBase()

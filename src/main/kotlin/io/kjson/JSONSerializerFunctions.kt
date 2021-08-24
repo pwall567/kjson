@@ -106,17 +106,16 @@ object JSONSerializerFunctions {
         return true
     }
 
-    fun KClass<*>.isSealedSubclass(): Boolean {
+    fun KClass<*>.findSealedClass(): KClass<*>? {
         for (supertype in supertypes) {
             (supertype.classifier as? KClass<*>)?.let {
                 if (it.isSealed)
-                    return true
+                    return it
                 if (it != Any::class)
-                    if (it.isSealedSubclass())
-                        return true
+                    it.findSealedClass()?.let { c -> return c }
             }
         }
-        return false
+        return null
     }
 
     fun Appendable.appendCalendar(calendar: Calendar) {

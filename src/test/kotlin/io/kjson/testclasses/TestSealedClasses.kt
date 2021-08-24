@@ -25,6 +25,9 @@
 
 package io.kjson.testclasses
 
+import io.kjson.annotation.JSONDiscriminator
+import io.kjson.annotation.JSONIdentifier
+
 // Note - these classes are copied from the Kotlin documentation:
 // https://kotlinlang.org/docs/reference/sealed-classes.html
 
@@ -37,3 +40,40 @@ data class Sum(val e1: Expr, val e2: Expr) : Expr()
 
 @Suppress("unused")
 object NotANumber : Expr()
+
+@JSONDiscriminator("type")
+sealed class Expr2
+
+data class Const2(val number: Double) : Expr2()
+
+@Suppress("unused")
+data class Sum2(val e1: Expr2, val e2: Expr2) : Expr2()
+
+@Suppress("unused")
+object NotANumber2 : Expr2()
+
+@JSONDiscriminator("type")
+sealed class Expr3
+
+@JSONIdentifier("CONST")
+data class Const3(val number: Double) : Expr3()
+
+@JSONIdentifier("SUM")
+@Suppress("unused")
+data class Sum3(val e1: Expr3, val e2: Expr3) : Expr3()
+
+@JSONIdentifier("NAN")
+@Suppress("unused")
+object NotANumber3 : Expr3()
+
+@JSONDiscriminator("type")
+sealed class Party() {
+    abstract val type: String
+}
+
+@JSONIdentifier("ORGANIZATION")
+data class Organization(override val type: String, val id: Int, val name: String) : Party()
+
+@JSONIdentifier("PERSON")
+data class Person(override val type: String, val firstName: String, val lastName: String) : Party()
+

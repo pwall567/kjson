@@ -56,6 +56,9 @@ import io.kjson.JSONStringify.appendJSON
 import io.kjson.test.JSONExpect.Companion.expectJSON
 import io.kjson.testclasses.Circular1
 import io.kjson.testclasses.Circular2
+import io.kjson.testclasses.Const
+import io.kjson.testclasses.Const2
+import io.kjson.testclasses.Const3
 import io.kjson.testclasses.CustomIgnore
 import io.kjson.testclasses.CustomIncludeAllProperties
 import io.kjson.testclasses.CustomIncludeIfNull
@@ -76,6 +79,8 @@ import io.kjson.testclasses.DummyWithIncludeIfNull
 import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.ListEnum
+import io.kjson.testclasses.NotANumber
+import io.kjson.testclasses.Organization
 
 class JSONStringifyTest {
 
@@ -649,6 +654,63 @@ class JSONStringifyTest {
             property("field1", "alpha")
             property("field2", null)
             property("field3", "gamma")
+        }
+    }
+
+    @Test fun `should stringify sealed class with extra member to indicate derived class`() {
+        val json = JSONStringify.stringify(Const(2.0))
+        expectJSON(json) {
+            count(2)
+            property("class", "Const")
+            property("number", BigDecimal(2.0))
+        }
+    }
+
+    @Test fun `should stringify sealed class object correctly`() {
+        val json = JSONStringify.stringify(NotANumber)
+        expectJSON(json) {
+            count(1)
+            property("class", "NotANumber")
+        }
+    }
+
+    @Test fun `should stringify sealed class with custom discriminator`() {
+        val config = JSONConfig().apply {
+            sealedClassDiscriminator = "?"
+        }
+        val json = JSONStringify.stringify(Const(2.0), config)
+        expectJSON(json) {
+            count(2)
+            property("?", "Const")
+            property("number", BigDecimal(2.0))
+        }
+    }
+
+    @Test fun `should stringify sealed class with class-specific discriminator`() {
+        val json = JSONStringify.stringify(Const2(2.0))
+        expectJSON(json) {
+            count(2)
+            property("type", "Const2")
+            property("number", BigDecimal(2.0))
+        }
+    }
+
+    @Test fun `should stringify sealed class with class-specific discriminator and identifiers`() {
+        val json = JSONStringify.stringify(Const3(2.0))
+        expectJSON(json) {
+            count(2)
+            property("type", "CONST")
+            property("number", BigDecimal(2.0))
+        }
+    }
+
+    @Test fun `should stringify sealed class with class-specific discriminator and identifiers within class`() {
+        val json = JSONStringify.stringify(Organization("ORGANIZATION", 123456, "Funny Company"))
+        expectJSON(json) {
+            count(3)
+            property("type", "ORGANIZATION")
+            property("id", 123456)
+            property("name", "Funny Company")
         }
     }
 

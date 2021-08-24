@@ -26,6 +26,7 @@
 package io.kjson
 
 import kotlin.reflect.KProperty
+import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.staticProperties
 import kotlin.reflect.jvm.isAccessible
 
@@ -39,9 +40,11 @@ import java.util.stream.BaseStream
 
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.JSONSerializerFunctions.appendCalendar
+import io.kjson.JSONSerializerFunctions.findSealedClass
 import io.kjson.JSONSerializerFunctions.findToJSON
-import io.kjson.JSONSerializerFunctions.isSealedSubclass
 import io.kjson.JSONSerializerFunctions.isToStringClass
+import io.kjson.annotation.JSONDiscriminator
+import io.kjson.annotation.JSONIdentifier
 
 /**
  * Reflection-based JSON serialization for Kotlin.
@@ -151,8 +154,11 @@ object JSONSerializer {
         return JSONObject.Builder {
             try {
                 references.add(obj)
-                if (objClass.isSealedSubclass())
-                    add(config.sealedClassDiscriminator, objClass.simpleName ?: "null")
+                val skipName = objClass.findSealedClass()?.let {
+                    val discriminator = it.findAnnotation<JSONDiscriminator>()?.id ?: config.sealedClassDiscriminator
+                    add(discriminator, objClass.findAnnotation<JSONIdentifier>()?.id ?: objClass.simpleName ?: "null")
+                    discriminator
+                }
                 val includeAll = config.hasIncludeAllPropertiesAnnotation(objClass.annotations)
                 if (objClass.isData && objClass.constructors.isNotEmpty()) {
                     // data classes will be a frequent use of serialization, so optimise for them
@@ -160,14 +166,14 @@ object JSONSerializer {
                     for (parameter in constructor.parameters) {
                         val member = objClass.members.find { it.name == parameter.name }
                         if (member is KProperty<*>)
-                            addUsingGetter(member, parameter.annotations, obj, config, references, includeAll)
+                            addUsingGetter(member, parameter.annotations, obj, config, references, includeAll, skipName)
                     }
                     // now check whether there are any more properties not in constructor
                     val statics: Collection<KProperty<*>> = objClass.staticProperties
                     for (member in objClass.members) {
                         if (member is KProperty<*> && !statics.contains(member) &&
                             !constructor.parameters.any { it.name == member.name })
-                            addUsingGetter(member, member.annotations, obj, config, references, includeAll)
+                            addUsingGetter(member, member.annotations, obj, config, references, includeAll, skipName)
                     }
                 }
                 else {
@@ -178,7 +184,7 @@ object JSONSerializer {
                             objClass.constructors.firstOrNull()?.parameters?.find { it.name == member.name }?.let {
                                 combinedAnnotations.addAll(it.annotations)
                             }
-                            addUsingGetter(member, combinedAnnotations, obj, config, references, includeAll)
+                            addUsingGetter(member, combinedAnnotations, obj, config, references, includeAll, skipName)
                         }
                     }
                 }
@@ -190,26 +196,29 @@ object JSONSerializer {
     }
 
     private fun JSONObject.Builder.addUsingGetter(member: KProperty<*>, annotations: List<Annotation>?, obj: Any,
-            config: JSONConfig, references: MutableSet<Any>, includeAll: Boolean) {
+            config: JSONConfig, references: MutableSet<Any>, includeAll: Boolean, skipName: String?) {
         if (!config.hasIgnoreAnnotation(annotations)) {
             val name = config.findNameFromAnnotation(annotations) ?: member.name
-            val wasAccessible = member.isAccessible
-            member.isAccessible = true
-            try {
-                val v = member.getter.call(obj)
-                if (v != null && v in references)
-                    fatal("Circular reference: field ${member.name} in ${obj::class.simpleName}")
-                if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls || includeAll)
-                    add(name, serialize(v, config, references))
-            }
-            catch (e: JSONException) {
-                throw e
-            }
-            catch (e: Exception) {
-                fatal("Error getting property ${member.name} from ${obj::class.simpleName}", e)
-            }
-            finally {
-                member.isAccessible = wasAccessible
+            if (name != skipName) {
+                val wasAccessible = member.isAccessible
+                member.isAccessible = true
+                try {
+                    val v = member.getter.call(obj)
+                    if (v != null && v in references)
+                        fatal("Circular reference: field ${member.name} in ${obj::class.simpleName}")
+                    if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls ||
+                            includeAll)
+                        add(name, serialize(v, config, references))
+                }
+                catch (e: JSONException) {
+                    throw e
+                }
+                catch (e: Exception) {
+                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}", e)
+                }
+                finally {
+                    member.isAccessible = wasAccessible
+                }
             }
         }
     }

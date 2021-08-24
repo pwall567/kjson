@@ -70,6 +70,8 @@ import java.util.stream.LongStream
 import java.util.stream.Stream
 
 import io.kjson.testclasses.Const
+import io.kjson.testclasses.Const2
+import io.kjson.testclasses.Const3
 import io.kjson.testclasses.CustomAllowExtraProperties
 import io.kjson.testclasses.CustomIgnore
 import io.kjson.testclasses.CustomName
@@ -94,10 +96,15 @@ import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.DummyWithVal
 import io.kjson.testclasses.Expr
+import io.kjson.testclasses.Expr2
+import io.kjson.testclasses.Expr3
 import io.kjson.testclasses.JavaClass1
 import io.kjson.testclasses.JavaClass2
 import io.kjson.testclasses.MultiConstructor
 import io.kjson.testclasses.NotANumber
+import io.kjson.testclasses.Organization
+import io.kjson.testclasses.Party
+import io.kjson.testclasses.Person
 import io.kjson.testclasses.Super
 
 class JSONDeserializerTest {
@@ -931,6 +938,37 @@ class JSONDeserializerTest {
             add("number", BigDecimal("2.0"))
         }
         expect(Const(2.0)) { JSONDeserializer.deserialize<Expr>(json, config) }
+    }
+
+    @Test fun `should deserialize sealed class with class-specific discriminator`() {
+        val json = JSONObject.build {
+            add("type", "Const2")
+            add("number", BigDecimal("2.0"))
+        }
+        expect(Const2(2.0)) { JSONDeserializer.deserialize<Expr2>(json) }
+    }
+
+    @Test fun `should deserialize sealed class with class-specific discriminator and identifiers`() {
+        val json = JSONObject.build {
+            add("type", "CONST")
+            add("number", BigDecimal("2.0"))
+        }
+        expect(Const3(2.0)) { JSONDeserializer.deserialize<Expr3>(json) }
+    }
+
+    @Test fun `should deserialize sealed class with class-specific discriminator and identifier within class`() {
+        val org = JSONObject.build {
+            add("type", "ORGANIZATION")
+            add("id", 123456)
+            add("name", "Funny Company")
+        }
+        expect(Organization("ORGANIZATION", 123456, "Funny Company")) { JSONDeserializer.deserialize<Party>(org) }
+        val person = JSONObject.build {
+            add("type", "PERSON")
+            add("firstName", "William")
+            add("lastName", "Wordsworth")
+        }
+        expect(Person("PERSON", "William", "Wordsworth")) { JSONDeserializer.deserialize<Party>(person) }
     }
 
     @Test fun `should ignore additional fields when allowExtra set in config`() {

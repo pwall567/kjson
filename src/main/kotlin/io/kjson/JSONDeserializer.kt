@@ -37,6 +37,7 @@ import kotlin.reflect.KTypeProjection
 import kotlin.reflect.KVariance
 import kotlin.reflect.full.companionObjectInstance
 import kotlin.reflect.full.createType
+import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.starProjectedType
@@ -68,6 +69,7 @@ import java.util.stream.DoubleStream
 import java.util.stream.IntStream
 import java.util.stream.LongStream
 import java.util.stream.Stream
+import io.kjson.JSON.asStringOrNull
 
 import io.kjson.JSONDeserializerFunctions.createUUID
 import io.kjson.JSONDeserializerFunctions.findFromJSON
@@ -75,6 +77,8 @@ import io.kjson.JSONDeserializerFunctions.findParameterName
 import io.kjson.JSONDeserializerFunctions.hasSingleParameter
 import io.kjson.JSONDeserializerFunctions.parseCalendar
 import io.kjson.JSONKotlinException.Companion.fatal
+import io.kjson.annotation.JSONDiscriminator
+import io.kjson.annotation.JSONIdentifier
 import io.kjson.pointer.JSONPointer
 
 /**
@@ -227,8 +231,6 @@ object JSONDeserializer {
     @Suppress("UNCHECKED_CAST")
     private fun <T: Any> deserialize(resultType: KType, resultClass: KClass<T>, types: List<KTypeProjection>,
             json: JSONValue, pointer: JSONPointer, config: JSONConfig): T {
-
-        // TODO do we want to allow broader range of input? (not just JSONValue)
 
         // check for JSONValue
 
@@ -516,10 +518,14 @@ object JSONDeserializer {
         val jsonCopy = LinkedHashMap(json)
 
         if (resultClass.isSealed) {
-            val subClassName = (jsonCopy.remove(config.sealedClassDiscriminator) as? JSONString)?.value ?:
-                    fatal("No class name for sealed class", pointer)
-            val subClass = resultClass.sealedSubclasses.find { it.simpleName == subClassName } ?:
-                    fatal("Can't find named subclass $subClassName for sealed class", pointer)
+            val discriminator = resultClass.findAnnotation<JSONDiscriminator>()?.id ?: config.sealedClassDiscriminator
+            val subClassName = jsonCopy[discriminator].asStringOrNull ?:
+                    fatal("No discriminator for sealed class", pointer)
+            val subClass = resultClass.sealedSubclasses.find {
+                (it.findAnnotation<JSONIdentifier>()?.id ?: it.simpleName) == subClassName
+            } ?: fatal("Can't find identifier $subClassName for sealed class", pointer)
+            if (findField(resultClass.members, discriminator, config) == null)
+                jsonCopy.remove(discriminator)
             return deserializeObject(subClass.createType(types, nullable = resultType.isMarkedNullable), subClass,
                 types, JSONObject.from(jsonCopy), pointer, config)
         }

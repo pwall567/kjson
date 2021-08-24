@@ -242,6 +242,20 @@ and the `NotANumber` object will serialize as:
 ```
 The discriminator property name (default "class") [may be chosen as required](#sealedclassdiscriminator).
 
+Alternatively, the `JSONDiscriminator` annotation may be added to the sealed class definition, nominating the property
+name to be used:
+```kotlin
+    @JSONDiscriminator("type")
+    sealed class Expr
+    // etc.
+```
+
+Instead of the name of the class, the identifier for the specific type may be nominated using the `@JSONIdentifier`
+annotation:
+```kotlin
+    @JSONIdentifier("CONST")
+    data class Const(val number: Double) : Expr()
+```
 
 ## Configuration
 

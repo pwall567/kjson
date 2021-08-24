@@ -33,7 +33,9 @@ import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.isSupertypeOf
+import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
+import io.kjson.JSON.displayValue
 
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.annotation.JSONAllowExtra
@@ -273,6 +275,42 @@ class JSONConfig {
      */
     inline fun <reified T: Any> toJSONString() {
         toJSONString(typeOf<T>())
+    }
+
+    /**
+     * Add a polymorphic mapping to the specified target class, using the nominated property and a list of pairs of
+     * property value and target type.
+     *
+     * @param   targetClass     the target class
+     * @param   discriminator   the "discriminator" property name
+     * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
+     *                          discriminator property and its associated type
+     */
+    fun fromJSONPolymorphic(targetClass: KClass<*>, discriminator: String, vararg mappings: Pair<JSONValue, KType>) {
+        fromJSONPolymorphic(targetClass.starProjectedType, discriminator, *mappings)
+    }
+
+    /**
+     * Add a polymorphic mapping to the specified target class, using the nominated property and a list of pairs of
+     * property value and target type.
+     *
+     * @param   type            the target type
+     * @param   discriminator   the "discriminator" property name
+     * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
+     *                          discriminator property and its associated type
+     */
+    fun fromJSONPolymorphic(type: KType, discriminator: String, vararg mappings: Pair<JSONValue, KType>) {
+        for (mapping in mappings)
+            if (!mapping.second.isSubtypeOf(type))
+                fatal("Illegal polymorphic mapping - ${mapping.second} is not a sub-type of $type")
+        fromJSON(type) { jsonValue ->
+            if (jsonValue !is JSONObject)
+                fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
+            val discriminatorValue = jsonValue[discriminator]
+            val mapping = mappings.find { discriminatorValue == it.first } ?:
+                fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
+            JSONDeserializer.deserialize(mapping.second, jsonValue, this)
+        }
     }
 
     /**

@@ -138,4 +138,18 @@ As with `toJSON`, the type may be specified explicitly:
     }
 ```
 
+### `fromJSONPolymorphic`
+
+This function (in `JSONConfig`) provides a means of deserializing polymorphic types &ndash; an input object may be
+deserialized into one of a number of possible derived types by examining the properties of the object:
+```kotlin
+ config.fromJSONPolymorphic(Party::class, "type",
+        JSONString("PERSON") to typeOf<Person>(),
+        JSONString("ORGANIZATION") to typeOf<Organization>()
+ )
+```
+
+If the object has a property named "type" with a value (string) of "PERSON", the object will be deserialized as a
+`Person`, and if the "type" property is "ORGANIZATION" the object will be deserialized as an `Organization`.
+
 2021-08-22

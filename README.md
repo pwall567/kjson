@@ -1,6 +1,6 @@
 # kjson
 
-[![Build Status](https://travis-ci.com/pwall567/kjson.svg?branch=main)](https://travis-ci.com/pwall567/kjson)
+[![Build Status](https://travis-ci.com/pwall567/kjson.svg?branch=main)](https://app.travis-ci.com/github/pwall567/kjson)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Kotlin](https://img.shields.io/static/v1?label=Kotlin&message=v1.5.20&color=7f52ff&logo=kotlin&logoColor=7f52ff)](https://github.com/JetBrains/kotlin/releases/tag/v1.5.20)
 [![Maven Central](https://img.shields.io/maven-central/v/io.kjson/kjson?label=Maven%20Central)](https://search.maven.org/search?q=g:%22io.kjson%22%20AND%20a:%22kjson%22)
@@ -21,7 +21,8 @@ It uses Kotlin reflection to serialize and deserialize arbitrary objects, and it
 Kotlin standard library classes.
 
 When instantiating deserialized objects it does not require the class to have a no-argument constructor, and unlike some
-JSON libraries it does not use the `sun.misc.Unsafe` class to force instantiation.
+JSON libraries it does not use the `sun.misc.Unsafe` class to force instantiation (which bypasses constructor validity
+and consistency checks).
 
 ## Supported Classes
 

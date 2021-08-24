@@ -61,6 +61,8 @@ import java.util.stream.Stream
 import io.kjson.testclasses.Circular1
 import io.kjson.testclasses.Circular2
 import io.kjson.testclasses.Const
+import io.kjson.testclasses.Const2
+import io.kjson.testclasses.Const3
 import io.kjson.testclasses.CustomIgnore
 import io.kjson.testclasses.CustomIncludeAllProperties
 import io.kjson.testclasses.CustomIncludeIfNull
@@ -89,6 +91,7 @@ import io.kjson.testclasses.JavaClass1
 import io.kjson.testclasses.ListEnum
 import io.kjson.testclasses.NestedDummy
 import io.kjson.testclasses.NotANumber
+import io.kjson.testclasses.Organization
 
 class JSONSerializerTest {
 
@@ -749,6 +752,31 @@ class JSONSerializerTest {
             add("number", BigDecimal(2.0))
         }
         expect(expected) { JSONSerializer.serialize(Const(2.0), config) }
+    }
+
+    @Test fun `should serialize sealed class with class-specific discriminator`() {
+        val expected = JSONObject.build {
+            add("type", "Const2")
+            add("number", BigDecimal(2.0))
+        }
+        expect(expected) { JSONSerializer.serialize(Const2(2.0)) }
+    }
+
+    @Test fun `should serialize sealed class with class-specific discriminator and identifiers`() {
+        val expected = JSONObject.build {
+            add("type", "CONST")
+            add("number", BigDecimal(2.0))
+        }
+        expect(expected) { JSONSerializer.serialize(Const3(2.0)) }
+    }
+
+    @Test fun `should serialize sealed class with class-specific discriminator and identifiers within class`() {
+        val expected = JSONObject.build {
+            add("type", "ORGANIZATION")
+            add("id", 123456)
+            add("name", "Funny Company")
+        }
+        expect(expected) { JSONSerializer.serialize(Organization("ORGANIZATION", 123456, "Funny Company")) }
     }
 
     @Test fun `should fail on use of circular reference`() {

@@ -26,6 +26,7 @@
 package io.kjson
 
 import kotlin.reflect.KProperty
+import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.staticProperties
 import kotlin.reflect.jvm.isAccessible
 
@@ -39,9 +40,11 @@ import java.util.stream.BaseStream
 
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.JSONSerializerFunctions.appendCalendar
+import io.kjson.JSONSerializerFunctions.findSealedClass
 import io.kjson.JSONSerializerFunctions.findToJSON
-import io.kjson.JSONSerializerFunctions.isSealedSubclass
 import io.kjson.JSONSerializerFunctions.isToStringClass
+import io.kjson.annotation.JSONDiscriminator
+import io.kjson.annotation.JSONIdentifier
 
 import net.pwall.json.JSONFunctions
 
@@ -205,11 +208,22 @@ object JSONStringify {
                     references.add(obj)
                     append('{')
                     var continuation = false
-                    if (objClass.isSealedSubclass()) {
-                        JSONFunctions.appendString(this, config.sealedClassDiscriminator, config.stringifyNonASCII)
+                    val skipName = objClass.findSealedClass()?.let {
+                        val discriminatorName = it.findAnnotation<JSONDiscriminator>()?.id ?:
+                                config.sealedClassDiscriminator
+                        JSONFunctions.appendString(
+                            this,
+                            discriminatorName,
+                            config.stringifyNonASCII
+                        )
                         append(':')
-                        JSONFunctions.appendString(this, objClass.simpleName ?: "null", config.stringifyNonASCII)
+                        JSONFunctions.appendString(
+                            this,
+                            objClass.findAnnotation<JSONIdentifier>()?.id ?: objClass.simpleName ?: "null",
+                            config.stringifyNonASCII
+                        )
                         continuation = true
+                        discriminatorName
                     }
                     val includeAll = config.hasIncludeAllPropertiesAnnotation(objClass.annotations)
                     val statics: Collection<KProperty<*>> = objClass.staticProperties
@@ -220,14 +234,14 @@ object JSONStringify {
                             val member = objClass.members.find { it.name == parameter.name }
                             if (member is KProperty<*>)
                                 continuation = appendUsingGetter(member, parameter.annotations, obj, config, references,
-                                        includeAll, continuation)
+                                        includeAll, skipName, continuation)
                         }
                         // now check whether there are any more properties not in constructor
                         for (member in objClass.members) {
                             if (member is KProperty<*> && !statics.contains(member) &&
                                 !constructor.parameters.any { it.name == member.name })
                                 continuation = appendUsingGetter(member, member.annotations, obj, config, references,
-                                    includeAll, continuation)
+                                    includeAll, skipName, continuation)
                         }
                     }
                     else {
@@ -238,7 +252,7 @@ object JSONStringify {
                                     combinedAnnotations.addAll(it.annotations)
                                 }
                                 continuation = appendUsingGetter(member, combinedAnnotations, obj, config, references,
-                                    includeAll, continuation)
+                                    includeAll, skipName, continuation)
                             }
                         }
                     }
@@ -252,32 +266,36 @@ object JSONStringify {
     }
 
     private fun Appendable.appendUsingGetter(member: KProperty<*>, annotations: List<Annotation>?, obj: Any,
-            config: JSONConfig, references: MutableSet<Any>, includeAll: Boolean, continuation: Boolean): Boolean {
+            config: JSONConfig, references: MutableSet<Any>, includeAll: Boolean, skipName: String?,
+            continuation: Boolean): Boolean {
         if (!config.hasIgnoreAnnotation(annotations)) {
             val name = config.findNameFromAnnotation(annotations) ?: member.name
-            val wasAccessible = member.isAccessible
-            member.isAccessible = true
-            try {
-                val v = member.getter.call(obj)
-                if (v != null && v in references)
-                    fatal("Circular reference: field ${member.name} in ${obj::class.simpleName}")
-                if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls || includeAll) {
-                    if (continuation)
-                        append(',')
-                    JSONFunctions.appendString(this, name, config.stringifyNonASCII)
-                    append(':')
-                    appendJSON(v, config, references)
-                    return true
+            if (name != skipName) {
+                val wasAccessible = member.isAccessible
+                member.isAccessible = true
+                try {
+                    val v = member.getter.call(obj)
+                    if (v != null && v in references)
+                        fatal("Circular reference: field ${member.name} in ${obj::class.simpleName}")
+                    if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls ||
+                            includeAll) {
+                        if (continuation)
+                            append(',')
+                        JSONFunctions.appendString(this, name, config.stringifyNonASCII)
+                        append(':')
+                        appendJSON(v, config, references)
+                        return true
+                    }
                 }
-            }
-            catch (e: JSONException) {
-                throw e
-            }
-            catch (e: Exception) {
-                fatal("Error getting property ${member.name} from ${obj::class.simpleName}", e)
-            }
-            finally {
-                member.isAccessible = wasAccessible
+                catch (e: JSONException) {
+                    throw e
+                }
+                catch (e: Exception) {
+                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}", e)
+                }
+                finally {
+                    member.isAccessible = wasAccessible
+                }
             }
         }
         return continuation
