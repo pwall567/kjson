@@ -50,7 +50,9 @@ import java.time.ZonedDateTime
 import java.util.Calendar
 import java.util.LinkedList
 import java.util.UUID
-import net.pwall.json.JSONFunctions
+import net.pwall.util.IntOutput.append2Digits
+import net.pwall.util.IntOutput.append3Digits
+import net.pwall.util.IntOutput.appendInt
 
 /**
  * Utility functions for JSON Serialization.  These functions are not expected to be of use outside the `kjson` family
@@ -119,19 +121,19 @@ object JSONSerializerFunctions {
     }
 
     fun Appendable.appendCalendar(calendar: Calendar) {
-        JSONFunctions.appendInt(this, calendar.get(Calendar.YEAR))
+        appendInt(this, calendar.get(Calendar.YEAR))
         append('-')
-        JSONFunctions.append2Digits(this, calendar.get(Calendar.MONTH) + 1)
+        append2Digits(this, calendar.get(Calendar.MONTH) + 1)
         append('-')
-        JSONFunctions.append2Digits(this, calendar.get(Calendar.DAY_OF_MONTH))
+        append2Digits(this, calendar.get(Calendar.DAY_OF_MONTH))
         append('T')
-        JSONFunctions.append2Digits(this, calendar.get(Calendar.HOUR_OF_DAY))
+        append2Digits(this, calendar.get(Calendar.HOUR_OF_DAY))
         append(':')
-        JSONFunctions.append2Digits(this, calendar.get(Calendar.MINUTE))
+        append2Digits(this, calendar.get(Calendar.MINUTE))
         append(':')
-        JSONFunctions.append2Digits(this, calendar.get(Calendar.SECOND))
+        append2Digits(this, calendar.get(Calendar.SECOND))
         append('.')
-        JSONFunctions.append3Digits(this, calendar.get(Calendar.MILLISECOND))
+        append3Digits(this, calendar.get(Calendar.MILLISECOND))
         val offsetMillis = calendar.get(Calendar.ZONE_OFFSET) +
                 if (calendar.timeZone.inDaylightTime(calendar.time)) calendar.get(Calendar.DST_OFFSET) else 0
         if (offsetMillis == 0)
@@ -139,9 +141,9 @@ object JSONSerializerFunctions {
         else {
             append(if (offsetMillis < 0) '-' else '+')
             val offsetMinutes = abs(offsetMillis / (60 * 1000))
-            JSONFunctions.append2Digits(this, offsetMinutes / 60)
+            append2Digits(this, offsetMinutes / 60)
             append(':')
-            JSONFunctions.append2Digits(this, offsetMinutes % 60)
+            append2Digits(this, offsetMinutes % 60)
         }
     }
 

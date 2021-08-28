@@ -36,9 +36,9 @@ import java.util.Calendar
 import java.util.TimeZone
 import java.util.UUID
 
-import net.pwall.json.JSONFunctions
 import net.pwall.json.validation.JSONValidation
 import net.pwall.text.TextMatcher
+import net.pwall.util.IntOutput.append2Digits
 
 object JSONDeserializerFunctions {
 
@@ -148,7 +148,7 @@ object JSONDeserializerFunctions {
                 val zoneHours = tm.resultInt
                 if (zoneHours > 13)
                     calendarError(tm)
-                JSONFunctions.append2Digits(sb, zoneHours)
+                append2Digits(sb, zoneHours)
                 sb.append(':')
                 val zoneMinutes = if (tm.match(':')) {
                     if (!tm.matchDec(2, 2))
@@ -157,7 +157,7 @@ object JSONDeserializerFunctions {
                 }
                 else
                     0
-                JSONFunctions.append2Digits(sb, zoneMinutes)
+                append2Digits(sb, zoneMinutes)
                 if (zoneMinutes > 59)
                     calendarError(tm)
                 calendar.set(Calendar.ZONE_OFFSET, (zoneHours * 60 + zoneMinutes) * if (sign == '-') -60000 else 60000)

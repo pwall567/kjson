@@ -47,6 +47,8 @@ import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
 
 import net.pwall.json.JSONFunctions
+import net.pwall.util.IntOutput.appendInt
+import net.pwall.util.IntOutput.appendLong
 
 /**
  * Reflection-based JSON serialization for Kotlin - serialize direct to `String`.
@@ -120,9 +122,9 @@ object JSONStringify {
 
     private fun Appendable.appendJSONNumber(number: Number, config: JSONConfig, references: MutableSet<Any>) {
         when (number) {
-            is Int -> JSONFunctions.appendInt(this, number)
-            is Short, is Byte -> JSONFunctions.appendInt(this, number.toInt())
-            is Long -> JSONFunctions.appendLong(this, number)
+            is Int -> appendInt(this, number)
+            is Short, is Byte -> appendInt(this, number.toInt())
+            is Long -> appendLong(this, number)
             is Float, is Double -> append(number.toString())
             is BigInteger -> {
                 if (config.bigIntegerString)
@@ -359,7 +361,7 @@ object JSONStringify {
             if (bitSet.get(i)) {
                 if (continuation)
                     append(',')
-                JSONFunctions.appendInt(this, i)
+                appendInt(this, i)
                 continuation = true
             }
         }

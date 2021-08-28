@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.2] - 2021-08-29
+### Changed
+- `pom.xml`: bumped dependency versions, switched to `int-output` library
+
 ## [1.1] - 2021-08-25
 ### Changed
 - `JSONSerializer`, `JSONDeserializer`, `JSONStringify`, `JSONConfig`: improved handling of sealed classes and
