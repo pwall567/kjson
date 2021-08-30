@@ -105,6 +105,7 @@ import io.kjson.testclasses.NotANumber
 import io.kjson.testclasses.Organization
 import io.kjson.testclasses.Party
 import io.kjson.testclasses.Person
+import io.kjson.testclasses.SealedClassContainer
 import io.kjson.testclasses.Super
 
 class JSONDeserializerTest {
@@ -1159,6 +1160,13 @@ class JSONDeserializerTest {
         val json = JSON.parse("""[{"aaa":"X"},{"bbb":1},{"ccc":true,"ddd":0}]""")
         val e = assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<MultiConstructor>>(json) }
         expect("Can't locate constructor for MultiConstructor; properties: ccc, ddd at /2") { e.message }
+    }
+
+    @Test fun `should use type projection upperBounds`() {
+        val json = JSON.parse("""{"expr":{"class":"Const","number":20.0}}""")
+        val expr = JSONDeserializer.deserialize<SealedClassContainer<*>>(json)?.expr
+        assertTrue(expr is Const)
+        expect(20.0) { expr.number }
     }
 
     private val calendarFields = arrayOf(Calendar.YEAR, Calendar.MONTH, Calendar.DAY_OF_MONTH, Calendar.HOUR_OF_DAY,

@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.3] - 2021-08-30
+### Changed
+- `JSONDeserializer`: improved type determination for parameterised types with upper bound
+
 ## [1.2] - 2021-08-29
 ### Changed
 - `pom.xml`: bumped dependency versions, switched to `int-output` library

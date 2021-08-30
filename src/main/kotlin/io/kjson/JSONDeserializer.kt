@@ -673,6 +673,7 @@ object JSONDeserializer {
             val enclosingClass = enclosingType.classifierAsClass(this, pointer)
             val index = enclosingClass.typeParameters.indexOfFirst { it.name == typeParameter.name }
             return enclosingType.arguments.getOrNull(index)?.type ?:
+                    enclosingClass.typeParameters.getOrNull(index)?.upperBounds?.firstOrNull() ?:
                     fatal("Can't create $simpleName - no type information for ${typeParameter.name}", pointer)
         }
 

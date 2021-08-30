@@ -61,7 +61,7 @@ object JSONDeserializerFunctions {
     }
 
     fun KFunction<*>.hasSingleParameter(paramClass: KClass<*>) =
-            parameters.size == 1 && (parameters[0].type.classifier as KClass<*>).isSuperclassOf(paramClass)
+            parameters.size == 1 && (parameters[0].type.classifier as? KClass<*>)?.isSuperclassOf(paramClass) ?: false
 
     fun findParameterName(parameter: KParameter, config: JSONConfig): String? =
             config.findNameFromAnnotation(parameter.annotations) ?: parameter.name
