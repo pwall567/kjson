@@ -40,6 +40,7 @@ import io.kjson.JSON.asInt
 import io.kjson.JSON.asObject
 import io.kjson.JSON.asString
 import io.kjson.JSONKotlinException.Companion.fatal
+import io.kjson.pointer.JSONPointer
 import io.kjson.testclasses.CustomName
 import io.kjson.testclasses.Dummy1
 import io.kjson.testclasses.Dummy3
@@ -280,6 +281,13 @@ class JSONConfigTest {
         expect(Dummy9("abcdef")) { JSONDeserializer.deserialize(JSONString("abcdef"), config) }
     }
 
+    @Test fun `should use simple configurator syntax`() {
+        val config = JSONConfig {
+            fromJSONString<Dummy9>()
+        }
+        expect(Dummy9("abcdef")) { JSONDeserializer.deserialize(JSONString("abcdef"), config) }
+    }
+
     @OptIn(ExperimentalStdlibApi::class)
     @Test fun `should distinguish between polymorphic mappings`() {
         val config = JSONConfig().apply {
@@ -296,9 +304,40 @@ class JSONConfigTest {
         }
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
+    @Test fun `should distinguish between polymorphic mappings using JSONPointer`() {
+        val config = JSONConfig().apply {
+            fromJSONPolymorphic(PolymorphicBase::class, JSONPointer("/type"),
+                JSONString("TYPE1") to typeOf<PolymorphicDerived1>(),
+                JSONString("TYPE2") to typeOf<PolymorphicDerived2>()
+            )
+        }
+        expect(PolymorphicDerived1("TYPE1", 1234)) {
+            """{"type":"TYPE1","extra1":1234}""".parseJSON<PolymorphicBase>(config)
+        }
+        expect(PolymorphicDerived2("TYPE2", "hello")) {
+            """{"type":"TYPE2","extra2":"hello"}""".parseJSON<PolymorphicBase>(config)
+        }
+    }
+
     @Test fun `should distinguish between polymorphic mappings using type`() {
         val config = JSONConfig().apply {
             fromJSONPolymorphic(PolymorphicBase::class.starProjectedType, "type",
+                JSONString("TYPE1") to JSONTypeRef.create<PolymorphicDerived1>().refType,
+                JSONString("TYPE2") to JSONTypeRef.create<PolymorphicDerived2>().refType
+            )
+        }
+        expect(PolymorphicDerived1("TYPE1", 987)) {
+            """{"type":"TYPE1","extra1":987}""".parseJSON<PolymorphicBase>(config)
+        }
+        expect(PolymorphicDerived2("TYPE2", "bye")) {
+            """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config)
+        }
+    }
+
+    @Test fun `should distinguish between polymorphic mappings using type and JSONPointer`() {
+        val config = JSONConfig().apply {
+            fromJSONPolymorphic(PolymorphicBase::class.starProjectedType, JSONPointer("/type"),
                 JSONString("TYPE1") to JSONTypeRef.create<PolymorphicDerived1>().refType,
                 JSONString("TYPE2") to JSONTypeRef.create<PolymorphicDerived2>().refType
             )

@@ -270,10 +270,14 @@ Most of the serialization and deserialization functions take a `JSONConfig` as a
 
 To create a custom `JSONConfig`:
 ```kotlin
-    val config = JSONConfig().apply {
-        // make changes to default settings as required
+    val config = JSONConfig {
+        // make changes to default settings as required, for example:
+        includeNulls = true
     }
 ```
+The constructor parameter is a block which is executed with the `JSONConfig` as `this` to initialise it.
+The examples below assume that the `JSONConfig` has been created previously with the name `config`; if these
+configuration options are being applied in the initialisation block, they do not need the `config.`.
 
 ### `includeNulls`
 

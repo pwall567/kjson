@@ -35,14 +35,15 @@ import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.isSupertypeOf
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
-import io.kjson.JSON.displayValue
 
+import io.kjson.JSON.displayValue
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.annotation.JSONAllowExtra
 import io.kjson.annotation.JSONIgnore
 import io.kjson.annotation.JSONIncludeAllProperties
 import io.kjson.annotation.JSONIncludeIfNull
 import io.kjson.annotation.JSONName
+import io.kjson.pointer.JSONPointer
 
 /**
  * Configuration class for reflection-based JSON serialization and deserialization for Kotlin.
@@ -50,7 +51,7 @@ import io.kjson.annotation.JSONName
  * @author  Peter Wall
  */
 @OptIn(ExperimentalStdlibApi::class)
-class JSONConfig {
+class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
 
     /** Name of property to store sealed class subclass name as discriminator */
     var sealedClassDiscriminator = defaultSealedClassDiscriminator
@@ -110,6 +111,10 @@ class JSONConfig {
     private val includeAllPropertiesAnnotations: MutableList<KClass<*>> = arrayListOf(JSONIncludeAllProperties::class)
 
     private val allowExtraPropertiesAnnotations: MutableList<KClass<*>> = arrayListOf(JSONAllowExtra::class)
+
+    init {
+        apply(configurator)
+    }
 
     /**
      * Find a `fromJSON` mapping function that will create the specified [KType], or the closest subtype of it.
@@ -282,31 +287,58 @@ class JSONConfig {
      * property value and target type.
      *
      * @param   targetClass     the target class
-     * @param   discriminator   the "discriminator" property name
+     * @param   property        the property name
      * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
      *                          discriminator property and its associated type
      */
-    fun fromJSONPolymorphic(targetClass: KClass<*>, discriminator: String, vararg mappings: Pair<JSONValue, KType>) {
+    fun fromJSONPolymorphic(targetClass: KClass<*>, property: String, vararg mappings: Pair<JSONValue, KType>) {
+        fromJSONPolymorphic(targetClass.starProjectedType, JSONPointer.root.child(property), *mappings)
+    }
+
+    /**
+     * Add a polymorphic mapping to the specified target class, using the value selected by a [JSONPointer] and a list
+     * of pairs of property value and target type.
+     *
+     * @param   targetClass     the target class
+     * @param   discriminator   the "discriminator" [JSONPointer]
+     * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
+     *                          discriminator property and its associated type
+     */
+    fun fromJSONPolymorphic(targetClass: KClass<*>, discriminator: JSONPointer,
+            vararg mappings: Pair<JSONValue, KType>) {
         fromJSONPolymorphic(targetClass.starProjectedType, discriminator, *mappings)
     }
 
     /**
-     * Add a polymorphic mapping to the specified target class, using the nominated property and a list of pairs of
+     * Add a polymorphic mapping to the specified target type, using the nominated property and a list of pairs of
      * property value and target type.
      *
      * @param   type            the target type
-     * @param   discriminator   the "discriminator" property name
+     * @param   property        the property name
      * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
      *                          discriminator property and its associated type
      */
-    fun fromJSONPolymorphic(type: KType, discriminator: String, vararg mappings: Pair<JSONValue, KType>) {
+    fun fromJSONPolymorphic(type: KType, property: String, vararg mappings: Pair<JSONValue, KType>) {
+        fromJSONPolymorphic(type, JSONPointer.root.child(property), *mappings)
+    }
+
+    /**
+     * Add a polymorphic mapping to the specified target type, using the value selected by a [JSONPointer] and a list of
+     * pairs of property value and target type.
+     *
+     * @param   type            the target type
+     * @param   discriminator   the "discriminator" [JSONPointer]
+     * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
+     *                          discriminator property and its associated type
+     */
+    fun fromJSONPolymorphic(type: KType, discriminator: JSONPointer, vararg mappings: Pair<JSONValue, KType>) {
         for (mapping in mappings)
             if (!mapping.second.isSubtypeOf(type))
                 fatal("Illegal polymorphic mapping - ${mapping.second} is not a sub-type of $type")
         fromJSON(type) { jsonValue ->
-            if (jsonValue !is JSONObject)
+            if (jsonValue !is JSONObject || !discriminator.existsIn(jsonValue))
                 fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
-            val discriminatorValue = jsonValue[discriminator]
+            val discriminatorValue = discriminator.find(jsonValue)
             val mapping = mappings.find { discriminatorValue == it.first } ?:
                 fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
             JSONDeserializer.deserialize(mapping.second, jsonValue, this)

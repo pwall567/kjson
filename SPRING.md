@@ -53,7 +53,7 @@ class JSONConverter : AbstractJsonHttpMessageConverter() {
          * It is placed in a companion object to allow it to be used from other parts of the application, e.g.
          *     val event = jsonString.parseJSON<Event>(JSONConverter.config)
          */
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
 
             allowExtra = true // example configuration setting
 
@@ -70,5 +70,8 @@ class JSONConverter : AbstractJsonHttpMessageConverter() {
 
 }
 ```
+
+This class is provided as documentation rather than as a source file because it would not be practical for this project
+to include the dependencies required to resolve the Spring references.
 
 2021-08-21
