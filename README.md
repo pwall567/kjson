@@ -151,7 +151,7 @@ To indicate that all properties in a class are to be included in the output even
 And to specify that all properties in all classes are to be output if null, the `includeNulls` flag may be set in the
 `JSONConfig`:
 ```kotlin
-    val config = JSONConfig().apply {
+    val config = JSONConfig {
         includeNulls = true
     }
     val json = example.stringifyJSON(config)
@@ -169,7 +169,7 @@ To allow (and ignore) any extra properties, the `@JSONAllowExtra` annotation may
 To allow (and ignore) extra properties throughout the deserialization process, the `allowExtra` flag may be set in the
 `JSONConfig`:
 ```kotlin
-    val config = JSONConfig().apply {
+    val config = JSONConfig {
         allowExtra = true
     }
     val json = example.stringifyJSON(config)
@@ -180,7 +180,7 @@ To allow (and ignore) extra properties throughout the deserialization process, t
 If you have classes that already contain annotations for the above purposes, you can tell `kjson` to use those
 annotations by specifying them in a `JSONConfig`:
 ```kotlin
-    val config = JSONConfig().apply {
+    val config = JSONConfig {
         addNameAnnotation(MyName::class, "name")
         addIgnoreAnnotation(MyIgnore::class)
         addIncludeIfNullAnnotation(MyIncludeIfNull::class)
@@ -197,7 +197,7 @@ for more details).
 
 The `JSONConfig` is also used to specify custom serialization:
 ```kotlin
-    val config = JSONConfig().apply {
+    val config = JSONConfig {
         toJSON<Example> { obj ->
             obj?.let {
                 JSONObject().apply {
@@ -210,7 +210,7 @@ The `JSONConfig` is also used to specify custom serialization:
 ```
 Or deserialization:
 ```kotlin
-    val config = JSONConfig().apply {
+    val config = JSONConfig {
         fromJSON { json ->
             require(json is JSONObject) { "Must be JSONObject" }
             Example(json.getString("custom1"), json.getInt("custom2"))
@@ -243,25 +243,25 @@ trailing quote or bracket character.
 
 ## Dependency Specification
 
-The latest version of the library is 1.4, and it may be obtained from the Maven Central repository.
+The latest version of the library is 1.5, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>1.4</version>
+      <version>1.5</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:1.4'
+    implementation 'io.kjson:kjson:1.5'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:1.4")
+    implementation("io.kjson:kjson:1.5")
 ```
 
 Peter Wall
 
-2021-10-13
+2021-10-14

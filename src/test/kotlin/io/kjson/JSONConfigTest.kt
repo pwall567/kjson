@@ -290,7 +290,7 @@ class JSONConfigTest {
 
     @OptIn(ExperimentalStdlibApi::class)
     @Test fun `should distinguish between polymorphic mappings`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             fromJSONPolymorphic(PolymorphicBase::class, "type",
                 JSONString("TYPE1") to typeOf<PolymorphicDerived1>(),
                 JSONString("TYPE2") to typeOf<PolymorphicDerived2>()
@@ -306,7 +306,7 @@ class JSONConfigTest {
 
     @OptIn(ExperimentalStdlibApi::class)
     @Test fun `should distinguish between polymorphic mappings using JSONPointer`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             fromJSONPolymorphic(PolymorphicBase::class, JSONPointer("/type"),
                 JSONString("TYPE1") to typeOf<PolymorphicDerived1>(),
                 JSONString("TYPE2") to typeOf<PolymorphicDerived2>()
@@ -321,7 +321,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should distinguish between polymorphic mappings using type`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             fromJSONPolymorphic(PolymorphicBase::class.starProjectedType, "type",
                 JSONString("TYPE1") to JSONTypeRef.create<PolymorphicDerived1>().refType,
                 JSONString("TYPE2") to JSONTypeRef.create<PolymorphicDerived2>().refType
@@ -336,7 +336,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should distinguish between polymorphic mappings using type and JSONPointer`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             fromJSONPolymorphic(PolymorphicBase::class.starProjectedType, JSONPointer("/type"),
                 JSONString("TYPE1") to JSONTypeRef.create<PolymorphicDerived1>().refType,
                 JSONString("TYPE2") to JSONTypeRef.create<PolymorphicDerived2>().refType

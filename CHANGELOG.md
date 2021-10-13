@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.5] - 2021-10-13
+### Changed
+- `pom.xml`: bumped dependency versions
+
 ## [1.4] - 2021-10-13
 ### Changed
 - `JSONConfig`: added `configurator` to constructor
