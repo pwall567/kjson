@@ -2,7 +2,7 @@
  * @(#) JSONTypeRef.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2020, 2021 Peter Wall
+ * Copyright (c) 2020, 2021, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -52,8 +52,7 @@ open class JSONTypeRef<T>(nullable: Boolean = false) {
         /**
          * Create a [KType] for the target type.
          *
-         * (Note - this will largely become redundant once the `typeOf` function is made a stable part of the Kotlin
-         * library.)
+         * (Note - this is largely redundant now that the `typeOf` function is a stable part of the Kotlin library.)
          *
          * @param   T       the target type
          * @return          the [KType]

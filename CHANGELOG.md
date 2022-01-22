@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.7] - 2022-01-22
+### Changed
+- `pom.xml`: updated Kotlin version to 1.6.10
+
 ## [1.6] - 2021-11-11
 ### Changed
 - `JSONTypeRef`: added `createRef` function

@@ -2,7 +2,7 @@
  * @(#) JSONConfig.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -50,7 +50,6 @@ import io.kjson.pointer.JSONPointer
  *
  * @author  Peter Wall
  */
-@OptIn(ExperimentalStdlibApi::class)
 class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
 
     /** Name of property to store sealed class subclass name as discriminator */

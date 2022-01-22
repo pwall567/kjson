@@ -2,7 +2,7 @@
  * @(#) JSONConfigTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -289,7 +289,6 @@ class JSONConfigTest {
         expect(Dummy9("abcdef")) { JSONDeserializer.deserialize(JSONString("abcdef"), config) }
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
     @Test fun `should distinguish between polymorphic mappings`() {
         val config = JSONConfig {
             fromJSONPolymorphic(PolymorphicBase::class, "type",
@@ -305,7 +304,6 @@ class JSONConfigTest {
         }
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
     @Test fun `should distinguish between polymorphic mappings using JSONPointer`() {
         val config = JSONConfig {
             fromJSONPolymorphic(PolymorphicBase::class, JSONPointer("/type"),

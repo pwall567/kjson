@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.com/pwall567/kjson.svg?branch=main)](https://app.travis-ci.com/github/pwall567/kjson)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Kotlin](https://img.shields.io/static/v1?label=Kotlin&message=v1.5.20&color=7f52ff&logo=kotlin&logoColor=7f52ff)](https://github.com/JetBrains/kotlin/releases/tag/v1.5.20)
+[![Kotlin](https://img.shields.io/static/v1?label=Kotlin&message=v1.6.10&color=7f52ff&logo=kotlin&logoColor=7f52ff)](https://github.com/JetBrains/kotlin/releases/tag/v1.6.10)
 [![Maven Central](https://img.shields.io/maven-central/v/io.kjson/kjson?label=Maven%20Central)](https://search.maven.org/search?q=g:%22io.kjson%22%20AND%20a:%22kjson%22)
 
 Reflection-based JSON serialization and deserialization for Kotlin.
@@ -243,25 +243,25 @@ trailing quote or bracket character.
 
 ## Dependency Specification
 
-The latest version of the library is 1.6, and it may be obtained from the Maven Central repository.
+The latest version of the library is 1.7, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>1.6</version>
+      <version>1.7</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:1.6'
+    implementation 'io.kjson:kjson:1.7'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:1.6")
+    implementation("io.kjson:kjson:1.7")
 ```
 
 Peter Wall
 
-2021-11-11
+2022-01-22
