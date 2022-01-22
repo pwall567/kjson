@@ -28,12 +28,13 @@ package io.kjson
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.expect
+import kotlin.time.Duration
 
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.net.URI
 import java.net.URL
-import java.time.Duration
+import java.time.Duration as JavaDuration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -422,9 +423,9 @@ class JSONStringifyTest {
         expect("\"$str\"") { JSONStringify.stringify(monthDay) }
     }
 
-    @Test fun `should stringify a Duration`() {
+    @Test fun `should stringify a Java Duration`() {
         val str = "PT2H"
-        val duration = Duration.parse(str)
+        val duration = JavaDuration.parse(str)
         expect("\"$str\"") { JSONStringify.stringify(duration) }
     }
 
@@ -432,6 +433,12 @@ class JSONStringifyTest {
         val str = "P3M"
         val period = Period.parse(str)
         expect("\"$str\"") { JSONStringify.stringify(period) }
+    }
+
+    @Test fun `should stringify a Duration`() {
+        val str = "2h"
+        val duration = Duration.parse(str)
+        expect("\"$str\"") { JSONStringify.stringify(duration) }
     }
 
     @Test fun `should stringify a URI`() {

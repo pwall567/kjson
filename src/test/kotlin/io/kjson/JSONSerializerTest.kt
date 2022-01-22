@@ -32,12 +32,13 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.test.expect
+import kotlin.time.Duration.Companion.hours
 
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.net.URI
 import java.net.URL
-import java.time.Duration
+import java.time.Duration as JavaDuration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -412,14 +413,19 @@ class JSONSerializerTest {
         expect(JSONString("--04-23")) { JSONSerializer.serialize(month) }
     }
 
-    @Test fun `should return Duration as JSONString`() {
-        val duration = Duration.ofHours(2)
-        expect(JSONString("PT2H")) { JSONSerializer.serialize(duration) }
+    @Test fun `should return Java Duration as JSONString`() {
+        val javaDuration = JavaDuration.ofHours(2)
+        expect(JSONString("PT2H")) { JSONSerializer.serialize(javaDuration) }
     }
 
     @Test fun `should return Period JSONString`() {
         val period = Period.ofMonths(3)
         expect(JSONString("P3M")) { JSONSerializer.serialize(period) }
+    }
+
+    @Test fun `should return Duration as JSONString`() {
+        val duration = 2.hours
+        expect(JSONString("2h")) { JSONSerializer.serialize(duration) }
     }
 
     @Test fun `should return UUID as JSONString`() {

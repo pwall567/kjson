@@ -37,13 +37,14 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.test.expect
 import kotlin.test.fail
+import kotlin.time.Duration.Companion.hours
 
 import java.lang.reflect.Type
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.net.URI
 import java.net.URL
-import java.time.Duration
+import java.time.Duration as JavaDuration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -278,15 +279,21 @@ class JSONDeserializerTest {
         expect(expected) { JSONDeserializer.deserialize(json) }
     }
 
-    @Test fun `should return Duration from JSONString`() {
+    @Test fun `should return Java Duration from JSONString`() {
         val json = JSONString("PT2H")
-        val expected = Duration.ofHours(2)
+        val expected = JavaDuration.ofHours(2)
         expect(expected) { JSONDeserializer.deserialize(json) }
     }
 
     @Test fun `should return Period from JSONString`() {
         val json = JSONString("P3M")
         val expected = Period.ofMonths(3)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return Duration from JSONString`() {
+        val json = JSONString("2h")
+        val expected = 2.hours
         expect(expected) { JSONDeserializer.deserialize(json) }
     }
 

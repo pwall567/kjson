@@ -44,11 +44,12 @@ import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.full.staticFunctions
 import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.typeOf
+import kotlin.time.Duration
 
 import java.lang.reflect.Type
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.time.Duration
+import java.time.Duration as JavaDuration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -322,8 +323,9 @@ object JSONDeserializer {
                 Year::class -> return Year.parse(str) as T
                 YearMonth::class -> return YearMonth.parse(str) as T
                 MonthDay::class -> return MonthDay.parse(str) as T
-                Duration::class -> return Duration.parse(str) as T
+                JavaDuration::class -> return JavaDuration.parse(str) as T
                 Period::class -> return Period.parse(str) as T
+                Duration::class -> return Duration.parse(str) as T
                 UUID::class -> return createUUID(str) as T
             }
 

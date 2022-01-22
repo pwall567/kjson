@@ -30,12 +30,13 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.KType
+import kotlin.time.Duration
 
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.net.URI
 import java.net.URL
-import java.time.Duration
+import java.time.Duration as JavaDuration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -65,7 +66,7 @@ object JSONSerializerFunctions {
     private val toStringClasses = setOf(java.sql.Date::class, java.sql.Time::class, java.sql.Timestamp::class,
         Instant::class, LocalDate::class, LocalDateTime::class, LocalTime::class, OffsetTime::class,
         OffsetDateTime::class, ZonedDateTime::class, Year::class, YearMonth::class, MonthDay::class,
-        Duration::class, Period::class, URI::class, URL::class, UUID::class)
+        JavaDuration::class, Period::class, Duration::class, URI::class, URL::class, UUID::class)
 
     private val uncachedClasses = setOf(Any::class, String::class, Boolean::class, Int::class, Long::class, Byte::class,
         Short::class, Double::class, Float::class, BigDecimal::class, BigInteger::class, ArrayList::class,

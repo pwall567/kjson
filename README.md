@@ -36,6 +36,7 @@ Support is included for the following standard Kotlin classes:
 - `Map`, `HashMap`, `LinkedHashMap`
 - `Pair`, `Triple`
 - `Enum`
+- `Duration`
 
 Also, support is included for the following standard Java classes:
 
