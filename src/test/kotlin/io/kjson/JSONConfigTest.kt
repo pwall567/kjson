@@ -40,6 +40,7 @@ import io.kjson.JSON.asInt
 import io.kjson.JSON.asObject
 import io.kjson.JSON.asString
 import io.kjson.JSONKotlinException.Companion.fatal
+import io.kjson.JSONTypeRef.Companion.createRef
 import io.kjson.pointer.JSONPointer
 import io.kjson.testclasses.CustomName
 import io.kjson.testclasses.Dummy1
@@ -338,8 +339,8 @@ class JSONConfigTest {
     @Test fun `should distinguish between polymorphic mappings using type and JSONPointer`() {
         val config = JSONConfig {
             fromJSONPolymorphic(PolymorphicBase::class.starProjectedType, JSONPointer("/type"),
-                JSONString("TYPE1") to JSONTypeRef.create<PolymorphicDerived1>().refType,
-                JSONString("TYPE2") to JSONTypeRef.create<PolymorphicDerived2>().refType
+                JSONString("TYPE1") to createRef<PolymorphicDerived1>(),
+                JSONString("TYPE2") to createRef<PolymorphicDerived2>()
             )
         }
         expect(PolymorphicDerived1("TYPE1", 987)) {

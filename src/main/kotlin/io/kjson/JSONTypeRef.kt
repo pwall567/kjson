@@ -25,6 +25,7 @@
 
 package io.kjson
 
+import kotlin.reflect.KType
 import java.lang.reflect.ParameterizedType
 
 /**
@@ -47,6 +48,17 @@ open class JSONTypeRef<T>(nullable: Boolean = false) {
          * @return          the [JSONTypeRef]
          */
         inline fun <reified T> create(nullable: Boolean = false): JSONTypeRef<T> = object : JSONTypeRef<T>(nullable) {}
+
+        /**
+         * Create a [KType] for the target type.
+         *
+         * (Note - this will largely become redundant once the `typeOf` function is made a stable part of the Kotlin
+         * library.)
+         *
+         * @param   T       the target type
+         * @return          the [KType]
+         */
+        inline fun <reified T> createRef(nullable: Boolean = false): KType = create<T>(nullable).refType
 
     }
 

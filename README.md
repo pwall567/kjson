@@ -243,25 +243,25 @@ trailing quote or bracket character.
 
 ## Dependency Specification
 
-The latest version of the library is 1.5, and it may be obtained from the Maven Central repository.
+The latest version of the library is 1.6, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>1.5</version>
+      <version>1.6</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:1.5'
+    implementation 'io.kjson:kjson:1.6'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:1.5")
+    implementation("io.kjson:kjson:1.6")
 ```
 
 Peter Wall
 
-2021-10-14
+2021-11-11

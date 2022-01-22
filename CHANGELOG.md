@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.6] - 2021-11-11
+### Changed
+- `JSONTypeRef`: added `createRef` function
+
 ## [1.5] - 2021-10-13
 ### Changed
 - `pom.xml`: bumped dependency versions
