@@ -2,7 +2,7 @@
  * @(#) JSONStringify.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ import kotlin.reflect.KProperty
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.staticProperties
 import kotlin.reflect.jvm.isAccessible
+import kotlin.time.Duration
 
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -205,6 +206,7 @@ object JSONStringify {
             is Calendar -> appendJSONCalendar(obj)
             is Date -> appendJSONCalendar(Calendar.getInstance().apply { time = obj })
             is BitSet -> appendJSONBitSet(obj)
+            is Duration -> JSONFunctions.appendString(this, obj.toIsoString(), config.stringifyNonASCII)
             else -> {
                 try {
                     references.add(obj)

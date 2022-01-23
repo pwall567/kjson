@@ -2,7 +2,7 @@
  * @(#) JSONSerializerFunctions.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,6 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.KType
-import kotlin.time.Duration
 
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -66,7 +65,7 @@ object JSONSerializerFunctions {
     private val toStringClasses = setOf(java.sql.Date::class, java.sql.Time::class, java.sql.Timestamp::class,
         Instant::class, LocalDate::class, LocalDateTime::class, LocalTime::class, OffsetTime::class,
         OffsetDateTime::class, ZonedDateTime::class, Year::class, YearMonth::class, MonthDay::class,
-        JavaDuration::class, Period::class, Duration::class, URI::class, URL::class, UUID::class)
+        JavaDuration::class, Period::class, URI::class, URL::class, UUID::class)
 
     private val uncachedClasses = setOf(Any::class, String::class, Boolean::class, Int::class, Long::class, Byte::class,
         Short::class, Double::class, Float::class, BigDecimal::class, BigInteger::class, ArrayList::class,

@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -292,7 +292,7 @@ class JSONDeserializerTest {
     }
 
     @Test fun `should return Duration from JSONString`() {
-        val json = JSONString("2h")
+        val json = JSONString("PT2H")
         val expected = 2.hours
         expect(expected) { JSONDeserializer.deserialize(json) }
     }

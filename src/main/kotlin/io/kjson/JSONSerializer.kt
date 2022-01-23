@@ -2,7 +2,7 @@
  * @(#) JSONSerializer.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ import kotlin.reflect.KProperty
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.staticProperties
 import kotlin.reflect.jvm.isAccessible
+import kotlin.time.Duration
 
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -150,6 +151,7 @@ object JSONSerializer {
             is Calendar -> return serializeCalendar(obj)
             is Date -> return serializeCalendar(Calendar.getInstance().apply { time = obj })
             is BitSet -> return serializeBitSet(obj)
+            is Duration -> return JSONString(obj.toIsoString())
         }
         return JSONObject.Builder {
             try {
@@ -241,7 +243,7 @@ object JSONSerializer {
                     add(entry.key.toString(), serialize(entry.value, config, references))
             }.build()
 
-    private fun serializeCalendar(calendar: Calendar) : JSONValue =
+    private fun serializeCalendar(calendar: Calendar) =
             JSONString.of(StringBuilder().apply { appendCalendar(calendar) })
 
     private fun serializeBitSet(bitSet: BitSet)  =

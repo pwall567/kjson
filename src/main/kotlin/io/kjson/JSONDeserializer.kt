@@ -70,8 +70,8 @@ import java.util.stream.DoubleStream
 import java.util.stream.IntStream
 import java.util.stream.LongStream
 import java.util.stream.Stream
-import io.kjson.JSON.asStringOrNull
 
+import io.kjson.JSON.asStringOrNull
 import io.kjson.JSONDeserializerFunctions.createUUID
 import io.kjson.JSONDeserializerFunctions.findFromJSON
 import io.kjson.JSONDeserializerFunctions.findParameterName
@@ -325,7 +325,7 @@ object JSONDeserializer {
                 MonthDay::class -> return MonthDay.parse(str) as T
                 JavaDuration::class -> return JavaDuration.parse(str) as T
                 Period::class -> return Period.parse(str) as T
-                Duration::class -> return Duration.parse(str) as T
+                Duration::class -> return Duration.parseIsoString(str) as T
                 UUID::class -> return createUUID(str) as T
             }
 

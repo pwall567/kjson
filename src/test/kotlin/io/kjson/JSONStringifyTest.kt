@@ -2,7 +2,7 @@
  * @(#) JSONStringifyTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -436,8 +436,8 @@ class JSONStringifyTest {
     }
 
     @Test fun `should stringify a Duration`() {
-        val str = "2h"
-        val duration = Duration.parse(str)
+        val str = "PT2H"
+        val duration = Duration.parseIsoString(str)
         expect("\"$str\"") { JSONStringify.stringify(duration) }
     }
 
