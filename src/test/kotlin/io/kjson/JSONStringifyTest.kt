@@ -191,6 +191,26 @@ class JSONStringifyTest {
         expect("-9.998877665") { JSONStringify.stringify(x) }
     }
 
+    @Test fun `should stringify an unsigned integer`() {
+        val x = 2147483648U // Int.MAX_VALUE + 1
+        expect("2147483648") { JSONStringify.stringify(x) }
+    }
+
+    @Test fun `should stringify an unsigned long`() {
+        val x = 9223372036854775808U // Long.MAX_VALUE + 1
+        expect("9223372036854775808") { JSONStringify.stringify(x) }
+    }
+
+    @Test fun `should stringify an unsigned short`() {
+        val x: UShort = 32768U // Short.MAX_VALUE + 1
+        expect("32768") { JSONStringify.stringify(x) }
+    }
+
+    @Test fun `should stringify an unsigned byte`() {
+        val x: UByte = 128U // Byte.MAX_VALUE + 1
+        expect("128") { JSONStringify.stringify(x) }
+    }
+
     @Test fun `should stringify a BigInteger`() {
         val x = BigInteger.valueOf(123456789000)
         expect("123456789000") { JSONStringify.stringify(x) }

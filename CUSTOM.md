@@ -27,8 +27,8 @@ There are two ways of specifying custom serialization.
 
 ### `toJSON` function in the class
 
-If the class of an object to be serialized has a member function named `toJSON`, taking no parameters and returning a
-`JSONValue`, that function will be used for serialization.
+If the class of an object to be serialized has a public member function named `toJSON`, taking no parameters and
+returning a `JSONValue`, that function will be used for serialization.
 For example:
 ```kotlin
 class Person(val firstName: String, val surname: String) {
@@ -86,12 +86,19 @@ For Example:
 ## Deserialization
 
 Custom deserialization converts a `JSONValue` to an object of the specified (or implied) type.
-If the source is a string, it will already have been converted to a structure of `JSONValue` objects.
+If the source is JSON text, it will already have been converted to a structure of `JSONValue` objects.
+
+### Constructor taking `String`
+
+If the target class has a public constructor taking a single `String` parameter, and the JSON to be decoded is a string,
+then that constructor will be used.
+This is the simplest means of providing custom deserialization, and the library uses this mechanism to deserialize some
+system classes, for example `java.net.URL`.
 
 ### `fromJSON` function in the companion object
 
-If the target class has a companion object with a function taking a `JSONValue` and returning an object of the target
-class, that function will be used for deserialization.
+If the target class has a companion object with a public function named `fromJSON`, taking a `JSONValue` parameter and
+returning an object of the target class, that function will be used for deserialization.
 For example:
 ```kotlin
 class Person(val firstName: String, val surname: String) {
@@ -104,7 +111,7 @@ class Person(val firstName: String, val surname: String) {
         @Suppress("unused")
         fun fromJSON(json: JSONValue): DummyFromJSON {
             require(json is JSONString) { "Can't deserialize ${json::class} as Person" }
-            val names = json.get().split('|')
+            val names = json.value.split('|')
             require(names.length == 2) { "Person string has incorrect format" }
             return Person(names[0], names[1])
         }
@@ -120,7 +127,7 @@ The above example may be specified as:
 ```kotlin
     config.fromJSON { json ->
         require(json is JSONString) { "Can't deserialize ${json::class} as Person" }
-        val names = json.get().split('|')
+        val names = json.value.split('|')
         require(names.length == 2) { "Person string has incorrect format" }
         Person(names[0], names[1])
     }
@@ -132,7 +139,7 @@ As with `toJSON`, the type may be specified explicitly:
     val personType = Person::class.starProjectedType
     config.fromJSON(personType) { json ->
         require(json is JSONString) { "Can't deserialize ${json::class} as Person" }
-        val names = json.get().split('|')
+        val names = json.value.split('|')
         require(names.length == 2) { "Person string has incorrect format" }
         Person(names[0], names[1])
     }
@@ -148,8 +155,18 @@ deserialized into one of a number of possible derived types by examining the pro
         JSONString("ORGANIZATION") to typeOf<Organization>()
  )
 ```
-
 If the object has a property named "type" with a value (string) of "PERSON", the object will be deserialized as a
 `Person`, and if the "type" property is "ORGANIZATION" the object will be deserialized as an `Organization`.
 
-2021-08-22
+In some cases, the discriminator field may not be at the top level of the object.
+In this case, a `JSONPointer` may be used to specify the location of the discriminator field, relative to the root of
+object:
+```kotlin
+ config.fromJSONPolymorphic(Party::class, JSONPointer("/type/name"),
+        JSONString("PERSON") to typeOf<Person>(),
+        JSONString("ORGANIZATION") to typeOf<Organization>()
+ )
+```
+In this example, a property located by the pointer "`/type/name`" will be tested against the values specified.
+
+2022-01-28

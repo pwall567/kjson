@@ -20,9 +20,9 @@ import org.springframework.http.converter.json.AbstractJsonHttpMessageConverter
 import org.springframework.stereotype.Service
 
 import io.kjson.JSONConfig
-import io.kjson.JSONDeserializer
 import io.kjson.JSONString
 import io.kjson.JSONStringify.appendJSON
+import io.kjson.deserialize
 
 import my.custom.type.Money
 
@@ -38,7 +38,7 @@ class JSONConverter : AbstractJsonHttpMessageConverter() {
     }
 
     override fun readInternal(resolvedType: Type, reader: Reader): Any? {
-        return JSONDeserializer.deserialize(resolvedType, JSON.parse(reader.readText()), config)
+        return JSON.parse(reader.readText()).deserialize(resolvedType, config)
     }
 
     override fun writeInternal(o: Any, type: Type?, writer: Writer) {
@@ -74,4 +74,4 @@ class JSONConverter : AbstractJsonHttpMessageConverter() {
 This class is provided as documentation rather than as a source file because it would not be practical for this project
 to include the dependencies required to resolve the Spring references.
 
-2021-08-21
+2022-01-25

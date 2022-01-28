@@ -70,6 +70,7 @@ import java.util.stream.IntStream
 import java.util.stream.LongStream
 import java.util.stream.Stream
 
+import io.kjson.JSON.asLong
 import io.kjson.testclasses.Const
 import io.kjson.testclasses.Const2
 import io.kjson.testclasses.Const3
@@ -363,6 +364,12 @@ class JSONDeserializerTest {
         expect(expected) { JSONDeserializer.deserialize(json) }
     }
 
+    @Test fun `should return BigInteger from JSONDecimal`() {
+        val json = JSONDecimal("123456789.00")
+        val expected: BigInteger? = BigInteger.valueOf(json.asLong)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
     @Test fun `should return BigDecimal from JSONString`() {
         val str = "123456789.77777"
         val json = JSONString(str)
@@ -398,6 +405,36 @@ class JSONDeserializerTest {
     @Test fun `should return Byte from JSONInt`() {
         val json = JSONInt(123)
         val expected: Byte = 123
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return ULong from JSONLong`() {
+        val json = JSONLong(123456789123456789)
+        val expected: ULong = 123456789123456789U
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return ULong from JSONDecimal`() {
+        val json = JSONDecimal("9223372036854775808")
+        val expected: ULong = 9223372036854775808U // Long.MAX_VALUE + 1
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return UInt from JSONInt`() {
+        val json = JSONInt(1234567)
+        val expected: UInt = 1234567U
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return UShort from JSONInt`() {
+        val json = JSONInt(40000)
+        val expected: UShort = 40000U
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return UByte from JSONInt`() {
+        val json = JSONInt(200)
+        val expected: UByte = 200U
         expect(expected) { JSONDeserializer.deserialize(json) }
     }
 

@@ -194,6 +194,48 @@ class JSONSerializerTest {
         assertTrue(doubleEquals(d, actual.value.toDouble()))
     }
 
+    @Test fun `should return ULong as JSONLong`() {
+        val u = 123456789123456789U
+        val actual = JSONSerializer.serialize(u)
+        assertTrue(actual is JSONLong)
+        expect(123456789123456789) { actual.value }
+    }
+
+    @Test fun `should return ULong as JSONDecimal if too big for Long`() {
+        val u = 9876543210987654321U
+        val actual = JSONSerializer.serialize(u)
+        assertTrue(actual is JSONDecimal)
+        expect(BigDecimal("9876543210987654321")) { actual.value }
+    }
+
+    @Test fun `should return UInt as JSONInt`() {
+        val u = 123456789U
+        val actual = JSONSerializer.serialize(u)
+        assertTrue(actual is JSONInt)
+        expect(123456789) { actual.value }
+    }
+
+    @Test fun `should return UInt as JSONLong if too big for Int`() {
+        val u = 2345678901U
+        val actual = JSONSerializer.serialize(u)
+        assertTrue(actual is JSONLong)
+        expect(2345678901) { actual.value }
+    }
+
+    @Test fun `should return UShort as JSONInt`() {
+        val u: UShort = 40000U
+        val actual = JSONSerializer.serialize(u)
+        assertTrue(actual is JSONInt)
+        expect(40000) { actual.value }
+    }
+
+    @Test fun `should return UByte as JSONInt`() {
+        val u: UByte = 200U
+        val actual = JSONSerializer.serialize(u)
+        assertTrue(actual is JSONInt)
+        expect(200) { actual.value }
+    }
+
     @Test fun `should return Boolean as JSONBoolean`() {
         assertSame(JSONBoolean.TRUE, JSONSerializer.serialize(true))
         assertSame(JSONBoolean.FALSE, JSONSerializer.serialize(false))

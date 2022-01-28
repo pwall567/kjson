@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [Unreleased]
+### Changed
+- `JSONDeserializer`, `JSONSerializer`, `JSONSerializerFunctions`, `JSONStringify`: added unsigned integer types
+
 ## [1.7] - 2022-01-22
 ### Changed
 - `pom.xml`: updated Kotlin version to 1.6.10

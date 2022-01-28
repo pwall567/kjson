@@ -175,7 +175,7 @@ object JSONDeserializer {
      */
     @Suppress("UNCHECKED_CAST")
     fun <T: Any> deserializeNonNull(resultClass: KClass<T>, json: JSONValue?, pointer: JSONPointer,
-                                    config: JSONConfig = JSONConfig.defaultConfig): T {
+            config: JSONConfig = JSONConfig.defaultConfig): T {
         config.findFromJSONMapping(resultClass)?.let { return it(json) as T }
         if (json == null)
             fatal("Can't deserialize null as ${resultClass.simpleName}")
@@ -274,15 +274,24 @@ object JSONDeserializer {
                 Float::class -> return number.toFloat() as T
                 Short::class -> if (number.isShort()) return number.toShort() as T
                 Byte::class -> if (number.isByte()) return number.toByte() as T
-                BigInteger::class -> if (number.isIntegral()) return BigInteger(number.toString()) as T
-                BigDecimal::class ->
-                        return (if (number is JSONDecimal) number.value else BigDecimal(number.toLong())) as T
+                BigInteger::class -> if (number.isIntegral()) return (when (number) {
+                    is JSONDecimal -> number.value.toBigInteger()
+                    is JSONLong -> BigInteger.valueOf(number.value)
+                    is JSONInt -> BigInteger.valueOf(number.toLong())
+                }) as T
+                BigDecimal::class -> return (when (number) {
+                    is JSONDecimal -> number.value
+                    is JSONLong -> BigDecimal(number.value)
+                    is JSONInt -> BigDecimal(number.toLong())
+                }) as T
+                UInt::class -> if (number.isUInt()) return number.toUInt() as T
+                ULong::class -> if (number.isULong()) return number.toULong() as T
+                UShort::class -> if (number.isUShort()) return number.toUShort() as T
+                UByte::class -> if (number.isUByte()) return number.toUByte() as T
                 Number::class -> return number.value as T
                 Any::class -> return number.value as T
-                else -> {
-                    resultClass.constructors.find { it.hasSingleParameter(number.value::class) }?.apply {
-                        return call(number.value)
-                    }
+                else -> resultClass.constructors.find { it.hasSingleParameter(number.value::class) }?.apply {
+                    return call(number.value)
                 }
             }
             fatal("Can't deserialize $number as ${resultClass.simpleName}", pointer)

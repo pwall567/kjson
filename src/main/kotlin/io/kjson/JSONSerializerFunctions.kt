@@ -67,9 +67,10 @@ object JSONSerializerFunctions {
         OffsetDateTime::class, ZonedDateTime::class, Year::class, YearMonth::class, MonthDay::class,
         JavaDuration::class, Period::class, URI::class, URL::class, UUID::class)
 
-    private val uncachedClasses = setOf(Any::class, String::class, Boolean::class, Int::class, Long::class, Byte::class,
-        Short::class, Double::class, Float::class, BigDecimal::class, BigInteger::class, ArrayList::class,
-        LinkedList::class, HashMap::class, LinkedHashMap::class, HashSet::class)
+    private val uncachedClasses = setOf(Any::class, String::class, Boolean::class,
+        Int::class, Long::class, Byte::class, Short::class, BigDecimal::class, BigInteger::class,
+        UInt::class, ULong::class, UShort::class, UByte::class, Double::class, Float::class,
+        ArrayList::class, LinkedList::class, HashMap::class, LinkedHashMap::class, HashSet::class)
 
     private val toJsonCache = HashMap<KClass<*>, KFunction<Any?>?>()
 

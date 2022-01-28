@@ -50,6 +50,8 @@ import io.kjson.annotation.JSONIdentifier
 import net.pwall.json.JSONFunctions
 import net.pwall.util.IntOutput.appendInt
 import net.pwall.util.IntOutput.appendLong
+import net.pwall.util.IntOutput.appendUnsignedInt
+import net.pwall.util.IntOutput.appendUnsignedLong
 
 /**
  * Reflection-based JSON serialization for Kotlin - serialize direct to `String`.
@@ -113,6 +115,10 @@ object JSONStringify {
             }
             is Number -> appendJSONNumber(obj, config, references)
             is Boolean -> append(if (obj) "true" else "false")
+            is UInt -> appendUnsignedInt(this, obj.toInt())
+            is UShort -> appendInt(this, obj.toInt())
+            is UByte -> appendInt(this, obj.toInt())
+            is ULong -> appendUnsignedLong(this, obj.toLong())
             is Array<*> -> appendJSONArray(obj, config, references)
             is Pair<*, *> -> appendJSONPair(obj, config, references)
             is Triple<*, *, *> -> appendJSONTriple(obj, config, references)

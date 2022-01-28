@@ -29,7 +29,7 @@ and consistency checks).
 Support is included for the following standard Kotlin classes:
 
 - `String`, `StringBuilder`, `CharSequence`, `Char`, `CharArray`
-- `Int`, `Long`, `Short`, `Byte`, `Double`, `Float`
+- `Int`, `Long`, `Short`, `Byte`, `Double`, `Float`, `UInt`, `ULong`, `UShort`, `UByte`
 - `Array`, `IntArray`, `LongArray`, `ShortArray`, `ByteArray`, `DoubleArray`, `FloatArray`
 - `Boolean`, `BooleanArray`
 - `Collection`, `List`, `ArrayList`, `LinkedList`, `Set`, `HashSet`, `LinkedHashSet`, `Sequence`
