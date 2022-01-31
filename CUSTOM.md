@@ -90,10 +90,25 @@ If the source is JSON text, it will already have been converted to a structure o
 
 ### Constructor taking `String`
 
-If the target class has a public constructor taking a single `String` parameter, and the JSON to be decoded is a string,
-then that constructor will be used.
+If the target class has a public constructor which will accept a single `String` parameter, and the JSON to be decoded
+is a string, then that constructor will be used.
 This is the simplest means of providing custom deserialization, and the library uses this mechanism to deserialize some
 system classes, for example `java.net.URL`.
+
+### Constructor taking `Number`
+
+If the target class has a public constructor taking a single parameter of one of the system number classes, and the JSON
+to be decoded is a number that is valid for the specified number class, then that constructor will be used.
+
+For the purposes of this functionality, the following are considered to be number classes:
+- any class derived from the abstract class `Number` (this includes `Int`, `Long` _etc._, as well as `BigDecimal`
+  _etc._)
+- the unsigned integer classes `UInt`, `ULong`, `UShort` and `UByte`
+
+The types of the input and the constructor parameter need not match exactly, provided that the input may be converted to
+the parameter with no loss of precision.
+For example, a constructor taking a `Long` will be used if the JSON has a value of 1, and a constructor taking an `Int`
+will be used if the JSON is 5.0 (floating-point numbers are accepted as integer if the fractional part is zero).
 
 ### `fromJSON` function in the companion object
 
@@ -169,4 +184,4 @@ object:
 ```
 In this example, a property located by the pointer "`/type/name`" will be tested against the values specified.
 
-2022-01-28
+2022-01-31

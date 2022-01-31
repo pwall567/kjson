@@ -1,0 +1,199 @@
+/*
+ * @(#) JSONDeserializerLongTest.kt
+ *
+ * kjson  Reflection-based JSON serialization and deserialization for Kotlin
+ * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package io.kjson
+
+import kotlin.test.Test
+import kotlin.test.expect
+
+import java.math.BigDecimal
+import java.math.BigInteger
+import io.kjson.testclasses.ConstructBigDecimal
+import io.kjson.testclasses.ConstructBigInteger
+
+import io.kjson.testclasses.ConstructByte
+import io.kjson.testclasses.ConstructDouble
+import io.kjson.testclasses.ConstructFloat
+import io.kjson.testclasses.ConstructInt
+import io.kjson.testclasses.ConstructLong
+import io.kjson.testclasses.ConstructShort
+import io.kjson.testclasses.ConstructUByte
+import io.kjson.testclasses.ConstructUInt
+import io.kjson.testclasses.ConstructULong
+import io.kjson.testclasses.ConstructUShort
+
+class JSONDeserializerLongTest {
+
+    @Test fun `should return Int from JSONLong`() {
+        val json = JSONLong(12345678)
+        val expected = 12345678
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return Long from JSONLong`() {
+        val json = JSONLong(123456789012345)
+        val expected = 123456789012345
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return Short from JSONLong`() {
+        val json = JSONLong(12345)
+        val expected: Short = 12345
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return Byte from JSONLong`() {
+        val json = JSONLong(-123)
+        val expected: Short = -123
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return Double from JSONLong`() {
+        val json = JSONLong(123)
+        val expected = 123.0
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return Float from JSONLong`() {
+        val json = JSONLong(123)
+        val expected = 123.0F
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return BigInteger from JSONLong`() {
+        val value = 123456789012345678
+        val json = JSONLong(value)
+        val expected: BigInteger? = BigInteger.valueOf(value)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return BigDecimal from JSONLong`() {
+        val json = JSONLong(1234)
+        val expected = BigDecimal(1234)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return ULong from JSONLong`() {
+        val json = JSONLong(123456789123456789)
+        val expected: ULong = 123456789123456789U
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return UInt from JSONLong`() {
+        val json = JSONLong(1234567)
+        val expected: UInt = 1234567U
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return UShort from JSONLong`() {
+        val json = JSONLong(40000)
+        val expected: UShort = 40000U
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return UByte from JSONLong`() {
+        val json = JSONLong(200)
+        val expected: UByte = 200U
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with Long constructor from JSONLong`() {
+        val json = JSONLong(123456789012345678)
+        val expected = ConstructLong(123456789012345678)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with Int constructor from JSONLong`() {
+        val json = JSONLong(1234567)
+        val expected = ConstructInt(1234567)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with Short constructor from JSONLong`() {
+        val json = JSONLong(12345)
+        val expected = ConstructShort(12345)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with Byte constructor from JSONLong`() {
+        val json = JSONLong(123)
+        val expected = ConstructByte(123)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with ULong constructor from JSONLong`() {
+        val json = JSONLong(123456789012345678)
+        val expected = ConstructULong(123456789012345678U)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with UInt constructor from JSONLong`() {
+        val json = JSONLong(1234567)
+        val expected = ConstructUInt(1234567U)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with UShort constructor from JSONLong`() {
+        val json = JSONLong(12345)
+        val expected = ConstructUShort(12345U)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with UByte constructor from JSONLong`() {
+        val json = JSONLong(123)
+        val expected = ConstructUByte(123U)
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with Double constructor from JSONLong`() {
+        val json = JSONLong(1234567890123456)
+        val expected = ConstructDouble(1234567890123456.toDouble())
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with Float constructor from JSONLong`() {
+        val json = JSONLong(12345678)
+        val expected = ConstructFloat(12345678.toFloat())
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with BigDecimal constructor from JSONLong`() {
+        val json = JSONLong(-12345678)
+        val expected = ConstructBigDecimal(BigDecimal("-12345678"))
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should return class with BigInteger constructor from JSONLong`() {
+        val json = JSONLong(1234567)
+        val expected = ConstructBigInteger(BigInteger("1234567"))
+        expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should deserialize JSONLong to Any`() {
+        val json = JSONLong(1234567890123456L)
+        expect(1234567890123456L) { JSONDeserializer.deserializeAny(json) }
+    }
+
+}

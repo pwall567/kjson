@@ -90,6 +90,7 @@ For more information see [Custom Serialization and Deserialization](CUSTOM.md).
 | Pair          | array (of length 2)  |
 | Triple        | array (of length 3)  |
 | Enum          | string (using name)  |
+| Duration      | string (ISO form)    |
 
 #### Java
 
@@ -143,6 +144,11 @@ Deserialization of classes other than those listed above is possibly the most co
 If the JSON is a string and the target class has a constructor that takes a single string parameter, that constructor is
 invoked and the resulting object returned (this is the mechanism used internally for classes such as `StringBuilder` and
 `URL`, but it may also be employed for user-defined classes).
+
+If the target class has a constructor that takes a single numeric parameter (where numeric in this context means a class
+that derives from the system class `Number` &ndash; like `Int` or `Long` &ndash; or one of the unsigned integer classes
+`UInt`, `ULong` _etc._) and the JSON is a number that matches the parameter type, that constructor is invoked and the
+resulting object returned.
 
 Otherwise, the JSON must be an object, and the deserialization functions will construct an object of the target class,
 following this pseudo-code:
@@ -211,14 +217,16 @@ invocation), `kjson` will return the following types:
 | array                                                | `List<Any?>`        |
 | object                                               | `Map<String, Any?>` |
 
-When the return class is `List` or `Map`, the type parameter is `Any?` but the actual type will itself be one of the
-above.
+When the return class is `List` or `Map`, the type parameter is `Any?` but the actual type will itself be the result of
+deserializing into `Any?`, and will therefore be one of the above.
 
 ### Objects
 
 A Kotlin `object` may be the target of a deserialization operation (serialization requires no special processing).
 The object instance will be returned, and all parameters in the JSON will be processed in the same way as additional
-properties (those not used as constructor parameters) in the instantiation of an object.
+properties (those not used as constructor parameters) in the instantiation of an object &ndash; that is to say, the
+values will be checked to be equal to the values in the object instance, and if any are not equal the deserialization
+will fail.
 
 ### Sealed Classes
 
@@ -610,6 +618,9 @@ For example:
     }
 ```
 
+(Note that the above case is now handled automatically by the [`fromJSONPolymorphic`](CUSTOM.md#fromjsonpolymorphic)
+function.)
+
 ### Working with Spring
 
 Many users will wish to use `kjson` in conjunction with the
@@ -617,4 +628,4 @@ Many users will wish to use `kjson` in conjunction with the
 An example `Service` class to provide default JSON serialization and deserialization for Spring applications is shown in
 the [Spring and `kjson`](SPRING.md) guide.
 
-2021-08-21
+2022-01-31

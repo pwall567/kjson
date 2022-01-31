@@ -290,7 +290,11 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
      *                          discriminator property and its associated type
      */
-    fun fromJSONPolymorphic(targetClass: KClass<*>, property: String, vararg mappings: Pair<JSONValue, KType>) {
+    fun fromJSONPolymorphic(
+        targetClass: KClass<*>,
+        property: String,
+        vararg mappings: Pair<JSONValue, KType>,
+    ) {
         fromJSONPolymorphic(targetClass.starProjectedType, JSONPointer.root.child(property), *mappings)
     }
 
@@ -303,8 +307,11 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
      *                          discriminator property and its associated type
      */
-    fun fromJSONPolymorphic(targetClass: KClass<*>, discriminator: JSONPointer,
-            vararg mappings: Pair<JSONValue, KType>) {
+    fun fromJSONPolymorphic(
+        targetClass: KClass<*>,
+        discriminator: JSONPointer,
+        vararg mappings: Pair<JSONValue, KType>,
+    ) {
         fromJSONPolymorphic(targetClass.starProjectedType, discriminator, *mappings)
     }
 
@@ -317,7 +324,11 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
      *                          discriminator property and its associated type
      */
-    fun fromJSONPolymorphic(type: KType, property: String, vararg mappings: Pair<JSONValue, KType>) {
+    fun fromJSONPolymorphic(
+        type: KType,
+        property: String,
+        vararg mappings: Pair<JSONValue, KType>,
+    ) {
         fromJSONPolymorphic(type, JSONPointer.root.child(property), *mappings)
     }
 
@@ -330,7 +341,11 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
      *                          discriminator property and its associated type
      */
-    fun fromJSONPolymorphic(type: KType, discriminator: JSONPointer, vararg mappings: Pair<JSONValue, KType>) {
+    fun fromJSONPolymorphic(
+        type: KType,
+        discriminator: JSONPointer,
+        vararg mappings: Pair<JSONValue, KType>,
+    ) {
         for (mapping in mappings)
             if (!mapping.second.isSubtypeOf(type))
                 fatal("Illegal polymorphic mapping - ${mapping.second} is not a sub-type of $type")
@@ -356,14 +371,18 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
         nameAnnotations.add(namePropertyPair(nameAnnotationClass, argumentName))
     }
 
-    private fun <T: Annotation> namePropertyPair(nameAnnotationClass: KClass<T>, argumentName: String):
-            Pair<KClass<*>, KProperty.Getter<String>> {
+    private fun <T: Annotation> namePropertyPair(
+        nameAnnotationClass: KClass<T>,
+        argumentName: String,
+    ): Pair<KClass<*>, KProperty.Getter<String>> {
         return nameAnnotationClass to findAnnotationStringProperty(nameAnnotationClass, argumentName).getter
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T: Annotation> findAnnotationStringProperty(annotationClass: KClass<T>, argumentName: String):
-            KProperty<String> {
+    private fun <T: Annotation> findAnnotationStringProperty(
+        annotationClass: KClass<T>,
+        argumentName: String,
+    ): KProperty<String> {
         for (member in annotationClass.members) {
             if (member is KProperty<*> && member.name == argumentName && member.returnType == stringType) {
                 return member as KProperty<String>

@@ -2,7 +2,7 @@
  * @(#) TestClasses.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,8 @@
 
 package io.kjson.testclasses
 
+import java.math.BigDecimal
+import java.math.BigInteger
 import java.time.LocalDate
 
 import io.kjson.JSONException
@@ -269,3 +271,27 @@ open class PolymorphicBase
 data class PolymorphicDerived1(val type: String, val extra1: Int) : PolymorphicBase()
 
 data class PolymorphicDerived2(val type: String, val extra2: String) : PolymorphicBase()
+
+data class ConstructLong(val v: Long)
+
+data class ConstructInt(val v: Int)
+
+data class ConstructShort(val v: Short)
+
+data class ConstructByte(val v: Byte)
+
+data class ConstructULong(val v: ULong)
+
+data class ConstructUInt(val v: UInt)
+
+data class ConstructUShort(val v: UShort)
+
+data class ConstructUByte(val v: UByte)
+
+data class ConstructDouble(val v: Double)
+
+data class ConstructFloat(val v: Float)
+
+data class ConstructBigDecimal(val v: BigDecimal)
+
+data class ConstructBigInteger(val v: BigInteger)

@@ -11,8 +11,8 @@ This library is an evolution of the [json-kotlin](https://github.com/pwall567/js
 Users of that library should find the transition relatively painless &ndash; in most cases just a change to the
 dependency specifications and the `import` statements.
 
-This document provides reflection-based introductory information on the `kjson` library; fuller information is available
-in the [User Guide](USERGUIDE.md).
+This document provides introductory information on the `kjson` library; fuller information is available in the
+[User Guide](USERGUIDE.md).
 
 ## Background
 
@@ -73,7 +73,7 @@ and the instantiation:
 ```
 then
 ```kotlin
-    val json = example.stringifyJSON()
+    val jsonString = example.stringifyJSON()
 ```
 will yield:
 ```json
@@ -109,7 +109,7 @@ inferred; the `as` expression is needed because `KType` does not convey inferred
 
 ## Sealed Classes
 
-The library will handle Kotlin sealed classes.
+The library includes special handling for Kotlin sealed classes.
 See the [User Guide](USERGUIDE.md#sealed-classes) for more details.
 
 ## Customization
@@ -237,32 +237,32 @@ of `Appendable` including the various `Writer` classes.
 As always, the KDoc, the source or the unit test classes provide more information.
 
 This information is of significance when custom serialization and deserialization are required.
-Regardless of whether the `JSONStringify` functions are used to output directly to a string, the custom serialization
-is still required to create the internal `JSONValue`-based form.
-This ensures that errant serialization functions don't disrupt the remainder of the JSON, for example by omitting a
-trailing quote or bracket character.
+Regardless of whether the `JSONStringify` functions are used to output directly to a string, if custom serialization is
+used it is still required to create the internal `JSONValue`-based form.
+This ensures that errant serialization functions don&rsquo;t disrupt the remainder of the JSON, for example by omitting
+a trailing quote or bracket character.
 
 ## Dependency Specification
 
-The latest version of the library is 1.7, and it may be obtained from the Maven Central repository.
+The latest version of the library is 2.0, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>1.7</version>
+      <version>2.0</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:1.7'
+    implementation 'io.kjson:kjson:2.0'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:1.7")
+    implementation("io.kjson:kjson:2.0")
 ```
 
 Peter Wall
 
-2022-01-23
+2022-01-31

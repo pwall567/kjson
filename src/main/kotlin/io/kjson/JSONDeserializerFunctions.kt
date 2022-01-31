@@ -30,7 +30,9 @@ import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.functions
+import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.isSuperclassOf
+import java.math.BigInteger
 
 import java.util.Calendar
 import java.util.TimeZone
@@ -62,6 +64,18 @@ object JSONDeserializerFunctions {
 
     fun KFunction<*>.hasSingleParameter(paramClass: KClass<*>) =
             parameters.size == 1 && (parameters[0].type.classifier as? KClass<*>)?.isSuperclassOf(paramClass) ?: false
+
+    fun KFunction<*>.hasNumberParameter() =
+            parameters.size == 1 && (parameters[0].type.classifier as? KClass<*>)?.isNumberClass() ?: false
+
+    private fun KClass<*>.isNumberClass() = this.isSubclassOf(Number::class) || this == UInt::class ||
+            this == ULong::class || this == UShort::class || this == UByte::class
+
+    fun JSONNumberValue.toBigInteger(): BigInteger = when (this) {
+        is JSONDecimal -> value.toBigInteger()
+        is JSONLong -> BigInteger.valueOf(value)
+        is JSONInt -> BigInteger.valueOf(toLong())
+    }
 
     fun findParameterName(parameter: KParameter, config: JSONConfig): String? =
             config.findNameFromAnnotation(parameter.annotations) ?: parameter.name

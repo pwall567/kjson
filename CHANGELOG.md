@@ -2,9 +2,12 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [Unreleased]
+## [2.0] - 2022-01-31
 ### Changed
 - `JSONDeserializer`, `JSONSerializer`, `JSONSerializerFunctions`, `JSONStringify`: added unsigned integer types
+- `JSONConfig`, `JSONDeserializer`, `JSONFun`: minor code reformatting
+- `JSONDeserializer`: clarified deserialization into class with constructor taking `Number` etc.
+- tests: added tests and split into multiple files
 
 ## [1.7] - 2022-01-22
 ### Changed
