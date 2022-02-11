@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [2.1] - 2022-02-11
+### Changed
+- `JSONSerializerFunctions`: fixed bug in serialization of some internal Kotlin classes
+
 ## [2.0] - 2022-01-31
 ### Changed
 - `JSONDeserializer`, `JSONSerializer`, `JSONSerializerFunctions`, `JSONStringify`: added unsigned integer types

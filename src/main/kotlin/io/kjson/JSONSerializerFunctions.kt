@@ -98,7 +98,7 @@ object JSONSerializerFunctions {
                     return (function as KFunction<Any?>).apply { toJsonCache[this@findToJSON] = this }
             }
         }
-        catch (ignore: Exception) {
+        catch (_: Throwable) {
         }
         toJsonCache[this] = null
         return null
