@@ -130,7 +130,7 @@ An alternative name may be specified if required, by the use of the `@JSONName` 
 If it is not necessary (or desirable) to output a particular field, the `@JSONIgnore` annotation may be used to prevent
 serialization:
 ```kotlin
-    data class Example(val abc: String, @Ignore val def: Int)
+    data class Example(val abc: String, @JSONIgnore val def: Int)
 ```
 
 #### Include properties when null
@@ -191,8 +191,8 @@ annotations by specifying them in a `JSONConfig`:
     val json = example.stringifyJSON(config)
 ```
 
-The `JSONConfig` may be supplied as an optional final argument on most `kjson` function calls (see the KDoc or source
-for more details).
+The `JSONConfig` may be supplied as an optional final argument on most `kjson` function calls (see the
+[User Guide](USERGUIDE.md) or the KDoc or source for more details).
 
 ### Custom Serialization
 
@@ -201,9 +201,9 @@ The `JSONConfig` is also used to specify custom serialization:
     val config = JSONConfig {
         toJSON<Example> { obj ->
             obj?.let {
-                JSONObject().apply {
-                    putValue("custom1", it.abc)
-                    putValue("custom2", it.def)
+                JSONObject.build {
+                    add("custom1", it.abc)
+                    add("custom2", it.def)
                 }
             }
         }
@@ -214,14 +214,15 @@ Or deserialization:
     val config = JSONConfig {
         fromJSON { json ->
             require(json is JSONObject) { "Must be JSONObject" }
-            Example(json.getString("custom1"), json.getInt("custom2"))
+          Example(json["custom1"].asInt, json["custom2"].asInt)
         }
     }
 ```
 
-The `toJSON` function must supply a lambda will the signature `(Any?) -> JSONValue?` and the `fromJSON` function must
+The `toJSON` function must supply a lambda with the signature `(Any?) -> JSONValue?` and the `fromJSON` function must
 supply a lambda with the signature `(JSONValue?) -> Any?`.
-`JSONValue` is the interface implemented by each node in the `jsonutil` library (see below).
+`JSONValue` is the interface implemented by each node in the [`kjson-core`](https://github.com/pwall567/kjson-core)
+library (see below).
 
 Both `toJSON` and `fromJSON` may be specified repeatedly in the same `JSONConfig` to cover multiple classes.
 
@@ -241,6 +242,8 @@ Regardless of whether the `JSONStringify` functions are used to output directly 
 used it is still required to create the internal `JSONValue`-based form.
 This ensures that errant serialization functions don&rsquo;t disrupt the remainder of the JSON, for example by omitting
 a trailing quote or bracket character.
+
+See the [Custom Serialization and Deserialization](CUSTOM.md) guide for more information.
 
 ## Dependency Specification
 
