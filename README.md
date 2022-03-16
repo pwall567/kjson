@@ -214,7 +214,7 @@ Or deserialization:
     val config = JSONConfig {
         fromJSON { json ->
             require(json is JSONObject) { "Must be JSONObject" }
-          Example(json["custom1"].asInt, json["custom2"].asInt)
+            Example(json["custom1"].asInt, json["custom2"].asInt)
         }
     }
 ```
