@@ -25,7 +25,6 @@
 
 package io.kjson
 
-import kotlin.math.abs
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
@@ -47,12 +46,10 @@ import java.time.Period
 import java.time.Year
 import java.time.YearMonth
 import java.time.ZonedDateTime
-import java.util.Calendar
 import java.util.LinkedList
 import java.util.UUID
-import net.pwall.util.IntOutput.append2Digits
-import net.pwall.util.IntOutput.append3Digits
-import net.pwall.util.IntOutput.appendInt
+
+import net.pwall.util.IntOutput.append4HexLC
 
 /**
  * Utility functions for JSON Serialization.  These functions are not expected to be of use outside the `kjson` family
@@ -63,14 +60,14 @@ import net.pwall.util.IntOutput.appendInt
 object JSONSerializerFunctions {
 
     private val toStringClasses = setOf(java.sql.Date::class, java.sql.Time::class, java.sql.Timestamp::class,
-        Instant::class, LocalDate::class, LocalDateTime::class, LocalTime::class, OffsetTime::class,
-        OffsetDateTime::class, ZonedDateTime::class, Year::class, YearMonth::class, MonthDay::class,
-        JavaDuration::class, Period::class, URI::class, URL::class, UUID::class)
+        ZonedDateTime::class, JavaDuration::class, Period::class, URI::class, URL::class)
 
     private val uncachedClasses = setOf(Any::class, String::class, Boolean::class,
         Int::class, Long::class, Byte::class, Short::class, BigDecimal::class, BigInteger::class,
         UInt::class, ULong::class, UShort::class, UByte::class, Double::class, Float::class,
-        ArrayList::class, LinkedList::class, HashMap::class, LinkedHashMap::class, HashSet::class)
+        ArrayList::class, LinkedList::class, HashMap::class, LinkedHashMap::class, HashSet::class,
+        Instant::class, OffsetDateTime::class, OffsetTime::class, LocalDateTime::class,
+        LocalDate::class, LocalTime::class, Year::class, YearMonth::class, MonthDay::class, UUID::class)
 
     private val toJsonCache = HashMap<KClass<*>, KFunction<Any?>?>()
 
@@ -95,7 +92,7 @@ object JSONSerializerFunctions {
                         function.parameters[0].kind == KParameter.Kind.INSTANCE &&
                         function.returnType.isAcceptable())
                     @Suppress("UNCHECKED_CAST")
-                    return (function as KFunction<Any?>).apply { toJsonCache[this@findToJSON] = this }
+                    return (function as KFunction<Any?>).also { toJsonCache[this] = it }
             }
         }
         catch (_: Throwable) {
@@ -121,31 +118,21 @@ object JSONSerializerFunctions {
         return null
     }
 
-    fun Appendable.appendCalendar(calendar: Calendar) {
-        appendInt(this, calendar.get(Calendar.YEAR))
+    fun Appendable.appendUUID(uuid: UUID) {
+        val highBits = uuid.mostSignificantBits
+        append4HexLC(this, (highBits shr 48).toInt())
+        append4HexLC(this, (highBits shr 32).toInt())
         append('-')
-        append2Digits(this, calendar.get(Calendar.MONTH) + 1)
+        append4HexLC(this, (highBits shr 16).toInt())
         append('-')
-        append2Digits(this, calendar.get(Calendar.DAY_OF_MONTH))
-        append('T')
-        append2Digits(this, calendar.get(Calendar.HOUR_OF_DAY))
-        append(':')
-        append2Digits(this, calendar.get(Calendar.MINUTE))
-        append(':')
-        append2Digits(this, calendar.get(Calendar.SECOND))
-        append('.')
-        append3Digits(this, calendar.get(Calendar.MILLISECOND))
-        val offsetMillis = calendar.get(Calendar.ZONE_OFFSET) +
-                if (calendar.timeZone.inDaylightTime(calendar.time)) calendar.get(Calendar.DST_OFFSET) else 0
-        if (offsetMillis == 0)
-            append('Z')
-        else {
-            append(if (offsetMillis < 0) '-' else '+')
-            val offsetMinutes = abs(offsetMillis / (60 * 1000))
-            append2Digits(this, offsetMinutes / 60)
-            append(':')
-            append2Digits(this, offsetMinutes % 60)
-        }
+        append4HexLC(this, highBits.toInt())
+        append('-')
+        val lowBits = uuid.leastSignificantBits
+        append4HexLC(this, (lowBits shr 48).toInt())
+        append('-')
+        append4HexLC(this, (lowBits shr 32).toInt())
+        append4HexLC(this, (lowBits shr 16).toInt())
+        append4HexLC(this, lowBits.toInt())
     }
 
 }

@@ -31,9 +31,11 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.expect
-import java.time.Instant
-import java.util.Calendar
-import io.kjson.JSONSerializerFunctions.appendCalendar
+
+import java.net.URL
+import java.util.UUID
+
+import io.kjson.JSONSerializerFunctions.appendUUID
 import io.kjson.JSONSerializerFunctions.findSealedClass
 import io.kjson.JSONSerializerFunctions.findToJSON
 import io.kjson.JSONSerializerFunctions.isToStringClass
@@ -60,25 +62,11 @@ class JSONSerializerFunctionsTest {
     }
 
     @Test fun `should recognise a toString-able class`() {
-        assertTrue(Instant::class.isToStringClass())
+        assertTrue(URL::class.isToStringClass())
     }
 
     @Test fun `should recognise a not-toString-able class`() {
         assertFalse(Dummy1::class.isToStringClass())
-    }
-
-    @Test fun `should correctly format Calendar`() {
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.YEAR, 2020)
-            set(Calendar.MONTH, 3)
-            set(Calendar.DAY_OF_MONTH, 23)
-            set(Calendar.HOUR_OF_DAY, 19)
-            set(Calendar.MINUTE, 25)
-            set(Calendar.SECOND, 31)
-            set(Calendar.MILLISECOND, 123)
-            set(Calendar.ZONE_OFFSET, 10 * 60 * 60 * 1000)
-        }
-        expect("2020-04-23T19:25:31.123+10:00") { StringBuilder().apply { appendCalendar(cal) }.toString() }
     }
 
     @Test fun `should not crash on reflection on system classes`() {
@@ -90,6 +78,14 @@ class JSONSerializerFunctionsTest {
         assertNull(lambda::class.findToJSON())
         val str = "???"
         assertNull(str::class.findToJSON())
+    }
+
+    @Test fun `should serialize UUID correctly`() {
+        val string = "233decc2-b894-11ec-a686-d7d058bdeb9b"
+        val uuid = UUID.fromString(string)
+        val sb = StringBuilder()
+        sb.appendUUID(uuid)
+        expect(string) { sb.toString() }
     }
 
 }

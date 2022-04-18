@@ -33,14 +33,24 @@ import kotlin.time.Duration
 
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.MonthDay
+import java.time.OffsetDateTime
+import java.time.OffsetTime
+import java.time.Year
+import java.time.YearMonth
 import java.util.BitSet
 import java.util.Calendar
 import java.util.Date
 import java.util.Enumeration
+import java.util.UUID
 import java.util.stream.BaseStream
 
 import io.kjson.JSONKotlinException.Companion.fatal
-import io.kjson.JSONSerializerFunctions.appendCalendar
+import io.kjson.JSONSerializerFunctions.appendUUID
 import io.kjson.JSONSerializerFunctions.findSealedClass
 import io.kjson.JSONSerializerFunctions.findToJSON
 import io.kjson.JSONSerializerFunctions.isToStringClass
@@ -48,6 +58,7 @@ import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
 
 import net.pwall.json.JSONFunctions
+import net.pwall.util.DateOutput
 import net.pwall.util.IntOutput.appendInt
 import net.pwall.util.IntOutput.appendLong
 import net.pwall.util.IntOutput.appendUnsignedInt
@@ -102,17 +113,11 @@ object JSONStringify {
         when (obj) {
             is JSONValue -> obj.appendTo(this)
             is CharSequence -> JSONFunctions.appendString(this, obj, config.stringifyNonASCII)
-            is CharArray -> {
-                append('"')
+            is CharArray -> appendQuoted {
                 for (ch in obj)
                     JSONFunctions.appendChar(this, ch, config.stringifyNonASCII)
-                append('"')
             }
-            is Char -> {
-                append('"')
-                JSONFunctions.appendChar(this, obj, config.stringifyNonASCII)
-                append('"')
-            }
+            is Char -> appendQuoted { JSONFunctions.appendChar(this, obj, config.stringifyNonASCII) }
             is Number -> appendJSONNumber(obj, config, references)
             is Boolean -> append(if (obj) "true" else "false")
             is UInt -> appendUnsignedInt(this, obj.toInt())
@@ -151,10 +156,10 @@ object JSONStringify {
 
     private fun Appendable.appendJSONArray(array: Array<*>, config: JSONConfig, references: MutableSet<Any>) {
         if (array.isArrayOf<Char>()) {
-            append('"')
-            for (ch in array)
-                JSONFunctions.appendChar(this, ch as Char, config.stringifyNonASCII)
-            append('"')
+            appendQuoted {
+                for (ch in array)
+                    JSONFunctions.appendChar(this, ch as Char, config.stringifyNonASCII)
+            }
         }
         else {
             append('[')
@@ -209,10 +214,20 @@ object JSONStringify {
             is Enumeration<*> -> appendJSONEnumeration(obj, config, references)
             is BaseStream<*, *> -> appendJSONIterator(obj.iterator(), config, references)
             is Map<*, *> -> appendJSONMap(obj, config, references)
-            is Calendar -> appendJSONCalendar(obj)
-            is Date -> appendJSONCalendar(Calendar.getInstance().apply { time = obj })
             is BitSet -> appendJSONBitSet(obj)
-            is Duration -> JSONFunctions.appendString(this, obj.toIsoString(), config.stringifyNonASCII)
+            is Calendar -> appendQuoted { DateOutput.appendCalendar(this, obj) }
+            is Date -> appendQuoted { DateOutput.appendDate(this, obj) }
+            is Duration -> appendQuoted { append(obj.toIsoString()) }
+            is Instant -> appendQuoted { DateOutput.appendInstant(this, obj) }
+            is OffsetDateTime -> appendQuoted { DateOutput.appendOffsetDateTime(this, obj) }
+            is OffsetTime -> appendQuoted { DateOutput.appendOffsetTime(this, obj) }
+            is LocalDateTime -> appendQuoted { DateOutput.appendLocalDateTime(this, obj) }
+            is LocalDate -> appendQuoted { DateOutput.appendLocalDate(this, obj) }
+            is LocalTime -> appendQuoted { DateOutput.appendLocalTime(this, obj) }
+            is Year -> appendQuoted { DateOutput.appendYear(this, obj) }
+            is YearMonth -> appendQuoted { DateOutput.appendYearMonth(this, obj) }
+            is MonthDay -> appendQuoted { DateOutput.appendMonthDay(this, obj) }
+            is UUID -> appendQuoted { appendUUID(obj) }
             else -> {
                 try {
                     references.add(obj)
@@ -356,12 +371,6 @@ object JSONStringify {
         append('}')
     }
 
-    private fun Appendable.appendJSONCalendar(calendar: Calendar) {
-        append('"')
-        appendCalendar(calendar)
-        append('"')
-    }
-
     private fun Appendable.appendJSONBitSet(bitSet: BitSet) {
         append('[')
         var continuation = false
@@ -374,6 +383,12 @@ object JSONStringify {
             }
         }
         append(']')
+    }
+
+    private inline fun Appendable.appendQuoted(block: Appendable.() -> Unit) {
+        append('"')
+        block()
+        append('"')
     }
 
 }

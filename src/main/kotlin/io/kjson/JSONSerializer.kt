@@ -33,19 +33,30 @@ import kotlin.time.Duration
 
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.MonthDay
+import java.time.OffsetDateTime
+import java.time.OffsetTime
+import java.time.Year
+import java.time.YearMonth
 import java.util.BitSet
 import java.util.Calendar
 import java.util.Date
 import java.util.Enumeration
+import java.util.UUID
 import java.util.stream.BaseStream
 
 import io.kjson.JSONKotlinException.Companion.fatal
-import io.kjson.JSONSerializerFunctions.appendCalendar
+import io.kjson.JSONSerializerFunctions.appendUUID
 import io.kjson.JSONSerializerFunctions.findSealedClass
 import io.kjson.JSONSerializerFunctions.findToJSON
 import io.kjson.JSONSerializerFunctions.isToStringClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
+import net.pwall.util.DateOutput
 
 /**
  * Reflection-based JSON serialization for Kotlin.
@@ -152,10 +163,20 @@ object JSONSerializer {
             is Iterator<*> -> return serializeIterator(obj, 8, config, references)
             is Enumeration<*> -> return serializeEnumeration(obj, config, references)
             is Map<*, *> -> return serializeMap(obj, config, references)
-            is Calendar -> return serializeCalendar(obj)
-            is Date -> return serializeCalendar(Calendar.getInstance().apply { time = obj })
             is BitSet -> return serializeBitSet(obj)
+            is UUID -> return serializeSystemClass(36, obj) { appendUUID(it) }
+            is Calendar -> return serializeSystemClass(29, obj) { DateOutput.appendCalendar(this, it) }
+            is Date -> return serializeSystemClass(24, obj) { DateOutput.appendDate(this, it) }
             is Duration -> return JSONString(obj.toIsoString())
+            is Instant -> return serializeSystemClass(30, obj) { DateOutput.appendInstant(this, it) }
+            is OffsetDateTime -> return serializeSystemClass(35, obj) { DateOutput.appendOffsetDateTime(this, it) }
+            is OffsetTime -> return serializeSystemClass(24, obj) { DateOutput.appendOffsetTime(this, it) }
+            is LocalDateTime -> return serializeSystemClass(29, obj) { DateOutput.appendLocalDateTime(this, it) }
+            is LocalDate -> return serializeSystemClass(10, obj) { DateOutput.appendLocalDate(this, it) }
+            is LocalTime -> return serializeSystemClass(18, obj) { DateOutput.appendLocalTime(this, it) }
+            is Year -> return serializeSystemClass(4, obj) { DateOutput.appendYear(this, it) }
+            is YearMonth -> return serializeSystemClass(7, obj) { DateOutput.appendYearMonth(this, it) }
+            is MonthDay -> return serializeSystemClass(7, obj) { DateOutput.appendMonthDay(this, it) }
         }
         return JSONObject.Builder {
             try {
@@ -247,14 +268,14 @@ object JSONSerializer {
                     add(entry.key.toString(), serialize(entry.value, config, references))
             }.build()
 
-    private fun serializeCalendar(calendar: Calendar) =
-            JSONString.of(StringBuilder().apply { appendCalendar(calendar) })
-
-    private fun serializeBitSet(bitSet: BitSet)  =
+    private fun serializeBitSet(bitSet: BitSet) =
             JSONArray.build {
                 for (i in 0 until bitSet.length())
                     if (bitSet.get(i))
                         add(i)
             }
+
+    private fun <T> serializeSystemClass(initialSize: Int, value: T, block: StringBuilder.(T) -> Unit) =
+            JSONString.of(StringBuilder(initialSize).apply { block(value) })
 
 }

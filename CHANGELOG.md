@@ -2,6 +2,11 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [2.2] - 2022-04-18
+### Changed
+- `JSONSerializer`, `JSONSerializerFunctions`, `JSONStringify`: optimised output of standard classes
+- `pom.xml`: bumped dependency versions
+
 ## [2.1] - 2022-02-11
 ### Changed
 - `JSONSerializerFunctions`: fixed bug in serialization of some internal Kotlin classes
