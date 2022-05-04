@@ -2,6 +2,11 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [2.3] - 2022-05-04
+### Changed
+- `pom.xml`: bumped dependency versions
+- `JSONSerializerFunctions`: take advantage of new functions
+
 ## [2.2] - 2022-04-18
 ### Changed
 - `JSONSerializer`, `JSONSerializerFunctions`, `JSONStringify`: optimised output of standard classes

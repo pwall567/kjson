@@ -50,6 +50,7 @@ import java.util.LinkedList
 import java.util.UUID
 
 import net.pwall.util.IntOutput.append4HexLC
+import net.pwall.util.IntOutput.append8HexLC
 
 /**
  * Utility functions for JSON Serialization.  These functions are not expected to be of use outside the `kjson` family
@@ -120,8 +121,7 @@ object JSONSerializerFunctions {
 
     fun Appendable.appendUUID(uuid: UUID) {
         val highBits = uuid.mostSignificantBits
-        append4HexLC(this, (highBits shr 48).toInt())
-        append4HexLC(this, (highBits shr 32).toInt())
+        append8HexLC(this, (highBits shr 32).toInt())
         append('-')
         append4HexLC(this, (highBits shr 16).toInt())
         append('-')
@@ -131,8 +131,7 @@ object JSONSerializerFunctions {
         append4HexLC(this, (lowBits shr 48).toInt())
         append('-')
         append4HexLC(this, (lowBits shr 32).toInt())
-        append4HexLC(this, (lowBits shr 16).toInt())
-        append4HexLC(this, lowBits.toInt())
+        append8HexLC(this, lowBits.toInt())
     }
 
 }
