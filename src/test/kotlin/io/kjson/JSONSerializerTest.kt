@@ -273,6 +273,80 @@ class JSONSerializerTest {
         expect(expected) { JSONSerializer.serialize(array) }
     }
 
+    @Test fun `should return IntArray as JSONArray`() {
+        val array = IntArray(3) { (it + 1) * 111 }
+        val expected = JSONArray.build {
+            add(111)
+            add(222)
+            add(333)
+        }
+        expect(expected) { JSONSerializer.serialize(array) }
+    }
+
+    @Test fun `should return LongArray as JSONArray`() {
+        val array = LongArray(3) { (it + 1) * 111111111111 }
+        val expected = JSONArray.build {
+            add(111111111111)
+            add(222222222222)
+            add(333333333333)
+        }
+        expect(expected) { JSONSerializer.serialize(array) }
+    }
+
+    @Test fun `should return ByteArray as JSONArray`() {
+        val array = ByteArray(3) { ((it + 1) * 5).toByte() }
+        val expected = JSONArray.build {
+            add(5)
+            add(10)
+            add(15)
+        }
+        expect(expected) { JSONSerializer.serialize(array) }
+    }
+
+    @Test fun `should return ShortArray as JSONArray`() {
+        val array = ShortArray(4) { ((it + 1) * 1111).toShort() }
+        val expected = JSONArray.build {
+            add(1111)
+            add(2222)
+            add(3333)
+            add(4444)
+        }
+        expect(expected) { JSONSerializer.serialize(array) }
+    }
+
+    @Test fun `should return FloatArray as JSONArray`() {
+        val array = FloatArray(4) { it + 0.5F }
+        val expected = JSONArray.build {
+            add(BigDecimal(0.5))
+            add(BigDecimal(1.5))
+            add(BigDecimal(2.5))
+            add(BigDecimal(3.5))
+        }
+        expect(expected) { JSONSerializer.serialize(array) }
+    }
+
+    @Test fun `should return DoubleArray as JSONArray`() {
+        val array = DoubleArray(4) { it + 0.5 }
+        val expected = JSONArray.build {
+            add(BigDecimal(0.5))
+            add(BigDecimal(1.5))
+            add(BigDecimal(2.5))
+            add(BigDecimal(3.5))
+        }
+        expect(expected) { JSONSerializer.serialize(array) }
+    }
+
+    @Test fun `should return BooleanArray as JSONArray`() {
+        val array = BooleanArray(4) { (it and 1) == 0 }
+        val expected = JSONArray.build {
+            add(true)
+            add(false)
+            add(true)
+            add(false)
+        }
+        expect(expected) { JSONSerializer.serialize(array) }
+    }
+
     @Test fun `should return Array of String as JSONArray`() {
         val array = arrayOf("Hello", "Kotlin")
         val expected = JSONArray.build {

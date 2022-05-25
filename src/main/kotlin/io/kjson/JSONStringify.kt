@@ -119,7 +119,7 @@ object JSONStringify {
             }
             is Char -> appendQuoted { JSONFunctions.appendChar(this, obj, config.stringifyNonASCII) }
             is Number -> appendJSONNumber(obj, config, references)
-            is Boolean -> append(if (obj) "true" else "false")
+            is Boolean -> append(obj.toString())
             is UInt -> appendUnsignedInt(this, obj.toInt())
             is UShort -> appendInt(this, obj.toInt())
             is UByte -> appendInt(this, obj.toInt())
@@ -127,6 +127,13 @@ object JSONStringify {
             is Array<*> -> appendJSONArray(obj, config, references)
             is Pair<*, *> -> appendJSONPair(obj, config, references)
             is Triple<*, *, *> -> appendJSONTriple(obj, config, references)
+            is IntArray -> appendJSONTypedArray(obj.size) { appendInt(this, obj[it]) }
+            is LongArray -> appendJSONTypedArray(obj.size) { appendLong(this, obj[it]) }
+            is ByteArray -> appendJSONTypedArray(obj.size) { appendInt(this, obj[it].toInt()) }
+            is ShortArray -> appendJSONTypedArray(obj.size) { appendInt(this, obj[it].toInt()) }
+            is FloatArray -> appendJSONTypedArray(obj.size) { append(obj[it].toString()) }
+            is DoubleArray -> appendJSONTypedArray(obj.size) { append(obj[it].toString()) }
+            is BooleanArray -> appendJSONTypedArray(obj.size) { append(obj[it].toString()) }
             else -> appendJSONObject(obj, config, references)
         }
 
@@ -161,17 +168,20 @@ object JSONStringify {
                     JSONFunctions.appendChar(this, ch as Char, config.stringifyNonASCII)
             }
         }
-        else {
-            append('[')
-            if (array.isNotEmpty()) {
-                for (i in array.indices) {
-                    if (i > 0)
-                        append(',')
-                    appendJSON(array[i], config, references)
-                }
+        else
+            appendJSONTypedArray(array.size) { appendJSON(array[it], config, references) }
+    }
+
+    private fun Appendable.appendJSONTypedArray(size: Int, itemFunction: Appendable.(Int) -> Unit) {
+        append('[')
+        if (size > 0) {
+            for (i in 0 until size) {
+                if (i > 0)
+                    append(',')
+                itemFunction(i)
             }
-            append(']')
         }
+        append(']')
     }
 
     private fun Appendable.appendJSONPair(pair: Pair<*, *>, config: JSONConfig, references: MutableSet<Any>) {

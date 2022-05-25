@@ -105,39 +105,21 @@ object JSONDeserializerFunctions {
             calendarError(tm)
         val year = tm.resultInt
         calendar.set(Calendar.YEAR, year)
-        if (!tm.match('-') || !tm.matchDec(2, 2))
+        if (!tm.match('-'))
             calendarError(tm)
-        val month = tm.resultInt
-        if (month < 1 || month > 12)
-            calendarError(tm)
+        val month = tm.decimalField(12, 1)
         calendar.set(Calendar.MONTH, month - 1)
-        if (!tm.match('-') || !tm.matchDec(2, 2))
+        if (!tm.match('-'))
             calendarError(tm)
-        val day = tm.resultInt
-        if (day < 1 || day > JSONValidation.monthLength(year, month))
-            calendarError(tm)
-        calendar.set(Calendar.DAY_OF_MONTH, day)
+        calendar.set(Calendar.DAY_OF_MONTH, tm.decimalField(JSONValidation.monthLength(year, month), 1))
         if (tm.matchAny("Tt")) {
-            if (!tm.matchDec(2, 2))
-                calendarError(tm)
-            val hours = tm.resultInt
-            if (hours > 23)
-                calendarError(tm)
-            calendar.set(Calendar.HOUR_OF_DAY, hours)
-            if (!tm.match(':') || !tm.matchDec(2, 2))
-                calendarError(tm)
-            val minutes = tm.resultInt
-            if (minutes > 59)
-                calendarError(tm)
-            calendar.set(Calendar.MINUTE, minutes)
+            calendar.set(Calendar.HOUR_OF_DAY, tm.decimalField(23))
             if (!tm.match(':'))
                 calendarError(tm)
-            if (!tm.matchDec(2, 2))
+            calendar.set(Calendar.MINUTE, tm.decimalField(59))
+            if (!tm.match(':'))
                 calendarError(tm)
-            val seconds = tm.resultInt
-            if (seconds > 60)
-                calendarError(tm)
-            calendar.set(Calendar.SECOND, seconds)
+            calendar.set(Calendar.SECOND, tm.decimalField(60))
             if (tm.match('.')) {
                 if (!tm.matchDec())
                     calendarError(tm)
@@ -157,23 +139,11 @@ object JSONDeserializerFunctions {
                 val sb = StringBuilder("GMT")
                 val sign = tm.resultChar
                 sb.append(sign)
-                if (!tm.matchDec(2))
-                    calendarError(tm)
-                val zoneHours = tm.resultInt
-                if (zoneHours > 13)
-                    calendarError(tm)
+                val zoneHours = tm.decimalField(13)
                 append2Digits(sb, zoneHours)
                 sb.append(':')
-                val zoneMinutes = if (tm.match(':')) {
-                    if (!tm.matchDec(2, 2))
-                        calendarError(tm)
-                    tm.resultInt
-                }
-                else
-                    0
+                val zoneMinutes = if (tm.match(':')) tm.decimalField(59) else 0
                 append2Digits(sb, zoneMinutes)
-                if (zoneMinutes > 59)
-                    calendarError(tm)
                 calendar.set(Calendar.ZONE_OFFSET, (zoneHours * 60 + zoneMinutes) * if (sign == '-') -60000 else 60000)
                 calendar.timeZone = TimeZone.getTimeZone(sb.toString())
             }
@@ -181,6 +151,15 @@ object JSONDeserializerFunctions {
         if (!tm.isAtEnd)
             calendarError(tm)
         return calendar
+    }
+
+    private fun TextMatcher.decimalField(max: Int, min: Int = 0): Int {
+        if (!matchDec(2))
+            calendarError(this)
+        return resultInt.also {
+            if (it < min || it > max)
+                calendarError(this)
+        }
     }
 
     private fun calendarError(tm: TextMatcher): Nothing {

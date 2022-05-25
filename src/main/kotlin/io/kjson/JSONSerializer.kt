@@ -96,6 +96,13 @@ object JSONSerializer {
             is Array<*> -> serializeArray(obj, config, references)
             is Pair<*, *> -> serializePair(obj, config, references)
             is Triple<*, *, *> -> serializeTriple(obj, config, references)
+            is IntArray -> serializeTypedArray(obj.size) { JSONInt.of(obj[it]) }
+            is LongArray -> serializeTypedArray(obj.size) { JSONLong.of(obj[it]) }
+            is ByteArray -> serializeTypedArray(obj.size) { JSONInt.of(obj[it].toInt()) }
+            is ShortArray -> serializeTypedArray(obj.size) { JSONInt.of(obj[it].toInt()) }
+            is FloatArray -> serializeTypedArray(obj.size) { JSONDecimal.of(BigDecimal(obj[it].toDouble())) }
+            is DoubleArray -> serializeTypedArray(obj.size) { JSONDecimal.of(BigDecimal(obj[it])) }
+            is BooleanArray -> serializeTypedArray(obj.size) { JSONBoolean.of(obj[it]) }
             else -> serializeObject(obj, config, references)
         }
 
@@ -127,6 +134,13 @@ object JSONSerializer {
                 for (item in array)
                     add(serialize(item, config, references))
             }.build()
+    }
+
+    private fun serializeTypedArray(size: Int, itemFunction: (Int) -> JSONValue?): JSONArray {
+        return JSONArray.Builder(size) {
+            for (i in 0 until size)
+                add(itemFunction(i))
+        }.build()
     }
 
     private fun serializePair(pair: Pair<*, *>, config: JSONConfig, references: MutableSet<Any>) =

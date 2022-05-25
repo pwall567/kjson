@@ -2,6 +2,11 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [2.4] - 2022-05-25
+### Changed
+- `JSONSerializer`, `JSONStringify`: fixed handling of `IntArray`, `LongArray` _etc._
+- `JSONDeserializerFunctions`: minor optimisations
+
 ## [2.3] - 2022-05-04
 ### Changed
 - `pom.xml`: bumped dependency versions
@@ -20,7 +25,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 - `JSONDeserializer`, `JSONSerializer`, `JSONSerializerFunctions`, `JSONStringify`: added unsigned integer types
 - `JSONConfig`, `JSONDeserializer`, `JSONFun`: minor code reformatting
-- `JSONDeserializer`: clarified deserialization into class with constructor taking `Number` etc.
+- `JSONDeserializer`: clarified deserialization into class with constructor taking `Number` _etc._
 - tests: added tests and split into multiple files
 
 ## [1.7] - 2022-01-22

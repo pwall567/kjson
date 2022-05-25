@@ -257,6 +257,36 @@ class JSONStringifyTest {
         expect("[123,456,789]") { JSONStringify.stringify(arrayOf(123, 456, 789)) }
     }
 
+    @Test fun `should stringify an IntArray`() {
+        expect("[111,222,333]") { JSONStringify.stringify(IntArray(3) { (it + 1) * 111 }) }
+    }
+
+    @Test fun `should stringify a LongArray`() {
+        expect("[111111111111,222222222222,333333333333]") {
+            JSONStringify.stringify(LongArray(3) { (it + 1) * 111111111111 })
+        }
+    }
+
+    @Test fun `should stringify a ByteArray`() {
+        expect("[5,10,15]") { JSONStringify.stringify(ByteArray(3) { ((it + 1) * 5).toByte() }) }
+    }
+
+    @Test fun `should stringify a ShortArray`() {
+        expect("[1111,2222,3333,4444]") { JSONStringify.stringify(ShortArray(4) { ((it + 1) * 1111).toShort() }) }
+    }
+
+    @Test fun `should stringify a FloatArray`() {
+        expect("[0.5,1.5,2.5,3.5]") { JSONStringify.stringify(FloatArray(4) { it + 0.5F }) }
+    }
+
+    @Test fun `should stringify a DoubleArray`() {
+        expect("[0.5,1.5,2.5,3.5]") { JSONStringify.stringify(DoubleArray(4) { it + 0.5 }) }
+    }
+
+    @Test fun `should stringify a BooleanArray`() {
+        expect("[true,false,true,false]") { JSONStringify.stringify(BooleanArray(4) { (it and 1) == 0 }) }
+    }
+
     @Test fun `should stringify an array of strings`() {
         expect("""["Hello","World"]""") { JSONStringify.stringify(arrayOf("Hello", "World")) }
     }
