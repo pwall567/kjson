@@ -2,6 +2,11 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [2.5] - 2022-05-29
+### Changed
+- `JSONDeserializer`: fixed bug in deserializing some collection types
+- `pom.xml`: bumped dependency versions
+
 ## [2.4] - 2022-05-25
 ### Changed
 - `JSONSerializer`, `JSONStringify`: fixed handling of `IntArray`, `LongArray` _etc._

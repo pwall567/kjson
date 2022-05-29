@@ -60,6 +60,10 @@ import io.kjson.testclasses.DummyList
 import io.kjson.testclasses.JavaClass1
 import io.kjson.testclasses.JavaClass2
 
+import net.pwall.util.ImmutableCollection
+import net.pwall.util.ImmutableList
+import net.pwall.util.ImmutableSet
+
 class JSONDeserializerArrayTest {
 
     @Test fun `should return BitSet from JSONArray`() {
@@ -378,6 +382,44 @@ class JSONDeserializerArrayTest {
             add("fghij")
         }
         expect(listOf("abcde", "fghij")) { JSONDeserializer.deserializeAny(json) }
+    }
+
+    @Test fun `should deserialize List taking List constructor parameter`() {
+        val json = JSONArray.build {
+            add("aaa")
+            add("ccc")
+            add("bbb")
+            add("abc")
+        }
+        val immutableList = ImmutableList.listOf(arrayOf("aaa", "ccc", "bbb", "abc"))
+        expect(immutableList) { json.deserialize<ImmutableList<String>>() }
+    }
+
+    @Test fun `should deserialize Set taking Set constructor parameter`() {
+        val json = JSONArray.build {
+            add("aaa")
+            add("ccc")
+            add("bbb")
+            add("abc")
+        }
+        val immutableSet = ImmutableSet.setOf(arrayOf("aaa", "ccc", "bbb", "abc"))
+        expect(immutableSet) { json.deserialize<ImmutableSet<String>>() }
+    }
+
+    @Test fun `should deserialize Collection taking Collection constructor parameter`() {
+        val json = JSONArray.build {
+            add("aaa")
+            add("ccc")
+            add("bbb")
+            add("abc")
+        }
+        // there's no equals defined for Collection, so we have to do this the hard way...
+        val immutableCollection: ImmutableCollection<String> = json.deserialize() ?: fail()
+        expect(4) { immutableCollection.size }
+        assertTrue(immutableCollection.contains("aaa"))
+        assertTrue(immutableCollection.contains("ccc"))
+        assertTrue(immutableCollection.contains("bbb"))
+        assertTrue(immutableCollection.contains("abc"))
     }
 
 }

@@ -51,6 +51,9 @@ import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.Super
 
+import net.pwall.util.ImmutableMap
+import net.pwall.util.ImmutableMapEntry
+
 class JSONDeserializerObjectTest {
 
     @Test fun `should return map of String to Int from JSONObject`() {
@@ -232,6 +235,24 @@ class JSONDeserializerObjectTest {
         }
         else
             fail("Not a Map - $result")
+    }
+
+    @Test fun `should deserialize Map taking Map constructor parameter`() {
+        val json = JSONObject.build {
+            add("aaa", 1234)
+            add("ccc", 9999)
+            add("bbb", 5678)
+            add("abc", 8888)
+        }
+        val immutableMap = ImmutableMap.from(
+            listOf(
+                ImmutableMapEntry("aaa", 1234),
+                ImmutableMapEntry("ccc", 9999),
+                ImmutableMapEntry("bbb", 5678),
+                ImmutableMapEntry("abc", 8888),
+            )
+        )
+        expect(immutableMap) { json.deserialize<ImmutableMap<String, Int>>() }
     }
 
 }

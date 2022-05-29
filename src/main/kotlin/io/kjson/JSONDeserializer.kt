@@ -457,21 +457,21 @@ object JSONDeserializer {
 
             IntStream::class -> {
                 val intArray = IntArray(json.size) {
-                        i -> deserializeNonNull(Int::class, json[i], pointer.child(i), config)
+                    i -> deserializeNonNull(Int::class, json[i], pointer.child(i), config)
                 }
                 IntStream.of(*intArray)
             }
 
             LongStream::class -> {
                 val longArray = LongArray(json.size) {
-                        i -> deserializeNonNull(Long::class, json[i], pointer.child(i), config)
+                    i -> deserializeNonNull(Long::class, json[i], pointer.child(i), config)
                 }
                 LongStream.of(*longArray)
             }
 
             DoubleStream::class -> {
                 val doubleArray = DoubleArray(json.size) {
-                        i -> deserializeNonNull(Double::class, json[i], pointer.child(i), config)
+                    i -> deserializeNonNull(Double::class, json[i], pointer.child(i), config)
                 }
                 DoubleStream.of(*doubleArray)
             }
@@ -524,12 +524,20 @@ object JSONDeserializer {
                 }
                 else {
 
-                    // If the target class has a constructor that takes a single List parameter, create a List and
-                    // invoke that constructor.  This should catch the less frequently used List classes.
+                    // If the target class has a constructor that takes a single List (or Set) parameter, create a
+                    // List (Set) and invoke that constructor.  This should catch the less frequently used List (Set)
+                    // classes.
 
                     resultClass.constructors.find { it.hasSingleParameter(List::class) }?.run {
                         val type = getTypeParam(parameters[0].type.arguments)
-                        call(ArrayList<Any?>(json.size).apply { fillFromJSON(resultType, json, type, pointer, config) })
+                        call(ArrayList<Any?>(json.size).apply {
+                            fillFromJSON(resultType, json, type, pointer, config)
+                        })
+                    } ?: resultClass.constructors.find { it.hasSingleParameter(Set::class) }?.run {
+                        val type = getTypeParam(parameters[0].type.arguments)
+                        call(LinkedHashSet<Any?>(json.size).apply {
+                            fillFromJSON(resultType, json, type, pointer, config)
+                        })
                     } ?: fatal("Can't deserialize array as ${resultClass.simpleName}", pointer)
                 }
             }
@@ -572,20 +580,20 @@ object JSONDeserializer {
         if (resultClass.isSubclassOf(Map::class)) {
             when (resultClass) {
                 HashMap::class -> return deserializeMap(resultType, HashMap(json.size), types, json, pointer,
-                    config) as T
+                        config) as T
                 Map::class,
                 MutableMap::class,
                 LinkedHashMap::class -> return deserializeMap(resultType, LinkedHashMap(json.size), types, json,
-                    pointer, config) as T
+                        pointer, config) as T
             }
         }
 
         // If the target class has a constructor that takes a single Map parameter, create a Map and invoke that
-        // constructor.  This should catch the less frequently used Map classes.  TODO - review this
+        // constructor.  This should catch the less frequently used Map classes.
 
         resultClass.constructors.find { it.hasSingleParameter(Map::class) }?.apply {
             return call(deserializeMap(resultType, LinkedHashMap(json.size), parameters[0].type.arguments, json,
-                pointer, config))
+                    pointer, config))
         }
 
         val jsonCopy = LinkedHashMap(json)
@@ -600,7 +608,7 @@ object JSONDeserializer {
             if (findField(resultClass.members, discriminator, config) == null)
                 jsonCopy.remove(discriminator)
             return deserializeObject(subClass.createType(types, nullable = resultType.isMarkedNullable), subClass,
-                types, JSONObject.from(jsonCopy), pointer, config)
+                    types, JSONObject.from(jsonCopy), pointer, config)
         }
 
         resultClass.objectInstance?.let {
@@ -618,7 +626,7 @@ object JSONDeserializer {
                 if (!config.hasIgnoreAnnotation(parameter.annotations)) {
                     if (jsonCopy.containsKey(paramName)) {
                         argMap[parameter] = deserializeNested(resultType, parameter.type, jsonCopy[paramName],
-                            pointer.child(paramName), config)
+                                pointer.child(paramName), config)
                     }
                     else {
                         if (!parameter.isOptional) {
@@ -661,12 +669,12 @@ object JSONDeserializer {
         pointer: JSONPointer,
         config: JSONConfig,
     ): MutableMap<Any, Any?> {
-        val keyClass = getTypeParam(types, 0).classifier as? KClass<*> ?:
-        fatal("Key type can not be determined for Map", pointer)
+        val keyClass = getTypeParam(types, 0).applyTypeParameters(resultType, pointer).classifier as? KClass<*> ?:
+                fatal("Key type can not be determined for Map", pointer)
         val valueType = getTypeParam(types, 1)
         for (entry in json.entries) {
             map[deserializeString(keyClass, entry.key, pointer)] = deserializeNested(resultType, valueType, entry.value,
-                pointer.child(entry.key), config)
+                    pointer.child(entry.key), config)
         }
         return map
     }
