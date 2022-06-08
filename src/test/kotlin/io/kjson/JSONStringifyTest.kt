@@ -90,7 +90,7 @@ class JSONStringifyTest {
     }
 
     @Test fun `should use toJSON if specified in JSONConfig`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSON<Dummy1> { obj ->
                 obj?.let {
                     JSONObject.build {
@@ -222,7 +222,7 @@ class JSONStringifyTest {
     }
 
     @Test fun `should stringify a BigInteger as string when specified in JSONConfig`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             bigIntegerString = true
         }
         val x = BigInteger.valueOf(123456789000)
@@ -235,7 +235,7 @@ class JSONStringifyTest {
     }
 
     @Test fun `should stringify a BigDecimal as string when specified in JSONConfig`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             bigDecimalString = true
         }
         val x = BigDecimal("12345.678")
@@ -571,7 +571,7 @@ class JSONStringifyTest {
     @Test fun `should stringify a simple object with extra property including null field when config set`() {
         val dummy2 = Dummy2("abcdef", 98765)
         dummy2.extra = null
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             includeNulls = true
         }
         expect("""{"field1":"abcdef","field2":98765,"extra":null}""") { JSONStringify.stringify(dummy2, config) }
@@ -615,7 +615,7 @@ class JSONStringifyTest {
 
     @Test fun `should stringify an object using custom parameter name annotation`() {
         val obj = DummyWithCustomNameAnnotation("abc", 123)
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             addNameAnnotation(CustomName::class, "symbol")
         }
         val json = JSONStringify.stringify(obj, config)
@@ -677,7 +677,7 @@ class JSONStringifyTest {
 
     @Test fun `should stringify an object with custom include if null annotation`() {
         val obj = DummyWithCustomIncludeIfNull("alpha", null, "gamma")
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             addIncludeIfNullAnnotation(CustomIncludeIfNull::class)
         }
         val json = JSONStringify.stringify(obj, config)
@@ -702,7 +702,7 @@ class JSONStringifyTest {
 
     @Test fun `should stringify an object with custom include all properties annotation`() {
         val obj = DummyWithCustomIncludeAllProperties("alpha", null, "gamma")
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             addIncludeAllPropertiesAnnotation(CustomIncludeAllProperties::class)
         }
         val json = JSONStringify.stringify(obj, config)
@@ -732,7 +732,7 @@ class JSONStringifyTest {
     }
 
     @Test fun `should stringify sealed class with custom discriminator`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             sealedClassDiscriminator = "?"
         }
         val json = JSONStringify.stringify(Const(2.0), config)

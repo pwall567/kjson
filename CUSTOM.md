@@ -19,6 +19,11 @@ names, recursively invoking the library to serialize or deserialize the properti
 If this is not the required behaviour, custom serialization and deserialization may be used to tailor the JSON
 representation to the form needed.
 
+**New in Version 3.0** &ndash; the `toJSON` and `fromJSON` functions are invoked as extension functions on `JSONConfig`.
+This allows the function full access to the configuration options, which is particularly useful when invoking the
+standard serialization and deserialization functions recursively.
+The change should be transparent to most existing uses.
+
 ## Serialization
 
 Custom serialization converts the object to a `JSONValue`; the library will convert the `JSONValue` to string form if
@@ -166,8 +171,8 @@ This function (in `JSONConfig`) provides a means of deserializing polymorphic ty
 deserialized into one of a number of possible derived types by examining the properties of the object:
 ```kotlin
  config.fromJSONPolymorphic(Party::class, "type",
-        JSONString("PERSON") to typeOf<Person>(),
-        JSONString("ORGANIZATION") to typeOf<Organization>()
+        "PERSON" to typeOf<Person>(),
+        "ORGANIZATION" to typeOf<Organization>()
  )
 ```
 If the object has a property named "type" with a value (string) of "PERSON", the object will be deserialized as a
@@ -178,10 +183,10 @@ In this case, a `JSONPointer` may be used to specify the location of the discrim
 object:
 ```kotlin
  config.fromJSONPolymorphic(Party::class, JSONPointer("/type/name"),
-        JSONString("PERSON") to typeOf<Person>(),
-        JSONString("ORGANIZATION") to typeOf<Organization>()
+        "PERSON" to typeOf<Person>(),
+        "ORGANIZATION" to typeOf<Organization>()
  )
 ```
 In this example, a property located by the pointer "`/type/name`" will be tested against the values specified.
 
-2022-01-31
+2022-06-08

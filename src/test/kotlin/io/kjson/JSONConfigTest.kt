@@ -83,7 +83,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should map simple data class using fromJSON mapping`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             fromJSON { json ->
                 if (json !is JSONObject)
                     fatal("Must be JSONObject")
@@ -98,7 +98,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should not interfere with other deserialization when using fromJSON mapping`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             fromJSON { json ->
                 if (json !is JSONObject)
                     fatal("Must be JSONObject")
@@ -111,7 +111,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should map nested class using fromJSON mapping`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             fromJSON { json ->
                 json.asObject.let { Dummy1(it["a"].asString, it["b"].asInt) }
             }
@@ -139,7 +139,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should map simple data class using toJSON mapping`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSON<Dummy1> { obj ->
                 obj?.let {
                     JSONObject.build {
@@ -157,7 +157,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should map nested class using toJSON mapping`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSON { obj: Dummy1? -> // change to allow non-nullable?
                 obj?.let {
                     JSONObject.build {
@@ -179,21 +179,21 @@ class JSONConfigTest {
     }
 
     @Test fun `should select correct toJSON mapping of nullable type`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSON(Dummy1::class.createType(nullable = true)) { JSONString("A") }
         }
         expect(JSONString("A")) { JSONSerializer.serialize(Dummy1("X", 0), config) }
     }
 
     @Test fun `should select correct toJSON mapping of non-nullable type`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSON(Dummy1::class.createType(nullable = false)) { JSONString("A") }
         }
         expect(JSONString("A")) { JSONSerializer.serialize(Dummy1("X", 0), config) }
     }
 
     @Test fun `should select correct function among derived classes for toJSON mapping`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSON<DummyA> { JSONString("A") }
             toJSON<DummyB> { JSONString("B") }
             toJSON<DummyC> { JSONString("C") }
@@ -206,7 +206,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should select correct function when order is reversed for toJSON mapping`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSON<DummyD> { JSONString("D") }
             toJSON<DummyC> { JSONString("C") }
             toJSON<DummyB> { JSONString("B") }
@@ -219,7 +219,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should select correct function when exact match not present for toJSON mapping`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSON<DummyA> { JSONString("A") }
             toJSON<DummyB> { JSONString("B") }
             toJSON<DummyC> { JSONString("C") }
@@ -231,7 +231,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should select correct function among derived classes for fromJSON mapping`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             fromJSON { if (it == JSONString("A")) DummyA() else fail() }
             fromJSON { if (it == JSONString("B")) DummyB() else fail() }
             fromJSON { if (it == JSONString("C")) DummyC() else fail() }
@@ -244,7 +244,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should select correct function when order is reversed for fromJSON mapping`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             fromJSON { if (it == JSONString("D")) DummyD() else fail() }
             fromJSON { if (it == JSONString("C")) DummyC() else fail() }
             fromJSON { if (it == JSONString("B")) DummyB() else fail() }
@@ -257,7 +257,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should select correct function when exact match not present for fromJSON mapping`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             fromJSON { if (it == JSONString("B")) DummyB() else fail() }
             fromJSON { if (it == JSONString("C")) DummyC() else fail() }
             fromJSON { if (it == JSONString("D")) DummyD() else fail() }
@@ -269,20 +269,13 @@ class JSONConfigTest {
     }
 
     @Test fun `should use toJSON mapping with JSONConfig toJSONString`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSONString<Dummy9>()
         }
         expect(JSONString("abcdef")) { JSONSerializer.serialize(Dummy9("abcdef"), config) }
     }
 
     @Test fun `should use String constructor for fromJSON mapping with JSONConfig fromJSONString`() {
-        val config = JSONConfig().apply {
-            fromJSONString<Dummy9>()
-        }
-        expect(Dummy9("abcdef")) { JSONDeserializer.deserialize(JSONString("abcdef"), config) }
-    }
-
-    @Test fun `should use simple configurator syntax`() {
         val config = JSONConfig {
             fromJSONString<Dummy9>()
         }
@@ -294,6 +287,21 @@ class JSONConfigTest {
             fromJSONPolymorphic(PolymorphicBase::class, "type",
                 JSONString("TYPE1") to typeOf<PolymorphicDerived1>(),
                 JSONString("TYPE2") to typeOf<PolymorphicDerived2>()
+            )
+        }
+        expect(PolymorphicDerived1("TYPE1", 1234)) {
+            """{"type":"TYPE1","extra1":1234}""".parseJSON<PolymorphicBase>(config)
+        }
+        expect(PolymorphicDerived2("TYPE2", "hello")) {
+            """{"type":"TYPE2","extra2":"hello"}""".parseJSON<PolymorphicBase>(config)
+        }
+    }
+
+    @Test fun `should distinguish between polymorphic mappings using raw discriminator values`() {
+        val config = JSONConfig {
+            fromJSONPolymorphic(PolymorphicBase::class, "type",
+                "TYPE1" to typeOf<PolymorphicDerived1>(),
+                "TYPE2" to typeOf<PolymorphicDerived2>()
             )
         }
         expect(PolymorphicDerived1("TYPE1", 1234)) {
@@ -350,7 +358,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should use multiple JSONConfig mappings`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSON<Dummy1> { obj ->
                 obj?.let {
                     JSONObject.build {
@@ -366,7 +374,7 @@ class JSONConfigTest {
             toJSON<Dummy3> { obj ->
                 obj?.let {
                     JSONObject.build {
-                        add("dummy", JSONSerializer.serialize(it.dummy1, this@apply))
+                        add("dummy", JSONSerializer.serialize(it.dummy1, this@toJSON))
                         add("text", it.text)
                     }
                 }
@@ -393,7 +401,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should transfer toJSON mapping on combineMappings`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSON<Dummy1> { obj ->
                 obj?.let {
                     JSONObject.build {
@@ -403,7 +411,7 @@ class JSONConfigTest {
                 }
             }
         }
-        val config2 = JSONConfig().apply {
+        val config2 = JSONConfig {
             combineMappings(config)
         }
         val expected = JSONObject.build {
@@ -414,7 +422,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should transfer toJSON mapping on combineAll`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             toJSON<Dummy1> { obj ->
                 obj?.let {
                     JSONObject.build {
@@ -424,7 +432,7 @@ class JSONConfigTest {
                 }
             }
         }
-        val config2 = JSONConfig().apply {
+        val config2 = JSONConfig {
             combineAll(config)
         }
         val expected = JSONObject.build {
@@ -436,10 +444,10 @@ class JSONConfigTest {
 
     @Test fun `should transfer JSONName annotation on combineAll`() {
         val obj = DummyWithCustomNameAnnotation("abc", 123)
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             addNameAnnotation(CustomName::class, "symbol")
         }
-        val config2 = JSONConfig().apply {
+        val config2 = JSONConfig {
             combineAll(config)
         }
         val expected = JSONObject.build {
@@ -450,7 +458,7 @@ class JSONConfigTest {
     }
 
     @Test fun `should transfer switch settings and numeric values on combineAll`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             sealedClassDiscriminator = "??"
             readBufferSize = 16384
             stringifyInitialSize = 512
@@ -461,7 +469,7 @@ class JSONConfigTest {
             stringifyNonASCII = true
             streamOutput = true
         }
-        val config2 = JSONConfig().apply {
+        val config2 = JSONConfig {
             combineAll(config)
         }
         expect("??") { config2.sealedClassDiscriminator }

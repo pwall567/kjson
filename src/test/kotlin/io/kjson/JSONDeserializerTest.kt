@@ -155,7 +155,7 @@ class JSONDeserializerTest {
     }
 
     @Test fun `should deserialize sealed class with custom discriminator`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             sealedClassDiscriminator = "?"
         }
         val json = JSONObject.build {
@@ -197,7 +197,7 @@ class JSONDeserializerTest {
     }
 
     @Test fun `should ignore additional fields when allowExtra set in config`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             allowExtra = true
         }
         val json = JSONObject.build {
@@ -218,7 +218,7 @@ class JSONDeserializerTest {
     }
 
     @Test fun `should ignore additional fields when class annotated with custom allow extra`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             addAllowExtraPropertiesAnnotation(CustomAllowExtraProperties::class)
         }
         val json = JSONObject.build {
@@ -239,7 +239,7 @@ class JSONDeserializerTest {
     }
 
     @Test fun `field annotated with custom ignore annotation should be ignored on deserialization`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             addIgnoreAnnotation(CustomIgnore::class)
         }
         val json = JSONObject.build {

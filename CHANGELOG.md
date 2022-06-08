@@ -2,6 +2,16 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [3.0] - 2022-06-08
+### Added
+- `JSONCoStringify`: non-blocking output functions
+### Changed
+- `JSONConfig`, `JSONFun`, `JSONDeserializer`, `JSONSerializer`, `JSONStringify`: changed `toJSON` and `fromJSON`
+  functions to be extension functions on `JSONConfig`
+- `JSONFun`: added non-blocking extension functions
+- `JSONConfig`: changed `fromJSONPolymorphic` to allow `Any` discriminator values
+- `pom.xml`: bumped dependency versions, added coroutine functions as optional dependency
+
 ## [2.5] - 2022-05-29
 ### Changed
 - `JSONDeserializer`: fixed bug in deserializing some collection types

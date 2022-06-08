@@ -24,6 +24,10 @@ When instantiating deserialized objects it does not require the class to have a 
 JSON libraries it does not use the `sun.misc.Unsafe` class to force instantiation (which bypasses constructor validity
 and consistency checks).
 
+**New in Version 3.0** &ndash; the library now supports non-blocking output.
+The `JSONCoStringify` object and the `coStringifyJSON` function allow the full functionality of the library to be used
+in a coroutine setting.
+
 ## Supported Classes
 
 Support is included for the following standard Kotlin classes:
@@ -37,6 +41,7 @@ Support is included for the following standard Kotlin classes:
 - `Pair`, `Triple`
 - `Enum`
 - `Duration`
+- `Channel`, `Flow` (from version 3.0 on; output using `coStringifyJSON()` or `JSONCoStringify` only)
 
 Also, support is included for the following standard Java classes:
 
@@ -78,6 +83,11 @@ then
 will yield:
 ```json
 {"abc":"hello","def":12345,"ghi":["A","B"]}
+```
+
+And starting with version 3.0 of this library, any object may be output to a non-blocking destination:
+```kotlin
+    example.coStringifyJSON { ch -> nonBlockingFunction(ch) }
 ```
 
 ### Deserialization
@@ -247,25 +257,25 @@ See the [Custom Serialization and Deserialization](CUSTOM.md) guide for more inf
 
 ## Dependency Specification
 
-The latest version of the library is 2.5, and it may be obtained from the Maven Central repository.
+The latest version of the library is 3.0, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>2.5</version>
+      <version>3.0</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:2.5'
+    implementation 'io.kjson:kjson:3.0'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:2.5")
+    implementation("io.kjson:kjson:3.0")
 ```
 
 Peter Wall
 
-2022-05-29
+2022-06-08

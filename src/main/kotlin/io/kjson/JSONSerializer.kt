@@ -80,7 +80,7 @@ object JSONSerializer {
         if (obj == null)
             return null
 
-        config.findToJSONMapping(obj::class)?.let { return serialize(it(obj), config, references) }
+        config.findToJSONMapping(obj::class)?.let { return serialize(config.it(obj), config, references) }
 
         return when (obj) {
             is JSONValue -> obj

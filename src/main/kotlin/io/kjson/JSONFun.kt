@@ -37,12 +37,13 @@ import java.lang.reflect.Type
 import java.lang.reflect.WildcardType
 
 import io.kjson.JSONKotlinException.Companion.fatal
+import net.pwall.util.CoOutput
 
 /** Type alias to simplify the definition of `fromJSON` mapping functions. */
-typealias FromJSONMapping = (JSONValue?) -> Any?
+typealias FromJSONMapping = JSONConfig.(JSONValue?) -> Any?
 
 /** Type alias to simplify the definition of `toJSON` mapping functions. */
-typealias ToJSONMapping = (Any?) -> Any?
+typealias ToJSONMapping = JSONConfig.(Any?) -> Any?
 
 /**
  * Deserialize JSON from string ([CharSequence]) to a specified [KType].
@@ -86,13 +87,25 @@ inline fun <reified T: Any> CharSequence.parseJSON(
 /**
  * Stringify any object to JSON.
  *
- * @receiver        the object to be converted to JSON (`null` will be converted to `"null"`).
+ * @receiver        the object to be converted to JSON (`null` will be converted to `"null"`)
  * @param   config  an optional [JSONConfig] to customise the conversion
  * @return          the JSON string
  */
 fun Any?.stringifyJSON(
     config: JSONConfig = JSONConfig.defaultConfig,
 ): String = JSONStringify.stringify(this, config)
+
+/**
+ * Stringify any object to JSON, using a non-blocking output function.
+ *
+ * @receiver        the object to be converted to JSON (`null` will be converted to `"null"`)
+ * @param   config  an optional [JSONConfig] to customise the conversion
+ * @param   out     the output function (`(char) -> Unit`)
+ */
+suspend fun Any?.coStringifyJSON(
+    config: JSONConfig = JSONConfig.defaultConfig,
+    out: CoOutput
+) = JSONCoStringify.coStringify(this, config, out)
 
 /**
  * Helper method to create a [KType] for a parameterised type, for use as the target type of a deserialization.

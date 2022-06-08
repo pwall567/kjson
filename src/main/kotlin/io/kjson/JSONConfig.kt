@@ -35,6 +35,12 @@ import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.isSupertypeOf
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
+import java.math.BigDecimal
+import io.kjson.JSON.asBoolean
+import io.kjson.JSON.asDecimal
+import io.kjson.JSON.asInt
+import io.kjson.JSON.asLong
+import io.kjson.JSON.asString
 
 import io.kjson.JSON.displayValue
 import io.kjson.JSONKotlinException.Companion.fatal
@@ -138,7 +144,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   targetClass the target class
      * @return              the mapping function, or `null` if not found
      */
-    fun findFromJSONMapping(targetClass: KClass<*>): ((JSONValue?) -> Any?)? {
+    fun findFromJSONMapping(targetClass: KClass<*>): (JSONConfig.(JSONValue?) -> Any?)? {
         if (targetClass == Any::class)
             return null
         var best: KClass<*>? = null
@@ -249,7 +255,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T: Any> fromJSON(noinline mapping: (JSONValue?) -> T?) {
+    inline fun <reified T: Any> fromJSON(noinline mapping: JSONConfig.(JSONValue?) -> T?) {
         fromJSON(typeOf<T>(), mapping as FromJSONMapping)
     }
 
@@ -268,7 +274,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T: Any> toJSON(noinline mapping: (T?) -> JSONValue?) {
+    inline fun <reified T: Any> toJSON(noinline mapping: JSONConfig.(T?) -> JSONValue?) {
         toJSON(typeOf<T>()) { mapping(it as T?) }
     }
 
@@ -287,13 +293,13 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      *
      * @param   targetClass     the target class
      * @param   property        the property name
-     * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
+     * @param   mappings        a set of `Pair<Any, KType>` entries, each of which identifies a value for the
      *                          discriminator property and its associated type
      */
     fun fromJSONPolymorphic(
         targetClass: KClass<*>,
         property: String,
-        vararg mappings: Pair<JSONValue, KType>,
+        vararg mappings: Pair<Any, KType>,
     ) {
         fromJSONPolymorphic(targetClass.starProjectedType, JSONPointer.root.child(property), *mappings)
     }
@@ -304,13 +310,13 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      *
      * @param   targetClass     the target class
      * @param   discriminator   the "discriminator" [JSONPointer]
-     * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
+     * @param   mappings        a set of `Pair<Any, KType>` entries, each of which identifies a value for the
      *                          discriminator property and its associated type
      */
     fun fromJSONPolymorphic(
         targetClass: KClass<*>,
         discriminator: JSONPointer,
-        vararg mappings: Pair<JSONValue, KType>,
+        vararg mappings: Pair<Any, KType>,
     ) {
         fromJSONPolymorphic(targetClass.starProjectedType, discriminator, *mappings)
     }
@@ -321,13 +327,13 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      *
      * @param   type            the target type
      * @param   property        the property name
-     * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
+     * @param   mappings        a set of `Pair<Any, KType>` entries, each of which identifies a value for the
      *                          discriminator property and its associated type
      */
     fun fromJSONPolymorphic(
         type: KType,
         property: String,
-        vararg mappings: Pair<JSONValue, KType>,
+        vararg mappings: Pair<Any, KType>,
     ) {
         fromJSONPolymorphic(type, JSONPointer.root.child(property), *mappings)
     }
@@ -338,13 +344,13 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      *
      * @param   type            the target type
      * @param   discriminator   the "discriminator" [JSONPointer]
-     * @param   mappings        a set of `Pair<JSONValue, KType>` entries, each of which identifies a value for the
+     * @param   mappings        a set of `Pair<Any, KType>` entries, each of which identifies a value for the
      *                          discriminator property and its associated type
      */
     fun fromJSONPolymorphic(
         type: KType,
         discriminator: JSONPointer,
-        vararg mappings: Pair<JSONValue, KType>,
+        vararg mappings: Pair<Any, KType>,
     ) {
         for (mapping in mappings)
             if (!mapping.second.isSubtypeOf(type))
@@ -353,10 +359,20 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
             if (jsonValue !is JSONObject || !discriminator.existsIn(jsonValue))
                 fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
             val discriminatorValue = discriminator.find(jsonValue)
-            val mapping = mappings.find { discriminatorValue == it.first } ?:
+            val mapping = mappings.find { it.first.matchesJSONValue(discriminatorValue) } ?:
                 fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
             JSONDeserializer.deserialize(mapping.second, jsonValue, this)
         }
+    }
+
+    private fun Any.matchesJSONValue(value: JSONValue?) = when (this) {
+        is JSONValue -> this == value
+        is String -> this == value.asString
+        is Int -> this == value.asInt
+        is Long -> this == value.asLong
+        is BigDecimal -> this == value.asDecimal
+        is Boolean -> this == value.asBoolean
+        else -> false
     }
 
     /**

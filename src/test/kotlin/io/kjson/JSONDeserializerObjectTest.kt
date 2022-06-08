@@ -177,7 +177,7 @@ class JSONDeserializerObjectTest {
             add("fieldX", 888)
         }
         val expected = DummyWithCustomNameAnnotation("qqq", 888)
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             addNameAnnotation(CustomName::class, "symbol")
         }
         expect(expected) { JSONDeserializer.deserialize(DummyWithCustomNameAnnotation::class, json, config) }

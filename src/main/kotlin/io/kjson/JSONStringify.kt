@@ -106,7 +106,7 @@ object JSONStringify {
         }
 
         config.findToJSONMapping(obj::class)?.let {
-            appendJSON(it(obj), config, references)
+            appendJSON(config.it(obj), config, references)
             return
         }
 
@@ -221,7 +221,7 @@ object JSONStringify {
             is Iterable<*> -> appendJSONIterator(obj.iterator(), config, references)
             is Iterator<*> -> appendJSONIterator(obj, config, references)
             is Sequence<*> -> appendJSONIterator(obj.iterator(), config, references)
-            is Enumeration<*> -> appendJSONEnumeration(obj, config, references)
+            is Enumeration<*> -> appendJSONIterator(obj.iterator(), config, references)
             is BaseStream<*, *> -> appendJSONIterator(obj.iterator(), config, references)
             is Map<*, *> -> appendJSONMap(obj, config, references)
             is BitSet -> appendJSONBitSet(obj)
@@ -274,9 +274,9 @@ object JSONStringify {
                         // now check whether there are any more properties not in constructor
                         for (member in objClass.members) {
                             if (member is KProperty<*> && !statics.contains(member) &&
-                                !constructor.parameters.any { it.name == member.name })
+                                    !constructor.parameters.any { it.name == member.name })
                                 continuation = appendUsingGetter(member, member.annotations, obj, config, references,
-                                    includeAll, skipName, continuation)
+                                        includeAll, skipName, continuation)
                         }
                     }
                     else {
@@ -287,7 +287,7 @@ object JSONStringify {
                                     combinedAnnotations.addAll(it.annotations)
                                 }
                                 continuation = appendUsingGetter(member, combinedAnnotations, obj, config, references,
-                                    includeAll, skipName, continuation)
+                                        includeAll, skipName, continuation)
                             }
                         }
                     }
@@ -342,20 +342,6 @@ object JSONStringify {
             while (true) {
                 appendJSON(iterator.next(), config, references)
                 if (!iterator.hasNext())
-                    break
-                append(',')
-            }
-        }
-        append(']')
-    }
-
-    private fun Appendable.appendJSONEnumeration(enumeration: Enumeration<*>, config: JSONConfig,
-            references: MutableSet<Any>) {
-        append('[')
-        if (enumeration.hasMoreElements()) {
-            while (true) {
-                appendJSON(enumeration.nextElement(), config, references)
-                if (!enumeration.hasMoreElements())
                     break
                 append(',')
             }

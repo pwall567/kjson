@@ -573,7 +573,7 @@ class JSONSerializerTest {
     @Test fun `should return BigInteger as JSONString when config option selected`() {
         val bigIntString = "123456789012345678"
         val bigInteger = BigInteger(bigIntString)
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             bigIntegerString = true
         }
         expect(JSONString(bigIntString)) { JSONSerializer.serialize(bigInteger, config) }
@@ -588,7 +588,7 @@ class JSONSerializerTest {
     @Test fun `should return BigDecimal as JSONString when config option selected`() {
         val bigDecString = "12345678901234567890.88888"
         val bigDecimal = BigDecimal(bigDecString)
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             bigDecimalString = true
         }
         expect(JSONString(bigDecString)) { JSONSerializer.serialize(bigDecimal, config) }
@@ -643,7 +643,7 @@ class JSONSerializerTest {
             add("field2", 123)
             add("extra", null)
         }
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             includeNulls = true
         }
         expect(expected) { JSONSerializer.serialize(obj, config) }
@@ -684,7 +684,7 @@ class JSONSerializerTest {
 
     @Test fun `should return annotated data class with custom annotation as JSONObject using specified name`() {
         val obj = DummyWithCustomNameAnnotation("abc", 123)
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             addNameAnnotation(CustomName::class, "symbol")
         }
         val expected = JSONObject.build {
@@ -719,7 +719,7 @@ class JSONSerializerTest {
 
     @Test fun `should return class with custom ignore annotation as JSONObject skipping field`() {
         val obj = DummyWithCustomIgnore("alpha", "beta", "gamma")
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             addIgnoreAnnotation(CustomIgnore::class)
         }
         val expected = JSONObject.build {
@@ -741,7 +741,7 @@ class JSONSerializerTest {
 
     @Test fun `should include null field for class with custom include if null annotation `() {
         val obj = DummyWithCustomIncludeIfNull("alpha", null, "gamma")
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             addIncludeIfNullAnnotation(CustomIncludeIfNull::class)
         }
         val expected = JSONObject.build {
@@ -764,7 +764,7 @@ class JSONSerializerTest {
 
     @Test fun `should include null field for class with custom include all properties annotation `() {
         val obj = DummyWithCustomIncludeAllProperties("alpha", null, "gamma")
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             addIncludeAllPropertiesAnnotation(CustomIncludeAllProperties::class)
         }
         val expected = JSONObject.build {
@@ -866,7 +866,7 @@ class JSONSerializerTest {
     }
 
     @Test fun `should serialize sealed class with custom discriminator`() {
-        val config = JSONConfig().apply {
+        val config = JSONConfig {
             sealedClassDiscriminator = "?"
         }
         val expected = JSONObject.build {

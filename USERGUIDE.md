@@ -52,81 +52,83 @@ For more information see [Custom Serialization and Deserialization](CUSTOM.md).
 
 `kjson` has built-in support for the following standard Kotlin types:
 
-| Type          | JSON Representation  |
-| ------------- | -------------------- |
-| String        | string               |
-| StringBuilder | string               |
-| CharSequence  | string               |
-| Char          | string (of length 1) |
-| CharArray     | string               |
-| Int           | number               |
-| Long          | number               |
-| Short         | number               |
-| Byte          | number               |
-| Double        | number               |
-| Float         | number               |
-| Boolean       | boolean              |
-| Array         | array                |
-| IntArray      | array                |
-| LongArray     | array                |
-| ShortArray    | array                |
-| ByteArray     | array                |
-| DoubleArray   | array                |
-| FloatArray    | array                |
-| BooleanArray  | array                |
-| Collection    | array                |
-| Iterable      | array                |
-| Iterator      | array                |
-| List          | array                |
-| ArrayList     | array                |
-| LinkedList    | array                |
-| Set           | array                |
-| HashSet       | array                |
-| LinkedHashSet | array                |
-| Sequence      | array                |
-| Map           | object               |
-| HashMapMap    | object               |
-| LinkedHashMap | object               |
-| Pair          | array (of length 2)  |
-| Triple        | array (of length 3)  |
-| Enum          | string (using name)  |
-| Duration      | string (ISO form)    |
+| Type            | JSON Representation                               |
+| --------------- | ------------------------------------------------- |
+| `String`        | string                                            |
+| `StringBuilder` | string                                            |
+| `CharSequence`  | string                                            |
+| `Char`          | string (of length 1)                              |
+| `CharArray`     | string                                            |
+| `Int`           | number                                            |
+| `Long`          | number                                            |
+| `Short`         | number                                            |
+| `Byte`          | number                                            |
+| `Double`        | number                                            |
+| `Float`         | number                                            |
+| `Boolean`       | boolean                                           |
+| `Array`         | array                                             |
+| `IntArray`      | array                                             |
+| `LongArray`     | array                                             |
+| `ShortArray`    | array                                             |
+| `ByteArray`     | array                                             |
+| `DoubleArray`   | array                                             |
+| `FloatArray`    | array                                             |
+| `BooleanArray`  | array                                             |
+| `Collection`    | array                                             |
+| `Iterable`      | array                                             |
+| `Iterator`      | array                                             |
+| `List`          | array                                             |
+| `ArrayList`     | array                                             |
+| `LinkedList`    | array                                             |
+| `Set`           | array                                             |
+| `HashSet`       | array                                             |
+| `LinkedHashSet` | array                                             |
+| `Sequence`      | array                                             |
+| `Map`           | object                                            |
+| `HashMapMap`    | object                                            |
+| `LinkedHashMap` | object                                            |
+| `Pair`          | array (of length 2)                               |
+| `Triple`        | array (of length 3)                               |
+| `Enum`          | string (using name)                               |
+| `Duration`      | string (ISO form)                                 |
+| `Channel`       | array (output only, using non-blocking functions) |
+| `Flow`          | array (output only, using non-blocking functions) |
 
 #### Java
 
 The library also has built-in support for the following standard Java types:
 
-| Type                           | JSON Representation                                   |
-| ------------------------------ | ----------------------------------------------------- |
-| java.lang.StringBuffer         | string                                                |
-| java.math.BigInteger           | number ([optionally string](#bigintegerstring))       |
-| java.math.BigDecimal           | number ([optionally string](#bigdecimalstring))       |
-| java.util.Enumeration          | array                                                 |
-| java.util.Bitset               | array of bit indices                                  |
-| java.util.UUID                 | string                                                |
-| java.util.Date                 | string (as yyyy-mm-ddThh:mm:ss.sssZ)                  |
-| java.util.Calendar             | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm)        |
-| java.sql.Date                  | string (as yyyy-mm-dd)                                |
-| java.sql.Time                  | string (as hh:mm:ss)                                  |
-| java.sql.Timestamp             | string (as yyyy-mm-dd hh:mm:ss.sss)                   |
-| java.time.Instant              | string (as yyyy-mm-ddThh:mm:ss.sssZ)                  |
-| java.time.LocalDate            | string (as yyyy-mm-dd)                                |
-| java.time.LocalTime            | string (as hh:mm:ss.sss)                              |
-| java.time.LocalDateTime        | string (as yyyy-mm-ddThh:mm:ss.sss)                   |
-| java.time.OffsetTime           | string (as hh:mm:ss.sss&#xB1;hh:mm)                   |
-| java.time.OffsetDateTime       | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm)        |
-| java.time.ZonedDateTime        | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm\[name]) |
-| java.time.Year                 | string (as yyyy)                                      |
-| java.time.YearMonth            | string (as yyyy-mm)                                   |
-| java.time.MonthDay             | string (as --mm-dd)                                   |
-| java.time.Duration             | string (e.g. PT2M)                                    |
-| java.time.Period               | string (e.g. P3M)                                     |
-| java.net.URI                   | string                                                |
-| java.net.URL                   | string                                                |
-| java.util.stream.Stream        | array                                                 |
-| java.util.stream.IntStream     | array                                                 |
-| java.util.stream.LongStream    | array                                                 |
-| java.util.stream.DoubleStream  | array                                                 |
+| Type                             | JSON Representation                                   |
+| -------------------------------- | ----------------------------------------------------- |
+| `java.lang.StringBuffer`         | string                                                |
+| `java.math.BigInteger`           | number ([optionally string](#bigintegerstring))       |
+| `java.math.BigDecimal`           | number ([optionally string](#bigdecimalstring))       |
+| `java.util.Enumeration`          | array                                                 |
+| `java.util.Bitset`               | array of bit indices                                  |
+| `java.util.UUID`                 | string                                                |
+| `java.util.Date`                 | string (as yyyy-mm-ddThh:mm:ss.sssZ)                  |
+| `java.util.Calendar`             | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm)        |
+| `java.sql.Date`                  | string (as yyyy-mm-dd)                                |
+| `java.sql.Time`                  | string (as hh:mm:ss)                                  |
+| `java.sql.Timestamp`             | string (as yyyy-mm-dd hh:mm:ss.sss)                   |
+| `java.time.Instant`              | string (as yyyy-mm-ddThh:mm:ss.sssZ)                  |
+| `java.time.LocalDate`            | string (as yyyy-mm-dd)                                |
+| `java.time.LocalTime`            | string (as hh:mm:ss.sss)                              |
+| `java.time.LocalDateTime`        | string (as yyyy-mm-ddThh:mm:ss.sss)                   |
+| `java.time.OffsetTime`           | string (as hh:mm:ss.sss&#xB1;hh:mm)                   |
+| `java.time.OffsetDateTime`       | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm)        |
+| `java.time.ZonedDateTime`        | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm\[name]) |
+| `java.time.Year`                 | string (as yyyy)                                      |
+| `java.time.YearMonth`            | string (as yyyy-mm)                                   |
+| `java.time.MonthDay`             | string (as --mm-dd)                                   |
+| `java.time.Duration`             | string (e.g. PT2M)                                    |
+| `java.time.Period`               | string (e.g. P3M)                                     |
+| `java.net.URI`                   | string                                                |
+| `java.net.URL`                   | string                                                |
+| `java.util.stream.Stream`        | array                                                 |
+| `java.util.stream.IntStream`     | array                                                 |
+| `java.util.stream.LongStream`    | array                                                 |
+| `java.util.stream.DoubleStream`  | array                                                 |
 
 ### Other Types
 
@@ -628,4 +630,4 @@ Many users will wish to use `kjson` in conjunction with the
 An example `Service` class to provide default JSON serialization and deserialization for Spring applications is shown in
 the [Spring and `kjson`](SPRING.md) guide.
 
-2022-01-31
+2022-06-05

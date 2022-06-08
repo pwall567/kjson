@@ -124,7 +124,7 @@ object JSONDeserializer {
     ): Any? {
         config.findFromJSONMapping(resultType)?.let {
             try {
-                return it(json)
+                return config.it(json)
             }
             catch (e: Exception) {
                 fatal("Error in custom fromJSON", pointer, e)
@@ -155,7 +155,7 @@ object JSONDeserializer {
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
     ): T? {
-        config.findFromJSONMapping(resultClass)?.let { return it(json) as T }
+        config.findFromJSONMapping(resultClass)?.let { return config.it(json) as T }
         if (json == null)
             return null
         return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, JSONPointer.root, config)
@@ -194,7 +194,7 @@ object JSONDeserializer {
         pointer: JSONPointer,
         config: JSONConfig = JSONConfig.defaultConfig,
     ): T {
-        config.findFromJSONMapping(resultClass)?.let { return it(json) as T }
+        config.findFromJSONMapping(resultClass)?.let { return config.it(json) as T }
         if (json == null)
             fatal("Can't deserialize null as ${resultClass.simpleName}")
         return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, pointer, config)
