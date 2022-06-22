@@ -29,6 +29,7 @@ import kotlin.reflect.KTypeProjection
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.starProjectedType
 import kotlin.test.Test
+import kotlin.test.assertNull
 import kotlin.test.expect
 
 import java.lang.reflect.Type
@@ -181,6 +182,86 @@ class JSONFunTest {
         }
         val expected = Dummy1("abdef", 54321)
         expect(expected) { json.deserialize(Dummy1::class.java) }
+    }
+
+    @Test fun `should convert a JSONObject to a specified type using fromJSONValueNullable`() {
+        val json = JSONObject.build {
+            add("field1", "abdef")
+            add("field2", 54321)
+        }
+        val expected = Dummy1("abdef", 54321)
+        expect(expected) { json.fromJSONValueNullable(Dummy1::class.starProjectedType) }
+        val nullValue: JSONValue? = null
+        assertNull(nullValue.fromJSONValueNullable(Dummy1::class.createType(nullable = true)))
+    }
+
+    @Test fun `should convert a JSONObject to a specified class using fromJSONValueNullable`() {
+        val json = JSONObject.build {
+            add("field1", "abdef")
+            add("field2", 54321)
+        }
+        val expected = Dummy1("abdef", 54321)
+        expect(expected) { json.fromJSONValueNullable(Dummy1::class) }
+        val nullValue: JSONValue? = null
+        assertNull(nullValue.fromJSONValueNullable(Dummy1::class))
+    }
+
+    @Test fun `should convert a JSONObject to an implied class using fromJSONValueNullable`() {
+        val json = JSONObject.build {
+            add("field1", "abdef")
+            add("field2", 54321)
+        }
+        val expected = Dummy1("abdef", 54321)
+        expect(expected) { json.fromJSONValueNullable() }
+        val nullValue: JSONValue? = null
+        assertNull(nullValue.fromJSONValueNullable<Dummy1?>())
+    }
+
+    @Test fun `should convert a JSONObject to a specified Java class using fromJSONValueNullable`() {
+        val json = JSONObject.build {
+            add("field1", "abdef")
+            add("field2", 54321)
+        }
+        val expected = Dummy1("abdef", 54321)
+        expect(expected) { json.fromJSONValueNullable(Dummy1::class.java) }
+        val nullValue: JSONValue? = null
+        assertNull(nullValue.fromJSONValueNullable(Dummy1::class.java))
+    }
+
+    @Test fun `should convert a JSONObject to a specified type using fromJSONValue`() {
+        val json = JSONObject.build {
+            add("field1", "abdef")
+            add("field2", 54321)
+        }
+        val expected = Dummy1("abdef", 54321)
+        expect(expected) { json.fromJSONValue(Dummy1::class.starProjectedType) }
+    }
+
+    @Test fun `should convert a JSONObject to a specified class using fromJSONValue`() {
+        val json = JSONObject.build {
+            add("field1", "abdef")
+            add("field2", 54321)
+        }
+        val expected = Dummy1("abdef", 54321)
+        expect(expected) { json.fromJSONValue(Dummy1::class) }
+    }
+
+    @Test fun `should convert a JSONObject to an implied class using fromJSONValue`() {
+        val json = JSONObject.build {
+            add("field1", "abdef")
+            add("field2", 54321)
+        }
+        val expected = Dummy1("abdef", 54321)
+        expect(expected) { json.fromJSONValue() }
+    }
+
+    @Test fun `should convert a JSONObject to a specified Java class using fromJSONValue`() {
+        val json = JSONObject.build {
+            add("field1", "abdef")
+            add("field2", 54321)
+        }
+        val expected = Dummy1("abdef", 54321)
+        expect(expected) { json.fromJSONValue(Dummy1::class.java) }
     }
 
 }

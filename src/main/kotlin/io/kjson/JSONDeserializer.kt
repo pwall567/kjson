@@ -141,6 +141,27 @@ object JSONDeserializer {
     }
 
     /**
+     * Deserialize a non-null parsed [JSONValue] to a specified non-nullable [KType].
+     *
+     * This is not to be confused with the `deserializeNonNull()` functions, which take a nullable parameter and throw
+     * an exception if it is in fact null.
+     *
+     * @param   resultType  the target type
+     * @param   json        the parsed JSON, as a [JSONValue]
+     * @param   config      an optional [JSONConfig]
+     * @return              the converted object
+     */
+    fun deserializeNonNullable(
+        resultType: KType,
+        json: JSONValue,
+        config: JSONConfig = JSONConfig.defaultConfig,
+    ): Any {
+        val classifier = resultType.classifier as? KClass<*> ?:
+                fatal("Can't deserialize ${resultType.simpleName}", JSONPointer.root)
+        return deserialize(resultType, classifier, resultType.arguments, json, JSONPointer.root, config)
+    }
+
+    /**
      * Deserialize a parsed [JSONValue] to a specified [KClass].
      *
      * @param   resultClass the target class
@@ -150,7 +171,7 @@ object JSONDeserializer {
      * @return              the converted object
      */
     @Suppress("UNCHECKED_CAST")
-    fun <T: Any> deserialize(
+    fun <T : Any> deserialize(
         resultClass: KClass<T>,
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
@@ -170,7 +191,7 @@ object JSONDeserializer {
      * @param   T           the target class
      * @return              the converted object
      */
-    fun <T: Any> deserializeNonNull(
+    fun <T : Any> deserializeNonNull(
         resultClass: KClass<T>,
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
@@ -188,7 +209,7 @@ object JSONDeserializer {
      * @return              the converted object
      */
     @Suppress("UNCHECKED_CAST")
-    fun <T: Any> deserializeNonNull(
+    fun <T : Any> deserializeNonNull(
         resultClass: KClass<T>,
         json: JSONValue?,
         pointer: JSONPointer,
@@ -236,7 +257,7 @@ object JSONDeserializer {
      * @param   T           the target class
      * @return              the converted object
      */
-    inline fun <reified T: Any> deserialize(
+    inline fun <reified T : Any> deserialize(
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
     ): T? = deserialize(typeOf<T>(), json, config) as T?
@@ -254,7 +275,7 @@ object JSONDeserializer {
      * @return              the converted object
      */
     @Suppress("UNCHECKED_CAST")
-    private fun <T: Any> deserialize(
+    private fun <T : Any> deserialize(
         resultType: KType,
         resultClass: KClass<T>,
         types: List<KTypeProjection>,
@@ -296,7 +317,7 @@ object JSONDeserializer {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T: Any> deserializeNumber(
+    private fun <T : Any> deserializeNumber(
         resultClass: KClass<T>,
         number: JSONNumberValue,
         pointer: JSONPointer,
@@ -345,7 +366,7 @@ object JSONDeserializer {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T: Any> deserializeString(
+    private fun <T : Any> deserializeString(
         resultClass: KClass<T>,
         str: String,
         pointer: JSONPointer,
@@ -403,7 +424,7 @@ object JSONDeserializer {
     }
 
     @Suppress("UNCHECKED_CAST", "IMPLICIT_CAST_TO_ANY")
-    private fun <T: Any> deserializeArray(
+    private fun <T : Any> deserializeArray(
         resultType: KType,
         resultClass: KClass<T>,
         types: List<KTypeProjection>,
@@ -545,7 +566,7 @@ object JSONDeserializer {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T: Any> newArray(
+    private fun <T : Any> newArray(
         itemClass: KClass<T>,
         size: Int,
     ): Array<T?> = java.lang.reflect.Array.newInstance(itemClass.java, size) as Array<T?>
@@ -569,7 +590,7 @@ object JSONDeserializer {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T: Any> deserializeObject(
+    private fun <T : Any> deserializeObject(
         resultType: KType,
         resultClass: KClass<T>,
         types: List<KTypeProjection>,
@@ -679,7 +700,7 @@ object JSONDeserializer {
         return map
     }
 
-    private fun <T: Any> setRemainingFields(
+    private fun <T : Any> setRemainingFields(
         resultType: KType,
         resultClass: KClass<T>,
         instance: T,
@@ -727,7 +748,7 @@ object JSONDeserializer {
         return null
     }
 
-    private fun <T: Any> findBestConstructor(
+    private fun <T : Any> findBestConstructor(
         constructors: Collection<KFunction<T>>,
         json: JSONObject,
         config: JSONConfig,

@@ -255,7 +255,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T: Any> fromJSON(noinline mapping: JSONConfig.(JSONValue?) -> T?) {
+    inline fun <reified T : Any> fromJSON(noinline mapping: JSONConfig.(JSONValue?) -> T?) {
         fromJSON(typeOf<T>(), mapping as FromJSONMapping)
     }
 
@@ -264,7 +264,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      *
      * @param   T       the type to be mapped
      */
-    inline fun <reified T: Any> fromJSONString() {
+    inline fun <reified T : Any> fromJSONString() {
         fromJSONString(typeOf<T>())
     }
 
@@ -274,7 +274,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T: Any> toJSON(noinline mapping: JSONConfig.(T?) -> JSONValue?) {
+    inline fun <reified T : Any> toJSON(noinline mapping: JSONConfig.(T?) -> JSONValue?) {
         toJSON(typeOf<T>()) { mapping(it as T?) }
     }
 
@@ -283,7 +283,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      *
      * @param   T       the type to be mapped
      */
-    inline fun <reified T: Any> toJSONString() {
+    inline fun <reified T : Any> toJSONString() {
         toJSONString(typeOf<T>())
     }
 
@@ -383,11 +383,11 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   argumentName        the name of the argument to the annotation that holds the name
      * @param   T                   the annotation class
      */
-    fun <T: Annotation> addNameAnnotation(nameAnnotationClass: KClass<T>, argumentName: String) {
+    fun <T : Annotation> addNameAnnotation(nameAnnotationClass: KClass<T>, argumentName: String) {
         nameAnnotations.add(namePropertyPair(nameAnnotationClass, argumentName))
     }
 
-    private fun <T: Annotation> namePropertyPair(
+    private fun <T : Annotation> namePropertyPair(
         nameAnnotationClass: KClass<T>,
         argumentName: String,
     ): Pair<KClass<*>, KProperty.Getter<String>> {
@@ -395,7 +395,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T: Annotation> findAnnotationStringProperty(
+    private fun <T : Annotation> findAnnotationStringProperty(
         annotationClass: KClass<T>,
         argumentName: String,
     ): KProperty<String> {
@@ -433,7 +433,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   ignoreAnnotationClass   the annotation class
      * @param   T                       the annotation class
      */
-    fun <T: Annotation> addIgnoreAnnotation(ignoreAnnotationClass: KClass<T>) {
+    fun <T : Annotation> addIgnoreAnnotation(ignoreAnnotationClass: KClass<T>) {
         ignoreAnnotations.add(ignoreAnnotationClass)
     }
 
@@ -452,7 +452,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   includeIfNullAnnotationClass    the annotation class
      * @param   T                               the annotation class
      */
-    fun <T: Annotation> addIncludeIfNullAnnotation(includeIfNullAnnotationClass: KClass<T>) {
+    fun <T : Annotation> addIncludeIfNullAnnotation(includeIfNullAnnotationClass: KClass<T>) {
         includeIfNullAnnotations.add(includeIfNullAnnotationClass)
     }
 
@@ -473,7 +473,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   ignoreAllPropertiesAnnotationClass  the annotation class
      * @param   T                                   the annotation class
      */
-    fun <T: Annotation> addIncludeAllPropertiesAnnotation(ignoreAllPropertiesAnnotationClass: KClass<T>) {
+    fun <T : Annotation> addIncludeAllPropertiesAnnotation(ignoreAllPropertiesAnnotationClass: KClass<T>) {
         includeAllPropertiesAnnotations.add(ignoreAllPropertiesAnnotationClass)
     }
 
@@ -493,7 +493,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   allowExtraPropertiesAnnotationClass the annotation class
      * @param   T                                   the annotation class
      */
-    fun <T: Annotation> addAllowExtraPropertiesAnnotation(allowExtraPropertiesAnnotationClass: KClass<T>) {
+    fun <T : Annotation> addAllowExtraPropertiesAnnotation(allowExtraPropertiesAnnotationClass: KClass<T>) {
         allowExtraPropertiesAnnotations.add(allowExtraPropertiesAnnotationClass)
     }
 

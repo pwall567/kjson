@@ -77,4 +77,4 @@ data class Organization(override val type: String, val id: Int, val name: String
 @JSONIdentifier("PERSON")
 data class Person(override val type: String, val firstName: String, val lastName: String) : Party()
 
-data class SealedClassContainer<T: Expr>(val expr: T)
+data class SealedClassContainer<T : Expr>(val expr: T)

@@ -2,6 +2,12 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [3.1] - 2022-06-23
+### Changed
+- `pom.xml`: bumped dependency version
+- `JSONDeserializer`: added `deserializeNonNullable` function
+- `JSONFun`: added `fromJSONValue` and `fromJSONValueNullable` (extension functions on `JSONValue`)
+
 ## [3.0] - 2022-06-08
 ### Added
 - `JSONCoStringify`: non-blocking output functions

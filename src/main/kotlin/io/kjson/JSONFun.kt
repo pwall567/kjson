@@ -67,7 +67,7 @@ fun CharSequence.parseJSON(
  * @param   T           the target class
  * @return              the converted object
  */
-fun <T: Any> CharSequence.parseJSON(
+fun <T : Any> CharSequence.parseJSON(
     resultClass: KClass<T>,
     config: JSONConfig = JSONConfig.defaultConfig,
 ): T? = JSONDeserializer.deserialize(resultClass, JSON.parse(this.toString()), config)
@@ -80,7 +80,7 @@ fun <T: Any> CharSequence.parseJSON(
  * @param   T       the target class
  * @return          the converted object
  */
-inline fun <reified T: Any> CharSequence.parseJSON(
+inline fun <reified T : Any> CharSequence.parseJSON(
     config: JSONConfig = JSONConfig.defaultConfig,
 ): T? = parseJSON(typeOf<T>(), config) as T?
 
@@ -161,6 +161,9 @@ fun Type.toKType(nullable: Boolean = false): KType = when (this) {
 /**
  * Deserialize a [JSONValue] to the nominated [KType].
  *
+ * This function has been superseded by `fromJSONValue` and `fromJSONValueNullable`, and may be deprecated or removed in
+ * future releases.
+ *
  * @receiver    the [JSONValue] (or `null`)
  * @param       resultType  the target [KType]
  * @param       config      an optional [JSONConfig] to customise the conversion
@@ -174,31 +177,40 @@ fun JSONValue?.deserialize(
 /**
  * Deserialize a [JSONValue] to the nominated [KClass].
  *
+ * This function has been superseded by `fromJSONValue` and `fromJSONValueNullable`, and may be deprecated or removed in
+ * future releases.
+ *
  * @receiver    the [JSONValue] (or `null`)
  * @param       resultClass the target [KClass]
  * @param       config      an optional [JSONConfig] to customise the conversion
  * @param       T           the target class
  * @throws      JSONKotlinException if the value can not be converted
  */
-fun <T: Any> JSONValue?.deserialize(
+fun <T : Any> JSONValue?.deserialize(
     resultClass: KClass<T>,
     config: JSONConfig = JSONConfig.defaultConfig,
 ): T? = JSONDeserializer.deserialize(resultClass, this, config)
 
 /**
- * Deserialize a [JSONValue] to the inferred class.
+ * Deserialize a [JSONValue] to the inferred type.
+ *
+ * This function has been superseded by `fromJSONValue` and `fromJSONValueNullable`, and may be deprecated or removed in
+ * future releases.
  *
  * @receiver    the [JSONValue] (or `null`)
  * @param       config      an optional [JSONConfig] to customise the conversion
  * @param       T           the target class
  * @throws      JSONKotlinException if the value can not be converted
  */
-inline fun <reified T: Any> JSONValue?.deserialize(
+inline fun <reified T : Any> JSONValue?.deserialize(
     config: JSONConfig = JSONConfig.defaultConfig,
 ): T? = JSONDeserializer.deserialize(this, config)
 
 /**
  * Deserialize a [JSONValue] to the nominated Java [Type].
+ *
+ * This function has been superseded by `fromJSONValue` and `fromJSONValueNullable`, and may be deprecated or removed in
+ * future releases.
  *
  * @receiver    the [JSONValue] (or `null`)
  * @param       javaType    the target [Type]
@@ -209,3 +221,108 @@ fun JSONValue?.deserialize(
     javaType: Type,
     config: JSONConfig = JSONConfig.defaultConfig,
 ): Any? = JSONDeserializer.deserialize(javaType, this, config)
+
+/**
+ * Deserialize a possibly null [JSONValue] to the nominated [KType].
+ *
+ * @receiver    the [JSONValue] (or `null`)
+ * @param       resultType  the target [KType]
+ * @param       config      an optional [JSONConfig] to customise the conversion
+ * @throws      JSONKotlinException if the value can not be converted
+ */
+fun JSONValue?.fromJSONValueNullable(
+    resultType: KType,
+    config: JSONConfig = JSONConfig.defaultConfig,
+): Any? = JSONDeserializer.deserialize(resultType, this, config)
+
+/**
+ * Deserialize a possibly null [JSONValue] to the nominated [KClass].
+ *
+ * @receiver    the [JSONValue] (or `null`)
+ * @param       resultClass the target [KClass]
+ * @param       config      an optional [JSONConfig] to customise the conversion
+ * @param       T           the target class
+ * @throws      JSONKotlinException if the value can not be converted
+ */
+fun <T : Any> JSONValue?.fromJSONValueNullable(
+    resultClass: KClass<T>,
+    config: JSONConfig = JSONConfig.defaultConfig,
+): T? = JSONDeserializer.deserialize(resultClass, this, config)
+
+/**
+ * Deserialize a possibly null [JSONValue] to the inferred type.
+ *
+ * @receiver    the [JSONValue] (or `null`)
+ * @param       config      an optional [JSONConfig] to customise the conversion
+ * @param       T           the target class
+ * @throws      JSONKotlinException if the value can not be converted
+ */
+inline fun <reified T> JSONValue?.fromJSONValueNullable(
+    config: JSONConfig = JSONConfig.defaultConfig,
+): T? = JSONDeserializer.deserialize(this, config)
+
+/**
+ * Deserialize a possibly null [JSONValue] to the nominated Java [Type].
+ *
+ * @receiver    the [JSONValue] (or `null`)
+ * @param       javaType    the target [Type]
+ * @param       config      an optional [JSONConfig] to customise the conversion
+ * @throws      JSONKotlinException if the value can not be converted
+ */
+fun JSONValue?.fromJSONValueNullable(
+    javaType: Type,
+    config: JSONConfig = JSONConfig.defaultConfig,
+): Any? = JSONDeserializer.deserialize(javaType, this, config)
+
+/**
+ * Deserialize a [JSONValue] to the nominated [KType].
+ *
+ * @receiver    the [JSONValue]
+ * @param       resultType  the target [KType]
+ * @param       config      an optional [JSONConfig] to customise the conversion
+ * @throws      JSONKotlinException if the value can not be converted
+ */
+fun JSONValue.fromJSONValue(
+    resultType: KType,
+    config: JSONConfig = JSONConfig.defaultConfig,
+): Any = JSONDeserializer.deserializeNonNullable(resultType, this, config)
+
+/**
+ * Deserialize a [JSONValue] to the nominated [KClass].
+ *
+ * @receiver    the [JSONValue]
+ * @param       resultClass the target [KClass]
+ * @param       config      an optional [JSONConfig] to customise the conversion
+ * @param       T           the target class
+ * @throws      JSONKotlinException if the value can not be converted
+ */
+@Suppress("UNCHECKED_CAST")
+fun <T : Any> JSONValue.fromJSONValue(
+    resultClass: KClass<T>,
+    config: JSONConfig = JSONConfig.defaultConfig,
+): T = JSONDeserializer.deserializeNonNullable(resultClass.starProjectedType, this, config) as T
+
+/**
+ * Deserialize a [JSONValue] to the inferred type.
+ *
+ * @receiver    the [JSONValue]
+ * @param       config      an optional [JSONConfig] to customise the conversion
+ * @param       T           the target class
+ * @throws      JSONKotlinException if the value can not be converted
+ */
+inline fun <reified T : Any> JSONValue.fromJSONValue(
+    config: JSONConfig = JSONConfig.defaultConfig,
+): T = JSONDeserializer.deserializeNonNullable(typeOf<T>(), this, config) as T
+
+/**
+ * Deserialize a [JSONValue] to the nominated Java [Type].
+ *
+ * @receiver    the [JSONValue]
+ * @param       javaType    the target [Type]
+ * @param       config      an optional [JSONConfig] to customise the conversion
+ * @throws      JSONKotlinException if the value can not be converted
+ */
+fun JSONValue.fromJSONValue(
+    javaType: Type,
+    config: JSONConfig = JSONConfig.defaultConfig,
+): Any = JSONDeserializer.deserializeNonNullable(javaType.toKType(nullable = false), this, config)
