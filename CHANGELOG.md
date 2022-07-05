@@ -2,6 +2,12 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [3.2] - 2022-07-05
+### Changed
+- `JSONConfig`: added use of environment variables to initialise default values
+- `JSONDeserializer`: improved nullability handling
+- `pom.xml`: bumped dependency version
+
 ## [3.1] - 2022-06-23
 ### Changed
 - `pom.xml`: bumped dependency version

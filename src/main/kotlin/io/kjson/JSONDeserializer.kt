@@ -122,14 +122,7 @@ object JSONDeserializer {
         pointer: JSONPointer,
         config: JSONConfig = JSONConfig.defaultConfig,
     ): Any? {
-        config.findFromJSONMapping(resultType)?.let {
-            try {
-                return config.it(json)
-            }
-            catch (e: Exception) {
-                fatal("Error in custom fromJSON", pointer, e)
-            }
-        }
+        config.findFromJSONMapping(resultType)?.let { return config.applyFromJSON(it, json, pointer) }
         if (json == null) {
             if (!resultType.isMarkedNullable)
                 fatal("Can't deserialize null as ${resultType.simpleName}", pointer)
@@ -156,10 +149,31 @@ object JSONDeserializer {
         json: JSONValue,
         config: JSONConfig = JSONConfig.defaultConfig,
     ): Any {
+        if (resultType.isMarkedNullable)
+            fatal("Attempt to deserialize nullable type using non-nullable function")
+        config.findFromJSONMapping(resultType)?.let {
+            return config.applyFromJSON(it, json, JSONPointer.root) ?:
+                    fatal("Can't deserialize null as ${resultType.simpleName}")
+        }
         val classifier = resultType.classifier as? KClass<*> ?:
                 fatal("Can't deserialize ${resultType.simpleName}", JSONPointer.root)
         return deserialize(resultType, classifier, resultType.arguments, json, JSONPointer.root, config)
     }
+
+    /**
+     * Deserialize a non-null parsed [JSONValue] to an implied non-nullable [KType].
+     *
+     * This is not to be confused with the `deserializeNonNull()` functions, which take a nullable parameter and throw
+     * an exception if it is in fact null.
+     *
+     * @param   json        the parsed JSON, as a [JSONValue]
+     * @param   config      an optional [JSONConfig]
+     * @return              the converted object
+     */
+    inline fun <reified T : Any> deserializeNonNullable(
+        json: JSONValue,
+        config: JSONConfig = JSONConfig.defaultConfig,
+    ): T = deserializeNonNullable(typeOf<T>(), json, config) as T
 
     /**
      * Deserialize a parsed [JSONValue] to a specified [KClass].
@@ -176,7 +190,7 @@ object JSONDeserializer {
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
     ): T? {
-        config.findFromJSONMapping(resultClass)?.let { return config.it(json) as T }
+        config.findFromJSONMapping(resultClass)?.let { return config.applyFromJSON(it, json, JSONPointer.root) as T? }
         if (json == null)
             return null
         return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, JSONPointer.root, config)
@@ -215,7 +229,7 @@ object JSONDeserializer {
         pointer: JSONPointer,
         config: JSONConfig = JSONConfig.defaultConfig,
     ): T {
-        config.findFromJSONMapping(resultClass)?.let { return config.it(json) as T }
+        config.findFromJSONMapping(resultClass)?.let { return config.applyFromJSON(it, json, pointer) as T }
         if (json == null)
             fatal("Can't deserialize null as ${resultClass.simpleName}")
         return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, pointer, config)
@@ -261,6 +275,19 @@ object JSONDeserializer {
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
     ): T? = deserialize(typeOf<T>(), json, config) as T?
+
+    private fun JSONConfig.applyFromJSON(
+        fromJSONMapping: FromJSONMapping,
+        json: JSONValue?,
+        pointer: JSONPointer,
+    ): Any? {
+        try {
+            return fromJSONMapping(json)
+        }
+        catch (e: Exception) {
+            fatal("Error in custom fromJSON", pointer, e)
+        }
+    }
 
     /**
      * Deserialize a parsed [JSONValue] to a parameterized [KClass], with the specified [KTypeProjection]s.

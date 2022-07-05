@@ -53,7 +53,7 @@ For more information see [Custom Serialization and Deserialization](CUSTOM.md).
 `kjson` has built-in support for the following standard Kotlin types:
 
 | Type            | JSON Representation                               |
-| --------------- | ------------------------------------------------- |
+|-----------------|---------------------------------------------------|
 | `String`        | string                                            |
 | `StringBuilder` | string                                            |
 | `CharSequence`  | string                                            |
@@ -98,37 +98,37 @@ For more information see [Custom Serialization and Deserialization](CUSTOM.md).
 
 The library also has built-in support for the following standard Java types:
 
-| Type                             | JSON Representation                                   |
-| -------------------------------- | ----------------------------------------------------- |
-| `java.lang.StringBuffer`         | string                                                |
-| `java.math.BigInteger`           | number ([optionally string](#bigintegerstring))       |
-| `java.math.BigDecimal`           | number ([optionally string](#bigdecimalstring))       |
-| `java.util.Enumeration`          | array                                                 |
-| `java.util.Bitset`               | array of bit indices                                  |
-| `java.util.UUID`                 | string                                                |
-| `java.util.Date`                 | string (as yyyy-mm-ddThh:mm:ss.sssZ)                  |
-| `java.util.Calendar`             | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm)        |
-| `java.sql.Date`                  | string (as yyyy-mm-dd)                                |
-| `java.sql.Time`                  | string (as hh:mm:ss)                                  |
-| `java.sql.Timestamp`             | string (as yyyy-mm-dd hh:mm:ss.sss)                   |
-| `java.time.Instant`              | string (as yyyy-mm-ddThh:mm:ss.sssZ)                  |
-| `java.time.LocalDate`            | string (as yyyy-mm-dd)                                |
-| `java.time.LocalTime`            | string (as hh:mm:ss.sss)                              |
-| `java.time.LocalDateTime`        | string (as yyyy-mm-ddThh:mm:ss.sss)                   |
-| `java.time.OffsetTime`           | string (as hh:mm:ss.sss&#xB1;hh:mm)                   |
-| `java.time.OffsetDateTime`       | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm)        |
-| `java.time.ZonedDateTime`        | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm\[name]) |
-| `java.time.Year`                 | string (as yyyy)                                      |
-| `java.time.YearMonth`            | string (as yyyy-mm)                                   |
-| `java.time.MonthDay`             | string (as --mm-dd)                                   |
-| `java.time.Duration`             | string (e.g. PT2M)                                    |
-| `java.time.Period`               | string (e.g. P3M)                                     |
-| `java.net.URI`                   | string                                                |
-| `java.net.URL`                   | string                                                |
-| `java.util.stream.Stream`        | array                                                 |
-| `java.util.stream.IntStream`     | array                                                 |
-| `java.util.stream.LongStream`    | array                                                 |
-| `java.util.stream.DoubleStream`  | array                                                 |
+| Type                            | JSON Representation                                   |
+|---------------------------------|-------------------------------------------------------|
+| `java.lang.StringBuffer`        | string                                                |
+| `java.math.BigInteger`          | number ([optionally string](#bigintegerstring))       |
+| `java.math.BigDecimal`          | number ([optionally string](#bigdecimalstring))       |
+| `java.util.Enumeration`         | array                                                 |
+| `java.util.Bitset`              | array of bit indices                                  |
+| `java.util.UUID`                | string                                                |
+| `java.util.Date`                | string (as yyyy-mm-ddThh:mm:ss.sssZ)                  |
+| `java.util.Calendar`            | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm)        |
+| `java.sql.Date`                 | string (as yyyy-mm-dd)                                |
+| `java.sql.Time`                 | string (as hh:mm:ss)                                  |
+| `java.sql.Timestamp`            | string (as yyyy-mm-dd hh:mm:ss.sss)                   |
+| `java.time.Instant`             | string (as yyyy-mm-ddThh:mm:ss.sssZ)                  |
+| `java.time.LocalDate`           | string (as yyyy-mm-dd)                                |
+| `java.time.LocalTime`           | string (as hh:mm:ss.sss)                              |
+| `java.time.LocalDateTime`       | string (as yyyy-mm-ddThh:mm:ss.sss)                   |
+| `java.time.OffsetTime`          | string (as hh:mm:ss.sss&#xB1;hh:mm)                   |
+| `java.time.OffsetDateTime`      | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm)        |
+| `java.time.ZonedDateTime`       | string (as yyyy-mm-ddThh:mm:ss.sss&#xB1;hh:mm\[name]) |
+| `java.time.Year`                | string (as yyyy)                                      |
+| `java.time.YearMonth`           | string (as yyyy-mm)                                   |
+| `java.time.MonthDay`            | string (as --mm-dd)                                   |
+| `java.time.Duration`            | string (e.g. PT2M)                                    |
+| `java.time.Period`              | string (e.g. P3M)                                     |
+| `java.net.URI`                  | string                                                |
+| `java.net.URL`                  | string                                                |
+| `java.util.stream.Stream`       | array                                                 |
+| `java.util.stream.IntStream`    | array                                                 |
+| `java.util.stream.LongStream`   | array                                                 |
+| `java.util.stream.DoubleStream` | array                                                 |
 
 ### Other Types
 
@@ -210,7 +210,7 @@ When deserialising into the target type `Any?` (either as the initial target cla
 invocation), `kjson` will return the following types:
 
 | Input JSON                                           | Result Class        |
-| ---------------------------------------------------- | ------------------- |
+|------------------------------------------------------|---------------------|
 | string                                               | `String`            |
 | number (that will fit in an `Int`)                   | `Int`               |
 | number (longer than `Int`, but will fit in a `Long`) | `Long`              |
@@ -332,6 +332,16 @@ set to decode the data.
 To output the full range of Unicode characters, the `stringifyNonASCII` variable may be set to `true`:
 ```kotlin
     config.stringifyNonASCII = true
+```
+
+### `stringifyInitialSize`
+
+When using the "stringify" functions, a buffer is allocated to build the output.
+This buffer will be extended as required, but the process may be more efficient if the buffer size is adequate for most
+uses, while not being too large.
+The default initial buffer size is 1024, but the size may be set by:
+```kotlin
+    config.stringifyInitialSize = 2048
 ```
 
 ### `sealedClassDiscriminator`
@@ -591,12 +601,26 @@ Most errors in serialization or deserialization cause a `JSONKotlinException` to
 The exception has the following available properties:
 
 | Name      | Type          | Description                                                                        |
-| --------- | ------------- | ---------------------------------------------------------------------------------- |
+|-----------|---------------|------------------------------------------------------------------------------------|
 | `text`    | `String`      | The specific text for the exception, not including pointer or `cause`              |
 | `pointer` | `JSONPointer` | A [JSON Pointer](https://tools.ietf.org/html/rfc6901) to the location of the issue |
 | `message` | `String`      | The conventional exception message, including the pointer                          |
 | `cause`   | `Throwable`   | The original cause of the exception                                                |
 
+
+## Environment Variables
+
+Some of the defaults used by the library may be set using environment variables:
+
+| Environment Variable                       | Type      | Default   | Used as the initial value for                           |
+|--------------------------------------------|-----------|-----------|---------------------------------------------------------|
+| `io.kjson.defaultAllowExtra`               | `Boolean` | `false`   | [`allowExtra`](#allowextra)                             |
+| `io.kjson.defaultBigDecimalString`         | `Boolean` | `false`   | [`bigDecimalString`](#bigdecimalstring)                 |
+| `io.kjson.defaultBigIntegerString`         | `Boolean` | `false`   | [`bigIntegerString`](#bigintegerstring)                 |
+| `io.kjson.defaultIncludeNulls`             | `Boolean` | `false`   | [`includeNulls`](#includenulls)                         |
+| `io.kjson.defaultStringifyNonASCII`        | `Boolean` | `false`   | [`stringifyNonASCII`](#stringifynonascii)               |
+| `io.kjson.defaultStringifyInitialSize`     | `Int`     | `1024`    | [`stringifyInitialSize`](#stringifyinitialsize)         |
+| `io.kjson.defaultSealedClassDiscriminator` | `String`  | `"class"` | [`sealedClassDiscriminator`](#sealedclassdiscriminator) |
 
 ## Further Examples
 
@@ -630,4 +654,4 @@ Many users will wish to use `kjson` in conjunction with the
 An example `Service` class to provide default JSON serialization and deserialization for Spring applications is shown in
 the [Spring and `kjson`](SPRING.md) guide.
 
-2022-06-05
+2022-07-05

@@ -144,7 +144,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   targetClass the target class
      * @return              the mapping function, or `null` if not found
      */
-    fun findFromJSONMapping(targetClass: KClass<*>): (JSONConfig.(JSONValue?) -> Any?)? {
+    fun findFromJSONMapping(targetClass: KClass<*>): FromJSONMapping? {
         if (targetClass == Any::class)
             return null
         var best: KClass<*>? = null
@@ -564,17 +564,39 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
     companion object {
 
         val stringType = String::class.createType()
-        const val defaultSealedClassDiscriminator = "class"
-        const val defaultBufferSize = DEFAULT_BUFFER_SIZE
-        const val defaultStringifyInitialSize = 1024
-        const val defaultBigIntegerString = false
-        const val defaultBigDecimalString = false
-        const val defaultIncludeNulls = false
-        const val defaultAllowExtra = false
-        const val defaultStringifyNonASCII = false
-        const val defaultStreamOutput = false
+        val defaultSealedClassDiscriminator = getDefaultDiscriminatorName()
+        val defaultBufferSize = getIntProperty("io.kjson.defaultBufferSize", DEFAULT_BUFFER_SIZE)
+        val defaultStringifyInitialSize = getIntProperty("io.kjson.defaultStringifyInitialSize", 1024)
+        val defaultBigIntegerString = getBooleanPropertyOrFalse("io.kjson.defaultBigIntegerString")
+        val defaultBigDecimalString = getBooleanPropertyOrFalse("io.kjson.defaultBigDecimalString")
+        val defaultIncludeNulls = getBooleanPropertyOrFalse("io.kjson.defaultIncludeNulls")
+        val defaultAllowExtra = getBooleanPropertyOrFalse("io.kjson.defaultAllowExtra")
+        val defaultStringifyNonASCII = getBooleanPropertyOrFalse("io.kjson.defaultStringifyNonASCII")
+        val defaultStreamOutput = getBooleanPropertyOrFalse("io.kjson.defaultStreamOutput")
         val defaultCharset = Charsets.UTF_8
         val defaultConfig = JSONConfig()
+
+        private fun getBooleanPropertyOrFalse(propertyName: String): Boolean {
+            val property = System.getProperty(propertyName) ?: return false
+            if (property.equals("true", ignoreCase = true))
+                return true
+            if (property.equals("false", ignoreCase = true))
+                return false
+            fatal("$propertyName property invalid - $property")
+        }
+
+        private fun getIntProperty(propertyName: String, defaultValue: Int): Int {
+            val property = System.getProperty(propertyName) ?: return defaultValue
+            return try {
+                property.toInt()
+            } catch (_: NumberFormatException) {
+                fatal("$propertyName property invalid - $property")
+            }
+        }
+
+        private fun getDefaultDiscriminatorName(): String {
+            return System.getProperty("io.kjson.defaultSealedClassDiscriminator") ?: "class"
+        }
 
     }
 

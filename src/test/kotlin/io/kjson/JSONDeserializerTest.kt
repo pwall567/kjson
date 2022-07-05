@@ -26,12 +26,14 @@
 package io.kjson
 
 import kotlin.reflect.full.createType
+import kotlin.reflect.typeOf
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.test.expect
+import kotlin.test.fail
 
 import java.math.BigDecimal
 
@@ -352,6 +354,35 @@ class JSONDeserializerTest {
         val expr = JSONDeserializer.deserialize<SealedClassContainer<*>>(json)?.expr
         assertTrue(expr is Const)
         expect(20.0) { expr.number }
+    }
+
+    @Test fun `should use deserializeNonNullable`() {
+        val json = JSON.parse("""{"field1":"abc","field2":123}""") ?: fail()
+        val dummy1 = JSONDeserializer.deserializeNonNullable<Dummy1>(json)
+        expect("abc") { dummy1.field1 }
+    }
+
+    @Test fun `should fail on attempt to use deserializeNonNullable for nullable type`() {
+        val json = JSON.parse("""{"field1":"abc","field2":123}""") ?: fail()
+        assertFailsWith<JSONKotlinException> {
+            JSONDeserializer.deserializeNonNullable(typeOf<Dummy1?>(), json)
+        }.let {
+            expect("Attempt to deserialize nullable type using non-nullable function") { it.message }
+        }
+    }
+
+    @Test fun `should fail when custom deserialize returns null using deserializeNonNullable`() {
+        val json = JSON.parse("""{"field1":"abc","field2":123}""") ?: fail()
+        val config = JSONConfig {
+            fromJSON<Dummy1> {
+                null
+            }
+        }
+        assertFailsWith<JSONKotlinException> {
+            JSONDeserializer.deserializeNonNullable<Dummy1>(json, config)
+        }.let {
+            expect("Can't deserialize null as Dummy1") { it.message }
+        }
     }
 
     data class TestPage<T>(val header: String? = null, val lines: List<T>)
