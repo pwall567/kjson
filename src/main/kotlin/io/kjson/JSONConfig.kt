@@ -35,13 +35,14 @@ import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.isSupertypeOf
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
+
 import java.math.BigDecimal
+
 import io.kjson.JSON.asBoolean
 import io.kjson.JSON.asDecimal
 import io.kjson.JSON.asInt
 import io.kjson.JSON.asLong
 import io.kjson.JSON.asString
-
 import io.kjson.JSON.displayValue
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.annotation.JSONAllowExtra
@@ -97,6 +98,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
     /** Switch to control whether extra fields are allowed on deserialization: `true` -> yes, `false` -> no */
     var allowExtra = defaultAllowExtra
 
+    /** Switch to control whether to output non-ASCII characters or use escape sequences */
     var stringifyNonASCII = defaultStringifyNonASCII
 
     /** Switch to control whether `json-ktor` uses streamed output */

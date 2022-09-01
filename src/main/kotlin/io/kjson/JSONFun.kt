@@ -32,6 +32,7 @@ import kotlin.reflect.full.createType
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
 
+import java.io.Reader
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.lang.reflect.WildcardType
@@ -81,6 +82,45 @@ fun <T : Any> CharSequence.parseJSON(
  * @return          the converted object
  */
 inline fun <reified T : Any> CharSequence.parseJSON(
+    config: JSONConfig = JSONConfig.defaultConfig,
+): T? = parseJSON(typeOf<T>(), config) as T?
+
+/**
+ * Deserialize JSON from a [Reader] to a specified [KType].
+ *
+ * @receiver            a [Reader] containing the JSON
+ * @param   resultType  the target type
+ * @param   config      an optional [JSONConfig] to customise the conversion
+ * @return              the converted object
+ */
+fun Reader.parseJSON(
+    resultType: KType,
+    config: JSONConfig = JSONConfig.defaultConfig,
+): Any? = JSONDeserializer.deserialize(resultType, JSON.parse(readText()), config)
+
+/**
+ * Deserialize JSON from a [Reader] to a specified [KClass].
+ *
+ * @receiver            a [Reader] containing the JSON
+ * @param   resultClass the target class
+ * @param   config      an optional [JSONConfig] to customise the conversion
+ * @param   T           the target class
+ * @return              the converted object
+ */
+fun <T : Any> Reader.parseJSON(
+    resultClass: KClass<T>,
+    config: JSONConfig = JSONConfig.defaultConfig,
+): T? = JSONDeserializer.deserialize(resultClass, JSON.parse(readText()), config)
+
+/**
+ * Deserialize JSON from a [Reader] to the inferred [KType].
+ *
+ * @receiver        a [Reader] containing the JSON
+ * @param   config  an optional [JSONConfig] to customise the conversion
+ * @param   T       the target class
+ * @return          the converted object
+ */
+inline fun <reified T : Any> Reader.parseJSON(
     config: JSONConfig = JSONConfig.defaultConfig,
 ): T? = parseJSON(typeOf<T>(), config) as T?
 

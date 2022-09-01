@@ -31,6 +31,7 @@ import kotlin.reflect.full.starProjectedType
 import kotlin.test.Test
 import kotlin.test.assertNull
 import kotlin.test.expect
+import java.io.File
 
 import java.lang.reflect.Type
 
@@ -60,6 +61,28 @@ class JSONFunTest {
     @Test fun `should correctly parse string using explicit KType`() {
         val json = """{"field1":"Hi there!","field2":888}"""
         expect(Dummy1("Hi there!", 888)) { json.parseJSON(Dummy1::class.starProjectedType) }
+    }
+
+    @Test fun `should correctly parse from Reader`() {
+        val reader = File("src/test/resources/testdata.json").reader()
+        val expected = Dummy1("File test", 123)
+        expect(expected) { reader.parseJSON() }
+    }
+
+    @Test fun `should correctly parse from Reader using parameterised type`() {
+        val reader = File("src/test/resources/testdata.json").reader()
+        val actual = reader.parseJSON<Dummy1>()
+        expect(Dummy1("File test", 123)) { actual }
+    }
+
+    @Test fun `should correctly parse from Reader using explicit KClass`() {
+        val reader = File("src/test/resources/testdata.json").reader()
+        expect(Dummy1("File test", 123)) { reader.parseJSON(Dummy1::class) }
+    }
+
+    @Test fun `should correctly parse from Reader using explicit KType`() {
+        val reader = File("src/test/resources/testdata.json").reader()
+        expect(Dummy1("File test", 123)) { reader.parseJSON(Dummy1::class.starProjectedType) }
     }
 
     @Test fun `should stringify any object`() {
