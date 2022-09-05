@@ -38,6 +38,7 @@ import java.lang.reflect.Type
 import java.lang.reflect.WildcardType
 
 import io.kjson.JSONKotlinException.Companion.fatal
+import io.kjson.parser.Parser
 import net.pwall.util.CoOutput
 
 /** Type alias to simplify the definition of `fromJSON` mapping functions. */
@@ -57,7 +58,7 @@ typealias ToJSONMapping = JSONConfig.(Any?) -> Any?
 fun CharSequence.parseJSON(
     resultType: KType,
     config: JSONConfig = JSONConfig.defaultConfig,
-): Any? = JSONDeserializer.deserialize(resultType, JSON.parse(this.toString()), config)
+): Any? = JSONDeserializer.deserialize(resultType, callParser(this.toString(), config), config)
 
 /**
  * Deserialize JSON from string ([CharSequence]) to a specified [KClass].
@@ -71,7 +72,7 @@ fun CharSequence.parseJSON(
 fun <T : Any> CharSequence.parseJSON(
     resultClass: KClass<T>,
     config: JSONConfig = JSONConfig.defaultConfig,
-): T? = JSONDeserializer.deserialize(resultClass, JSON.parse(this.toString()), config)
+): T? = JSONDeserializer.deserialize(resultClass, callParser(this.toString(), config), config)
 
 /**
  * Deserialize JSON from string ([CharSequence]) to the inferred [KType].
@@ -96,7 +97,7 @@ inline fun <reified T : Any> CharSequence.parseJSON(
 fun Reader.parseJSON(
     resultType: KType,
     config: JSONConfig = JSONConfig.defaultConfig,
-): Any? = JSONDeserializer.deserialize(resultType, JSON.parse(readText()), config)
+): Any? = JSONDeserializer.deserialize(resultType, callParser(readText(), config), config)
 
 /**
  * Deserialize JSON from a [Reader] to a specified [KClass].
@@ -110,7 +111,7 @@ fun Reader.parseJSON(
 fun <T : Any> Reader.parseJSON(
     resultClass: KClass<T>,
     config: JSONConfig = JSONConfig.defaultConfig,
-): T? = JSONDeserializer.deserialize(resultClass, JSON.parse(readText()), config)
+): T? = JSONDeserializer.deserialize(resultClass, callParser(readText(), config), config)
 
 /**
  * Deserialize JSON from a [Reader] to the inferred [KType].
@@ -123,6 +124,11 @@ fun <T : Any> Reader.parseJSON(
 inline fun <reified T : Any> Reader.parseJSON(
     config: JSONConfig = JSONConfig.defaultConfig,
 ): T? = parseJSON(typeOf<T>(), config) as T?
+
+/**
+ * Invoke parser with parsing options from config.
+ */
+private fun callParser(json: String, config: JSONConfig) = Parser.parse(json, config.parseOptions)
 
 /**
  * Stringify any object to JSON.

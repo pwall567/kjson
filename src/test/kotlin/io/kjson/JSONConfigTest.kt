@@ -41,6 +41,7 @@ import io.kjson.JSON.asObject
 import io.kjson.JSON.asString
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.JSONTypeRef.Companion.createRef
+import io.kjson.parser.ParseOptions
 import io.kjson.pointer.JSONPointer
 import io.kjson.testclasses.CustomName
 import io.kjson.testclasses.Dummy1
@@ -458,6 +459,10 @@ class JSONConfigTest {
     }
 
     @Test fun `should transfer switch settings and numeric values on combineAll`() {
+        val options = ParseOptions(
+            objectKeyDuplicate = ParseOptions.DuplicateKeyOption.TAKE_LAST,
+            arrayTrailingComma = true,
+        )
         val config = JSONConfig {
             sealedClassDiscriminator = "??"
             readBufferSize = 16384
@@ -468,6 +473,7 @@ class JSONConfigTest {
             allowExtra = true
             stringifyNonASCII = true
             streamOutput = true
+            parseOptions = options
         }
         val config2 = JSONConfig {
             combineAll(config)
@@ -481,6 +487,7 @@ class JSONConfigTest {
         assertTrue(config2.allowExtra)
         assertTrue(config2.stringifyNonASCII)
         assertTrue(config2.streamOutput)
+        expect(options) { config2.parseOptions }
     }
 
 }

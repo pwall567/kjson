@@ -2,7 +2,7 @@
  * @(#) JSONFunTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,10 +31,11 @@ import kotlin.reflect.full.starProjectedType
 import kotlin.test.Test
 import kotlin.test.assertNull
 import kotlin.test.expect
-import java.io.File
 
+import java.io.File
 import java.lang.reflect.Type
 
+import io.kjson.parser.ParseOptions
 import io.kjson.testclasses.Dummy1
 import io.kjson.testclasses.JavaClass1
 import io.kjson.testclasses.JavaClass2
@@ -285,6 +286,14 @@ class JSONFunTest {
         }
         val expected = Dummy1("abdef", 54321)
         expect(expected) { json.fromJSONValue(Dummy1::class.java) }
+    }
+
+    @Test fun `should use lenient parsing options if provided`() {
+        val config = JSONConfig {
+            parseOptions = ParseOptions(ParseOptions.DuplicateKeyOption.CHECK_IDENTICAL)
+        }
+        val expected = Dummy1("abc", 987)
+        expect(expected) { """{"field1":"abc","field2":987,"field1":"abc"}""".parseJSON(config) }
     }
 
 }

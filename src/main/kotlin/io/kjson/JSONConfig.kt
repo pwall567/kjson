@@ -34,6 +34,7 @@ import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.isSupertypeOf
 import kotlin.reflect.full.starProjectedType
+import kotlin.reflect.full.staticFunctions
 import kotlin.reflect.typeOf
 
 import java.math.BigDecimal
@@ -50,6 +51,7 @@ import io.kjson.annotation.JSONIgnore
 import io.kjson.annotation.JSONIncludeAllProperties
 import io.kjson.annotation.JSONIncludeIfNull
 import io.kjson.annotation.JSONName
+import io.kjson.parser.ParseOptions
 import io.kjson.pointer.JSONPointer
 
 /**
@@ -85,6 +87,9 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
 
     /** Character set (for `json-ktor` and  `json-ktor-client`) */
     var charset = defaultCharset
+
+    /** Parse options (for lenient parsing) */
+    var parseOptions = defaultParseOptions
 
     /** Switch to control how `BigInteger` is serialized / deserialized: `true` -> string, `false` -> number */
     var bigIntegerString = defaultBigIntegerString
@@ -538,6 +543,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
         readBufferSize = config.readBufferSize
         stringifyInitialSize = config.stringifyInitialSize
         charset = config.charset
+        parseOptions = config.parseOptions
         bigIntegerString = config.bigIntegerString
         bigDecimalString = config.bigDecimalString
         includeNulls = config.includeNulls
@@ -576,6 +582,12 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
         val defaultStringifyNonASCII = getBooleanPropertyOrFalse("io.kjson.defaultStringifyNonASCII")
         val defaultStreamOutput = getBooleanPropertyOrFalse("io.kjson.defaultStreamOutput")
         val defaultCharset = Charsets.UTF_8
+        val defaultParseOptions = ParseOptions(
+            objectKeyDuplicate = getEnumProperty("io.kjson.objectKeyDuplicate", ParseOptions.DuplicateKeyOption.ERROR),
+            objectKeyUnquoted = getBooleanPropertyOrFalse("io.kjson.objectKeyUnquoted"),
+            objectTrailingComma = getBooleanPropertyOrFalse("io.kjson.objectTrailingComma"),
+            arrayTrailingComma = getBooleanPropertyOrFalse("io.kjson.arrayTrailingComma"),
+        )
         val defaultConfig = JSONConfig()
 
         private fun getBooleanPropertyOrFalse(propertyName: String): Boolean {
@@ -598,6 +610,15 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
 
         private fun getDefaultDiscriminatorName(): String {
             return System.getProperty("io.kjson.defaultSealedClassDiscriminator") ?: "class"
+        }
+
+        private inline fun <reified T : Enum<T>> getEnumProperty(propertyName: String, defaultValue: T): T {
+            val property = System.getProperty(propertyName) ?: return defaultValue
+            return try {
+                T::class.staticFunctions.find { it.name == "valueOf" }?.call(property) as T
+            } catch (_ : Exception) {
+                fatal("$propertyName property invalid - $property")
+            }
         }
 
     }

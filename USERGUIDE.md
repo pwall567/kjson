@@ -362,6 +362,15 @@ See [Custom Serialization and Deserialization](CUSTOM.md#fromjson-lambda-in-the-
 Function to add a custom serialization lambda.
 See [Custom Serialization and Deserialization](CUSTOM.md#tojson-lambda-in-the-jsonconfig).
 
+### `parseOptions`
+
+By default, the library will use strict JSON parsing.
+To use the [lenient parsing options](https://github.com/pwall567/kjson-core#lenient-parsing) in the
+[`kjson-core`](https://github.com/pwall567/kjson-core) library, set the `parseOptions` to the required settings:
+```kotlin
+    config.parseOptions = ParseOptions(arrayTrailingComma = true)
+```
+
 ### `defaultConfig`
 
 The `defaultConfig` object that will be used when no `JSONConfig` is specified may be modified just like any other
@@ -612,15 +621,19 @@ The exception has the following available properties:
 
 Some of the defaults used by the library may be set using environment variables:
 
-| Environment Variable                       | Type      | Default   | Used as the initial value for                           |
-|--------------------------------------------|-----------|-----------|---------------------------------------------------------|
-| `io.kjson.defaultAllowExtra`               | `Boolean` | `false`   | [`allowExtra`](#allowextra)                             |
-| `io.kjson.defaultBigDecimalString`         | `Boolean` | `false`   | [`bigDecimalString`](#bigdecimalstring)                 |
-| `io.kjson.defaultBigIntegerString`         | `Boolean` | `false`   | [`bigIntegerString`](#bigintegerstring)                 |
-| `io.kjson.defaultIncludeNulls`             | `Boolean` | `false`   | [`includeNulls`](#includenulls)                         |
-| `io.kjson.defaultStringifyNonASCII`        | `Boolean` | `false`   | [`stringifyNonASCII`](#stringifynonascii)               |
-| `io.kjson.defaultStringifyInitialSize`     | `Int`     | `1024`    | [`stringifyInitialSize`](#stringifyinitialsize)         |
-| `io.kjson.defaultSealedClassDiscriminator` | `String`  | `"class"` | [`sealedClassDiscriminator`](#sealedclassdiscriminator) |
+| Environment Variable                       | Type      | Default   | Used as the initial value for                                                                                       |
+|--------------------------------------------|-----------|-----------|---------------------------------------------------------------------------------------------------------------------|
+| `io.kjson.defaultAllowExtra`               | `Boolean` | `false`   | [`allowExtra`](#allowextra)                                                                                         |
+| `io.kjson.defaultBigDecimalString`         | `Boolean` | `false`   | [`bigDecimalString`](#bigdecimalstring)                                                                             |
+| `io.kjson.defaultBigIntegerString`         | `Boolean` | `false`   | [`bigIntegerString`](#bigintegerstring)                                                                             |
+| `io.kjson.defaultIncludeNulls`             | `Boolean` | `false`   | [`includeNulls`](#includenulls)                                                                                     |
+| `io.kjson.defaultStringifyNonASCII`        | `Boolean` | `false`   | [`stringifyNonASCII`](#stringifynonascii)                                                                           |
+| `io.kjson.defaultStringifyInitialSize`     | `Int`     | `1024`    | [`stringifyInitialSize`](#stringifyinitialsize)                                                                     |
+| `io.kjson.defaultSealedClassDiscriminator` | `String`  | `"class"` | [`sealedClassDiscriminator`](#sealedclassdiscriminator)                                                             |
+| `io.kjson.objectKeyDuplicate`              | `String`  | `"ERROR"` | [`parseOptions`](#parseoptions).[`objectKeyDuplicate`](https://github.com/pwall567/kjson-core#objectkeyduplicate)   |
+| `io.kjson.objectKeyUnquoted`               | `Boolean` | `false`   | [`parseOptions`](#parseoptions).[`objectKeyUnquoted`](https://github.com/pwall567/kjson-core#objectkeyunquoted)     |
+| `io.kjson.objectTrailingComma`             | `Boolean` | `false`   | [`parseOptions`](#parseoptions).[`objectTrailingComma`](https://github.com/pwall567/kjson-core#objecttrailingcomma) |
+| `io.kjson.arrayTrailingComma`              | `Boolean` | `false`   | [`parseOptions`](#parseoptions).[`arrayTrailingComma`](https://github.com/pwall567/kjson-core#arraytrailingcomma)   |
 
 ## Further Examples
 
@@ -654,4 +667,7 @@ Many users will wish to use `kjson` in conjunction with the
 An example `Service` class to provide default JSON serialization and deserialization for Spring applications is shown in
 the [Spring and `kjson`](SPRING.md) guide.
 
-2022-07-05
+**UPDATE:** the [`kjson-spring`](https://github.com/pwall567/kjson-spring) library now provides a simple way to
+integrate with Spring.
+
+2022-09-05

@@ -2,9 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [Unreleased]
+## [3.3] - 2022-09-04
 ### Changed
 - `JSONFun`: added versions of `parseJSON` that use `Reader` as receiver
+- `JSONConfig`, `JSONFun`: allow use of `ParseOptions` for lenient parsing
 
 ## [3.2] - 2022-07-05
 ### Changed

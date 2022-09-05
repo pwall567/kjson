@@ -74,4 +74,7 @@ class JSONConverter : AbstractJsonHttpMessageConverter() {
 This class is provided as documentation rather than as a source file because it would not be practical for this project
 to include the dependencies required to resolve the Spring references.
 
-2022-01-25
+**UPDATE:** the [`kjson-spring`](https://github.com/pwall567/kjson-spring) library now provides a simple way to
+integrate with Spring.
+
+2022-09-05

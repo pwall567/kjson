@@ -63,7 +63,7 @@
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson-core</artifactId>
-      <version>3.0</version>
+      <version>3.1</version>
     </dependency>
     <dependency>
       <groupId>io.kjson</groupId>
@@ -73,7 +73,7 @@
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson-pointer</artifactId>
-      <version>1.9</version>
+      <version>1.9.1</version>
     </dependency>
     <dependency>
       <groupId>net.pwall.json</groupId>
