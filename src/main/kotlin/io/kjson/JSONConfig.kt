@@ -45,6 +45,7 @@ import io.kjson.JSON.asInt
 import io.kjson.JSON.asLong
 import io.kjson.JSON.asString
 import io.kjson.JSON.displayValue
+import io.kjson.JSONDeserializerFunctions.hasSingleParameter
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.annotation.JSONAllowExtra
 import io.kjson.annotation.JSONIgnore
@@ -217,21 +218,41 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
     }
 
     /**
-     * Add custom mapping from JSON to the specified type, using a constructor that takes a single [String] parameter.
+     * Add custom mapping from JSON object to the specified type.
      *
      * @param   type    the target type
+     * @param   mapping the mapping function
      */
-    fun fromJSONString(type: KType) {
-        fromJSONMap[type] = { json ->
+    fun fromJSONObject(type: KType, mapping: JSONConfig.(JSONObject) -> Any?) {
+        fromSpecific(type, mapping)
+    }
+
+    /**
+     * Add custom mapping from JSON array to the specified type.
+     *
+     * @param   type    the target type
+     * @param   mapping the mapping function
+     */
+    fun fromJSONArray(type: KType, mapping: JSONConfig.(JSONArray) -> Any?) {
+        fromSpecific(type, mapping)
+    }
+
+    /**
+     * Add custom mapping from JSON string to the specified type.  The default mapping looks for a constructor that
+     * takes a single [String] parameter.
+     *
+     * @param   mapping the mapping function
+     * @param   type    the target type
+     */
+    fun fromJSONString(type: KType, mapping: JSONConfig.(JSONString) -> Any? = getDefaultStringMapping(type)) {
+        fromSpecific(type, mapping)
+    }
+
+    private inline fun <reified T : JSONValue> fromSpecific(type: KType, crossinline mapping: JSONConfig.(T) -> Any?) {
+        fromJSON(type) { json ->
             when (json) {
                 null -> if (type.isMarkedNullable) null else fatal("Can't deserialize null as $type")
-                is JSONString -> {
-                    val resultClass = type.classifier as? KClass<*> ?: fatal("Can't deserialize $type")
-                    val constructor = resultClass.constructors.find {
-                        it.parameters.size == 1 && it.parameters[0].type == stringType
-                    }
-                    constructor?.call(json.value) ?: fatal("Can't deserialize $type")
-                }
+                is T -> mapping(json)
                 else -> fatal("Can't deserialize ${json::class.simpleName} as $type")
             }
         }
@@ -267,12 +288,49 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
     }
 
     /**
-     * Add custom mapping from JSON to the inferred type, using a constructor that takes a single [String] parameter.
+     * Add custom mapping from JSON object to the inferred type.
      *
+     * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T : Any> fromJSONString() {
-        fromJSONString(typeOf<T>())
+    inline fun <reified T : Any> fromJSONObject(noinline mapping: JSONConfig.(JSONObject) -> T?) {
+        fromJSONObject(typeOf<T>(), mapping)
+    }
+
+    /**
+     * Add custom mapping from JSON array to the inferred type.
+     *
+     * @param   mapping the mapping function
+     * @param   T       the type to be mapped
+     */
+    inline fun <reified T : Any> fromJSONArray(noinline mapping: JSONConfig.(JSONArray) -> T?) {
+        fromJSONArray(typeOf<T>(), mapping)
+    }
+
+    /**
+     * Add custom mapping from JSON string to the specified type.  The default mapping looks for a constructor that
+     * takes a single [String] parameter.
+     *
+     * @param   mapping the mapping function
+     * @param   T       the type to be mapped
+     */
+    inline fun <reified T : Any> fromJSONString(noinline mapping: JSONConfig.(JSONString) -> Any? =
+            getDefaultStringMapping(typeOf<T>())) {
+        fromJSONString(typeOf<T>(), mapping)
+    }
+
+    /**
+     * Get a default mapping from [JSONString] to the specified type.  The default mapping looks for a constructor that
+     * takes a single [String] parameter, and invokes that constructor with the string value.
+     *
+     * @param   type    the required type
+     */
+    fun getDefaultStringMapping(type: KType): JSONConfig.(JSONString) -> Any? = { json ->
+        val resultClass = type.classifier as? KClass<*> ?: fatal("Can't deserialize $type")
+        val constructor = resultClass.constructors.find {
+            it.hasSingleParameter(String::class)
+        }
+        constructor?.call(json.value) ?: fatal("Can't deserialize $type")
     }
 
     /**

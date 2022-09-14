@@ -280,13 +280,10 @@ object JSONDeserializer {
         fromJSONMapping: FromJSONMapping,
         json: JSONValue?,
         pointer: JSONPointer,
-    ): Any? {
-        try {
-            return fromJSONMapping(json)
-        }
-        catch (e: Exception) {
-            fatal("Error in custom fromJSON", pointer, e)
-        }
+    ): Any? = try {
+        fromJSONMapping(json)
+    } catch (e: Exception) {
+        fatal("Error in custom fromJSON", pointer, e)
     }
 
     /**
@@ -295,7 +292,7 @@ object JSONDeserializer {
      * @param   resultType  the target [KType]
      * @param   resultClass the target class
      * @param   types       the [KTypeProjection]s
-     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
+     * @param   json        the parsed JSON, as a [JSONValue]
      * @param   pointer     a [JSONPointer] to the current location
      * @param   config      a [JSONConfig]
      * @param   T           the target class

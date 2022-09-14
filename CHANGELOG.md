@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [3.4] - 2022-09-14
+### Changed
+- `JSONConfig`, `JSONDeserializer`: added `fromJSONObject`, `fromJSONArray`; extended `fromJSONString`
+
 ## [3.3] - 2022-09-04
 ### Changed
 - `JSONFun`: added versions of `parseJSON` that use `Reader` as receiver

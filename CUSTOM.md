@@ -165,6 +165,45 @@ As with `toJSON`, the type may be specified explicitly:
     }
 ```
 
+### `fromJSONObject`
+
+Custom deserialization is often required to take a structure that has been output as a JSON object and convert it to a
+Kotlin class.
+Suppose you have an `Account` class that has no public constructor, only a `create` function, and it is represented in
+JSON as an object.
+The function `fromJSONObject` specifies that the input must be a `JSONObject` and not any other type of `JSONValue`:
+```kotlin
+    config.fromJSONObject { json ->
+        val name = json["name"].asString
+        val number = json["number"].asLong
+        val address: Address? = json["address"]?.fromJSONValue(this)
+        Account.create(number, name, address)
+    }
+```
+This also illustrates the use of `fromJSONValue` &ndash; the example assumes that the `Address` class can be
+deserialized in the normal manner, and this function recursively invokes the main deserialization process (the
+`fromJSONValue` function, like many functions in the library, takes a `JSONConfig` as an optional last parameter; the
+lambda is executed with the current `JSONConfig` as receiver, so `this` in this case passes the config on to the nested
+deserialization).
+
+### `fromJSONString`
+
+To specify that a string is input to the custom deserialization (avoiding the need to check the type), the
+`fromJSONString` function may be used:
+```kotlin
+    config.fromJSONString { json ->
+        val names = json.value.split('|')
+        require(names.length == 2) { "Person string has incorrect format" }
+        Person(names[0], names[1])
+    }
+```
+This function allows the lambda to be omitted, in which case a default deserialization function will be used; this looks
+for a constructor taking a single `String` parameter and invokes it.
+```kotlin
+    config.fromJSONString<Amount>()
+```
+In this case, the result type can not be inferred from the lambda result so it must be specified explicitly.
+
 ### `fromJSONPolymorphic`
 
 This function (in `JSONConfig`) provides a means of deserializing polymorphic types &ndash; an input object may be
@@ -175,6 +214,8 @@ deserialized into one of a number of possible derived types by examining the pro
         "ORGANIZATION" to typeOf<Organization>()
  )
 ```
+In this example, the base class `Party` has two derived types `Person` and `Organization`, and the containing class
+(say, `Account`) has a reference only to the base class.
 If the object has a property named "type" with a value (string) of "PERSON", the object will be deserialized as a
 `Person`, and if the "type" property is "ORGANIZATION" the object will be deserialized as an `Organization`.
 
@@ -189,4 +230,4 @@ object:
 ```
 In this example, a property located by the pointer "`/type/name`" will be tested against the values specified.
 
-2022-06-08
+2022-09-08

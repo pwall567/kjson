@@ -514,35 +514,36 @@ The examples in this section assume the input is a `JSONValue` resulting from th
 
 ### Extension Functions
 
-There are several forms of the `deserialize()` extension function which may be applied to a `JSONValue` (actually a
+There are several forms of the `fromJSONValue()` extension function which may be applied to a `JSONValue` (actually a
 `JSONValue?`, so the receiver may be null).
+Each `fromJSONValue()` function has a corresponding `fromJSONValueNullable()` which allows the result to be `null`.
 
 #### Implied type
 
 As with deserialization from string, the simplest form of the function is the one that uses the implied type:
 ```kotlin
-    val person: Person? = jsonValue.deserialize()
+    val person: Person = jsonValue.fromJSONValue()
 ```
 
 #### Kotlin reified type
 
 The same function may be called with the target type as an explicit type parameter:
 ```kotlin
-    val person = jsonValue.deserialize<Person>()
+    val person = jsonValue.fromJSONValue<Person>()
 ```
 
 #### Explicit `KClass`
 
 The class may be specified as a parameter:
 ```kotlin
-    val person = jsonValue.deserialize(Person::class)
+    val person = jsonValue.fromJSONValue(Person::class)
 ```
 
 #### Explicit `KType`
 
 The type may be specified as a parameter (see the note about the `as` clause in the description of the string function):
 ```kotlin
-    val person = jsonValue.deserialize(Person::class.starProjectedType) as Person
+    val person = jsonValue.fromJSONValue(Person::class.starProjectedType) as Person
 ```
 
 ### The `JSONDeserializer` object

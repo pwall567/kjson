@@ -35,6 +35,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.expect
 import kotlin.test.fail
+import java.time.LocalTime
 
 import io.kjson.JSON.asInt
 import io.kjson.JSON.asObject
@@ -96,6 +97,36 @@ class JSONConfigTest {
             add("b", 888)
         }
         expect(Dummy1("xyz", 888)) { JSONDeserializer.deserialize(Dummy1::class.createType(), json, config) }
+    }
+
+    @Test fun `should map simple data class using fromJSONObject mapping`() {
+        val config = JSONConfig {
+            fromJSONObject { json ->
+                Dummy1(json["a"].asString, json["b"].asInt)
+            }
+        }
+        val json = JSONObject.build {
+            add("a", "xyz")
+            add("b", 888)
+        }
+        expect(Dummy1("xyz", 888)) { JSONDeserializer.deserialize(Dummy1::class.createType(), json, config) }
+    }
+
+    @Test fun `should map array using fromJSONArray mapping`() {
+        val config = JSONConfig {
+            fromJSONArray {json ->
+                val hours = json[0].asInt
+                val minutes = json[1].asInt
+                val seconds = json[2].asInt
+                LocalTime.of(hours, minutes, seconds)
+            }
+        }
+        val json = JSONArray.build {
+            add(18)
+            add(25)
+            add(0)
+        }
+        expect(LocalTime.parse("18:25:00")) { JSONDeserializer.deserialize(json, config) }
     }
 
     @Test fun `should not interfere with other deserialization when using fromJSON mapping`() {
@@ -281,6 +312,13 @@ class JSONConfigTest {
             fromJSONString<Dummy9>()
         }
         expect(Dummy9("abcdef")) { JSONDeserializer.deserialize(JSONString("abcdef"), config) }
+    }
+
+    @Test fun `should use fromJSONString mapping for fromJSON mapping`() {
+        val config = JSONConfig {
+            fromJSONString<Dummy9> { Dummy9(it.value.reversed()) }
+        }
+        expect(Dummy9("fedcba")) { JSONDeserializer.deserialize(JSONString("abcdef"), config) }
     }
 
     @Test fun `should distinguish between polymorphic mappings`() {
