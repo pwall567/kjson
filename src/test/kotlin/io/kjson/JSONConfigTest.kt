@@ -366,6 +366,23 @@ class JSONConfigTest {
         }
     }
 
+    enum class Types { TYPE1, TYPE2 }
+
+    @Test fun `should distinguish between polymorphic mappings using enum discriminator values`() {
+        val config = JSONConfig {
+            fromJSONPolymorphic(PolymorphicBase::class, "type",
+                Types.TYPE1 to typeOf<PolymorphicDerived1>(),
+                Types.TYPE2 to typeOf<PolymorphicDerived2>()
+            )
+        }
+        expect(PolymorphicDerived1("TYPE1", 1234)) {
+            """{"type":"TYPE1","extra1":1234}""".parseJSON<PolymorphicBase>(config)
+        }
+        expect(PolymorphicDerived2("TYPE2", "hello")) {
+            """{"type":"TYPE2","extra2":"hello"}""".parseJSON<PolymorphicBase>(config)
+        }
+    }
+
     @Test fun `should distinguish between polymorphic mappings using JSONPointer`() {
         val config = JSONConfig {
             fromJSONPolymorphic(PolymorphicBase::class, JSONPointer("/type"),

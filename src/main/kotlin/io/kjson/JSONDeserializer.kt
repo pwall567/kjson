@@ -81,6 +81,7 @@ import io.kjson.JSONDeserializerFunctions.hasSingleParameter
 import io.kjson.JSONDeserializerFunctions.parseCalendar
 import io.kjson.JSONDeserializerFunctions.toBigInteger
 import io.kjson.JSONKotlinException.Companion.fatal
+import io.kjson.JSONSerializerFunctions.isUncachedClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
 import io.kjson.pointer.JSONPointer
@@ -321,25 +322,23 @@ object JSONDeserializer {
 
         // does the target class companion object have a "fromJSON()" method?
 
-        try {
-            resultClass.companionObject?.let { companionObject ->
-                try {
-                    findFromJSONInvoker(resultClass, json::class, companionObject)?.let {
-                        return it.invoke(json, config) as T
+        if (!resultClass.isUncachedClass()) {
+            try {
+                resultClass.companionObject?.let { companionObject ->
+                    try {
+                        findFromJSONInvoker(resultClass, json::class, companionObject)?.let {
+                            return it.invoke(json, config) as T
+                        }
+                    } catch (e: InvocationTargetException) {
+                        fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", pointer, e.cause ?: e)
+                    } catch (e: Exception) {
+                        fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", pointer, e)
                     }
                 }
-                catch (e: InvocationTargetException) {
-                    fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", pointer, e.cause ?: e)
-                }
-                catch (e: Exception) {
-                    fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", pointer, e)
-                }
-            }
+            } catch (e: JSONException) {
+                throw e
+            } catch (_: Exception) {} // some classes don't allow getting companion object (Kotlin bug?)
         }
-        catch (e: JSONException) {
-            throw e
-        }
-        catch (_: Exception) {} // some classes don't allow getting companion object (Kotlin bug?)
 
         return when (json) {
             is JSONBoolean -> {

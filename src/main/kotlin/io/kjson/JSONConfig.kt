@@ -37,13 +37,6 @@ import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.full.staticFunctions
 import kotlin.reflect.typeOf
 
-import java.math.BigDecimal
-
-import io.kjson.JSON.asBoolean
-import io.kjson.JSON.asDecimal
-import io.kjson.JSON.asInt
-import io.kjson.JSON.asLong
-import io.kjson.JSON.asString
 import io.kjson.JSON.displayValue
 import io.kjson.JSONDeserializerFunctions.hasSingleParameter
 import io.kjson.JSONKotlinException.Companion.fatal
@@ -417,27 +410,22 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
         discriminator: JSONPointer,
         vararg mappings: Pair<Any, KType>,
     ) {
+        if (mappings.isEmpty())
+            fatal("Illegal polymorphic mapping - list is empty")
         for (mapping in mappings)
             if (!mapping.second.isSubtypeOf(type))
                 fatal("Illegal polymorphic mapping - ${mapping.second} is not a sub-type of $type")
+        val mappingClass = mappings.fold(Any::class) { a: KClass<*>, b ->
+            if (b.first::class.isSubclassOf(a)) b.first::class else a
+        }
         fromJSON(type) { jsonValue ->
             if (jsonValue !is JSONObject || !discriminator.existsIn(jsonValue))
                 fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
-            val discriminatorValue = discriminator.find(jsonValue)
-            val mapping = mappings.find { it.first.matchesJSONValue(discriminatorValue) } ?:
+            val discriminatorValue = JSONDeserializer.deserialize(mappingClass, discriminator.find(jsonValue), this)
+            val mapping = mappings.find { it.first == discriminatorValue } ?:
                 fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
             JSONDeserializer.deserialize(mapping.second, jsonValue, this)
         }
-    }
-
-    private fun Any.matchesJSONValue(value: JSONValue?) = when (this) {
-        is JSONValue -> this == value
-        is String -> this == value.asString
-        is Int -> this == value.asInt
-        is Long -> this == value.asLong
-        is BigDecimal -> this == value.asDecimal
-        is Boolean -> this == value.asBoolean
-        else -> false
     }
 
     /**

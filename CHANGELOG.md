@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 - `JSONConfig`, `JSONDeserializer`: added `fromJSONObject`, `fromJSONArray`; extended `fromJSONString`
 - `JSONDeserializer`, `JSONSerializerFunctions`, `JSONKotlinException`: improved companion object `fromJSON`
+- `JSONConfig`: changed `fromJSONPolymorphic` to allow non-primitive discriminator values
 
 ## [3.3] - 2022-09-04
 ### Changed

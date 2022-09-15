@@ -80,8 +80,16 @@ object JSONSerializerFunctions {
      */
     fun KClass<*>.isToStringClass() = this in toStringClasses
 
+    /**
+     * Is the class a system class that will not have a `toJSON` or `fromJSON` function?
+     *
+     * @receiver            the class of the object
+     * @return              `true` if the object is a member of a system class
+     */
+    fun KClass<*>.isUncachedClass() = this in uncachedClasses || this in toStringClasses
+
     fun KClass<*>.findToJSON(): KFunction<Any?>? {
-        if (this in uncachedClasses || this in toStringClasses)
+        if (isUncachedClass())
             return null
         if (toJsonCache.containsKey(this))
             return toJsonCache[this]
