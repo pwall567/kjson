@@ -29,12 +29,14 @@ import kotlin.reflect.full.createType
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.expect
 import kotlin.test.fail
+
 import java.time.LocalTime
 
 import io.kjson.JSON.asInt
@@ -158,6 +160,19 @@ class JSONConfigTest {
         }
         expect(Dummy3(Dummy1("xyz", 888), "Hello!")) {
             JSONDeserializer.deserialize(Dummy3::class.createType(), json2, config)
+        }
+    }
+
+    @Test fun `should correctly report error in fromJSON`() {
+        val config = JSONConfig {
+            fromJSONString<Dummy1> {
+                throw IllegalStateException("Wrong")
+            }
+        }
+        assertFailsWith<JSONKotlinException> { JSONString("data").fromJSONValue<Dummy1>(config) }.let {
+            expect("Error in custom fromJSON mapping of ${Dummy1::class.qualifiedName}") { it.message }
+            assertTrue(it.cause is IllegalStateException)
+            expect("Wrong") { it.cause?.message }
         }
     }
 

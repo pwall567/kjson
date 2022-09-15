@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerFunctions.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,12 +28,11 @@ package io.kjson
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
-import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.functions
 import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.isSuperclassOf
-import java.math.BigInteger
 
+import java.math.BigInteger
 import java.util.Calendar
 import java.util.TimeZone
 import java.util.UUID
@@ -44,23 +43,68 @@ import net.pwall.util.IntOutput.append2Digits
 
 object JSONDeserializerFunctions {
 
-    private val fromJsonCache = HashMap<Pair<KClass<*>, KClass<*>>, KFunction<*>>()
+    abstract class FromJSONInvoker(val instance: Any?) {
+        abstract fun invoke(json: JSONValue, config: JSONConfig): Any?
+    }
 
-    fun findFromJSON(resultClass: KClass<*>, parameterClass: KClass<*>): KFunction<*>? {
-        val cacheKey = resultClass to parameterClass
-        return fromJsonCache[cacheKey] ?: try {
-            resultClass.companionObject?.functions?.find { function ->
-                function.name == "fromJSON" &&
-                        function.parameters.size == 2 &&
-                        function.parameters[0].type.classifier == resultClass.companionObject &&
-                        (function.parameters[1].type.classifier as KClass<*>).isSuperclassOf(parameterClass) &&
-                        function.returnType.classifier == resultClass
-            }
+    class FromJSONInvokerBasic(instance: Any?, val function: KFunction<*>) : FromJSONInvoker(instance) {
+
+        override fun invoke(json: JSONValue, config: JSONConfig): Any? {
+            return function.call(instance, json)
         }
-        catch (e: Exception) {
-            null
+
+    }
+
+    class FromJSONInvokerWithConfig(instance: Any?, val function: KFunction<*>) : FromJSONInvoker(instance) {
+
+        override fun invoke(json: JSONValue, config: JSONConfig): Any? {
+            return function.call(instance, config, json)
+        }
+
+    }
+
+    private val fromJsonCache = HashMap<Pair<KClass<*>, KClass<*>>, FromJSONInvoker>()
+
+    fun findFromJSONInvoker(resultClass: KClass<*>, parameterClass: KClass<*>, companionObject: KClass<*>):
+            FromJSONInvoker? {
+        val cacheKey = resultClass to parameterClass
+        return fromJsonCache[cacheKey] ?: run {
+            findInvoker(companionObject.functions, resultClass, parameterClass, companionObject)
         }?.also { fromJsonCache[cacheKey] = it }
     }
+
+    private fun findInvoker(
+        functions: Collection<KFunction<*>>,
+        resultClass: KClass<*>,
+        parameterClass: KClass<*>,
+        companionObjectClass: KClass<*>,
+    ): FromJSONInvoker? {
+        for (function in functions) {
+            if (function.name == "fromJSON" && function.returnType.classifier == resultClass) {
+                if (function.parameters.size == 2 &&
+                    function.parameters[0].isInstanceParameter(companionObjectClass) &&
+                    function.parameters[1].isValueParameter(parameterClass)) {
+                    return FromJSONInvokerBasic(companionObjectClass.objectInstance, function)
+                }
+                if (function.parameters.size == 3 &&
+                    function.parameters[0].isInstanceParameter(companionObjectClass) &&
+                    function.parameters[1].isExtensionReceiverParameter(JSONConfig::class) &&
+                    function.parameters[2].isValueParameter(parameterClass)) {
+                    return FromJSONInvokerWithConfig(companionObjectClass.objectInstance, function)
+                }
+            }
+        }
+        return null
+    }
+
+    private fun KParameter.isInstanceParameter(instanceClass: KClass<*>?) =
+            kind == KParameter.Kind.INSTANCE && type.classifier == instanceClass
+
+    private fun KParameter.isExtensionReceiverParameter(receiverClass: KClass<*>) =
+            kind == KParameter.Kind.EXTENSION_RECEIVER && type.classifier == receiverClass
+
+    private fun KParameter.isValueParameter(valueClass: KClass<*>) =
+            kind == KParameter.Kind.VALUE && (type.classifier as KClass<*>).isSuperclassOf(valueClass)
 
     fun KFunction<*>.hasSingleParameter(paramClass: KClass<*>) =
             parameters.size == 1 && (parameters[0].type.classifier as? KClass<*>)?.isSuperclassOf(paramClass) ?: false

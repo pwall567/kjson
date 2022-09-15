@@ -29,6 +29,9 @@ import java.math.BigDecimal
 import java.math.BigInteger
 import java.time.LocalDate
 
+import io.kjson.JSON.asObject
+import io.kjson.JSON.asString
+import io.kjson.JSONConfig
 import io.kjson.JSONException
 import io.kjson.JSONInt
 import io.kjson.JSONObject
@@ -39,6 +42,7 @@ import io.kjson.annotation.JSONIgnore
 import io.kjson.annotation.JSONIncludeAllProperties
 import io.kjson.annotation.JSONIncludeIfNull
 import io.kjson.annotation.JSONName
+import io.kjson.fromJSONValue
 
 data class Dummy1(val field1: String, val field2: Int = 999)
 
@@ -57,20 +61,33 @@ data class DummyFromJSON(val int1: Int) {
     @Suppress("unused")
     fun toJSON(): JSONObject {
         return JSONObject.build {
-            add("dec", JSONString(int1.toString()))
-            add("hex", JSONString(int1.toString(16)))
+            add("dec", int1.toString())
+            add("hex", int1.toString(16))
         }
     }
 
     companion object {
         @Suppress("unused")
         fun fromJSON(json: JSONValue): DummyFromJSON {
-            val jsonObject = json as JSONObject
-            val dec = (jsonObject["dec"] as JSONString).value.toInt()
-            val hex = (jsonObject["hex"] as JSONString).value.toInt(16)
+            val jsonObject = json.asObject
+            val dec = jsonObject["dec"].asString.toInt()
+            val hex = jsonObject["hex"].asString.toInt(16)
             if (dec != hex)
                 throw JSONException("Inconsistent values")
             return DummyFromJSON(dec)
+        }
+    }
+
+}
+
+data class DummyFromJSONWithConfig(val dummy1: Dummy1) {
+
+    companion object {
+        @Suppress("unused")
+        fun JSONConfig.fromJSON(json: JSONValue): DummyFromJSONWithConfig {
+            val jsonObject = json as JSONObject
+            val dummy1: Dummy1 = jsonObject["aaa"].asObject.fromJSONValue(this)
+            return DummyFromJSONWithConfig(dummy1)
         }
     }
 
@@ -89,8 +106,8 @@ data class DummyMultipleFromJSON(val int1: Int) {
     companion object {
         @Suppress("unused")
         fun fromJSON(json: JSONObject): DummyMultipleFromJSON {
-            val dec = (json["dec"] as JSONString).value.toInt() // json.getString("dec").toInt()
-            val hex = (json["hex"] as JSONString).value.toInt(16) // json.getString("hex").toInt(16)
+            val dec = json["dec"].asString.toInt() // json.getString("dec").toInt()
+            val hex = json["hex"].asString.toInt(16) // json.getString("hex").toInt(16)
             if (dec != hex)
                 throw JSONException("Inconsistent values")
             return DummyMultipleFromJSON(dec)

@@ -2,9 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [3.4] - 2022-09-14
+## [3.4] - 2022-09-15
 ### Changed
 - `JSONConfig`, `JSONDeserializer`: added `fromJSONObject`, `fromJSONArray`; extended `fromJSONString`
+- `JSONDeserializer`, `JSONSerializerFunctions`, `JSONKotlinException`: improved companion object `fromJSON`
 
 ## [3.3] - 2022-09-04
 ### Changed

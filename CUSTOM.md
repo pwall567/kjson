@@ -140,6 +140,10 @@ class Person(val firstName: String, val surname: String) {
 }
 ```
 
+The `fromJSON` in the companion object may optionally be specified as an extension function on `JSONConfig`.
+If this form is used, the config in effect at the time of deserialization is available as `this`, and it may be passed
+on to nested deserialization calls.
+
 ### `fromJSON` lambda in the `JSONConfig`
 
 Again, it may not be possible to modify the class, so a `fromJSON` lambda may be specified in the `JSONConfig`.
@@ -230,4 +234,4 @@ object:
 ```
 In this example, a property located by the pointer "`/type/name`" will be tested against the values specified.
 
-2022-09-08
+2022-09-15

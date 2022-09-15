@@ -38,6 +38,8 @@ import kotlin.test.fail
 import java.math.BigDecimal
 
 import io.kjson.Constants.stringType
+import io.kjson.JSON.asInt
+import io.kjson.JSON.asString
 import io.kjson.testclasses.Const
 import io.kjson.testclasses.Const2
 import io.kjson.testclasses.Const3
@@ -46,6 +48,7 @@ import io.kjson.testclasses.CustomIgnore
 import io.kjson.testclasses.Dummy1
 import io.kjson.testclasses.Dummy5
 import io.kjson.testclasses.DummyFromJSON
+import io.kjson.testclasses.DummyFromJSONWithConfig
 import io.kjson.testclasses.DummyMultipleFromJSON
 import io.kjson.testclasses.DummyWithAllowExtra
 import io.kjson.testclasses.DummyWithCustomAllowExtra
@@ -71,7 +74,7 @@ class JSONDeserializerTest {
 
     @Test fun `should throw exception when non-null function called with null`() {
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserializeNonNull(String::class, null) }.let {
-            expect("Can't deserialize null as String") { it.message }
+            expect("Can't deserialize null as kotlin.String") { it.message }
         }
     }
 
@@ -91,6 +94,25 @@ class JSONDeserializerTest {
         }
         val expected = DummyFromJSON(17)
         expect(expected) { JSONDeserializer.deserialize(json) }
+    }
+
+    @Test fun `should use companion object fromJSON with JSONConfig receiver`() {
+        val config = JSONConfig {
+            fromJSONObject { json ->
+                val field1 = json["a"].asString
+                val field2 = json["b"].asInt
+                Dummy1(field1, field2)
+            }
+        }
+        val inner = JSONObject.build {
+            add("a", "Complex")
+            add("b", 6789)
+        }
+        val json = JSONObject.build {
+            add("aaa", inner)
+        }
+        val expected = DummyFromJSONWithConfig(Dummy1("Complex", 6789))
+        expect(expected) { JSONDeserializer.deserialize(json, config) }
     }
 
     @Test fun `should select correct companion object fromJSON function`() {
@@ -115,7 +137,7 @@ class JSONDeserializerTest {
 
     @Test fun `should fail deserializing null for non-nullable String`() {
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(stringType, null) }.let {
-            expect("Can't deserialize null as String") { it.message }
+            expect("Can't deserialize null as kotlin.String") { it.message }
         }
     }
 
@@ -325,27 +347,29 @@ class JSONDeserializerTest {
     @Test fun `should give error message with pointer`() {
         val json = JSON.parse("""{"field1":"abc","field2":"def"}""")
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<Dummy1>(json) }.let {
-            expect("Can't deserialize \"def\" as Int at /field2") { it.message }
+            expect("Can't deserialize \"def\" as kotlin.Int at /field2") { it.message }
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<Dummy1>>(JSONArray.of(json)) }.let {
-            expect("Can't deserialize \"def\" as Int at /0/field2") { it.message }
+            expect("Can't deserialize \"def\" as kotlin.Int at /0/field2") { it.message }
         }
     }
 
     @Test fun `should give expanded error message with pointer`() {
         val json = JSON.parse("""{"field2":1}""")
+        val className = Dummy1::class.qualifiedName
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<Dummy1>(json) }.let {
-            expect("Can't create Dummy1; missing: field1") { it.message }
+            expect("Can't create $className; missing: field1") { it.message }
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<Dummy1>>(JSONArray.of(json)) }.let {
-            expect("Can't create Dummy1; missing: field1 at /0") { it.message }
+            expect("Can't create $className; missing: field1 at /0") { it.message }
         }
     }
 
     @Test fun `should give expanded error message for multiple constructors`() {
         val json = JSON.parse("""[{"aaa":"X"},{"bbb":1},{"ccc":true,"ddd":0}]""")
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<MultiConstructor>>(json) }.let {
-            expect("Can't locate constructor for MultiConstructor; properties: ccc, ddd at /2") { it.message }
+            val className = MultiConstructor::class.qualifiedName
+            expect("Can't locate constructor for $className; properties: ccc, ddd at /2") { it.message }
         }
     }
 
@@ -381,7 +405,7 @@ class JSONDeserializerTest {
         assertFailsWith<JSONKotlinException> {
             JSONDeserializer.deserializeNonNullable<Dummy1>(json, config)
         }.let {
-            expect("Can't deserialize null as Dummy1") { it.message }
+            expect("Can't deserialize null as ${Dummy1::class.qualifiedName}") { it.message }
         }
     }
 
