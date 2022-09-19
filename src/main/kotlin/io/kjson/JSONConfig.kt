@@ -412,11 +412,12 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
     ) {
         if (mappings.isEmpty())
             fatal("Illegal polymorphic mapping - list is empty")
-        for (mapping in mappings)
+        val mappingClass = mappings[0].first::class
+        for (mapping in mappings) {
+            if (mapping.first::class != mappingClass)
+                fatal("Illegal polymorphic mapping - discriminator values must be same type")
             if (!mapping.second.isSubtypeOf(type))
                 fatal("Illegal polymorphic mapping - ${mapping.second} is not a sub-type of $type")
-        val mappingClass = mappings.fold(Any::class) { a: KClass<*>, b ->
-            if (b.first::class.isSubclassOf(a)) b.first::class else a
         }
         fromJSON(type) { jsonValue ->
             if (jsonValue !is JSONObject || !discriminator.existsIn(jsonValue))

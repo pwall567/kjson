@@ -2,6 +2,11 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [3.5] - 2022-09-19
+### Changed
+- `pom.xml`: updated version of `kjson-core`
+- `JSONConfig`: simplified recent changes to `fromJSONPolymorphic`
+
 ## [3.4] - 2022-09-15
 ### Changed
 - `JSONConfig`, `JSONDeserializer`: added `fromJSONObject`, `fromJSONArray`; extended `fromJSONString`
