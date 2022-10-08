@@ -190,6 +190,15 @@ deserialized in the normal manner, and this function recursively invokes the mai
 lambda is executed with the current `JSONConfig` as receiver, so `this` in this case passes the config on to the nested
 deserialization).
 
+If it is necessary to add settings to the `JSONConfig` used in nested calls, the `copy` function may be used:
+```kotlin
+        val nestedConfig = this.copy {
+            allowExtra = true
+        }
+        val address: Address? = json["address"]?.fromJSONValue(nestedConfig)
+```
+The copy will have the same setting as the original, except for those explicitly modified.
+
 ### `fromJSONString`
 
 To specify that a string is input to the custom deserialization (avoiding the need to check the type), the
@@ -234,4 +243,4 @@ object:
 ```
 In this example, a property located by the pointer "`/type/name`" will be tested against the values specified.
 
-2022-09-15
+2022-10-09

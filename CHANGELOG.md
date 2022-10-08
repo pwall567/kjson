@@ -2,7 +2,7 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [Unreleased]
+## [3.6] - 2022--10-09
 ### Changed
 - tests: added tests for value classes
 - `JSONConfig`: added `copy` function
