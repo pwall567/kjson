@@ -50,6 +50,7 @@ import io.kjson.testclasses.DummyWithCustomNameAnnotation
 import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.Super
+import io.kjson.testclasses.ValueClassHolder
 
 import net.pwall.util.ImmutableMap
 import net.pwall.util.ImmutableMapEntry
@@ -253,6 +254,16 @@ class JSONDeserializerObjectTest {
             )
         )
         expect(immutableMap) { json.deserialize<ImmutableMap<String, Int>>() }
+    }
+
+    @Test fun `should deserialize into value class`() {
+        val json = JSONObject.build {
+            add("innerValue", "abc")
+            add("number", 123)
+        }
+        val valueClassHolder = json.deserialize<ValueClassHolder>() ?: fail()
+        expect("abc") { valueClassHolder.innerValue.string }
+        expect(123) { valueClassHolder.number }
     }
 
 }

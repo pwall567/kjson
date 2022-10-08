@@ -82,6 +82,8 @@ import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.ListEnum
 import io.kjson.testclasses.NotANumber
 import io.kjson.testclasses.Organization
+import io.kjson.testclasses.ValueClass
+import io.kjson.testclasses.ValueClassHolder
 
 class JSONStringifyTest {
 
@@ -790,6 +792,14 @@ class JSONStringifyTest {
             property("field1", "Testing...")
             property("field2", 999)
         }
+    }
+
+    @Test fun `should stringify value class`() {
+        val holder = ValueClassHolder(
+            innerValue = ValueClass("xyz"),
+            number = 999
+        )
+        expect("""{"innerValue":{"string":"xyz"},"number":999}""") { holder.stringifyJSON() }
     }
 
 }

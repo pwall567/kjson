@@ -81,9 +81,9 @@ object JSONStringify {
     fun stringify(obj: Any?, config: JSONConfig = JSONConfig.defaultConfig): String {
         return when (obj) {
             null -> "null"
-            else -> StringBuilder(config.stringifyInitialSize).apply {
+            else -> buildString(config.stringifyInitialSize) {
                 appendJSON(obj, config)
-            }.toString()
+            }
         }
     }
 

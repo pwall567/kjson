@@ -93,6 +93,8 @@ import io.kjson.testclasses.ListEnum
 import io.kjson.testclasses.NestedDummy
 import io.kjson.testclasses.NotANumber
 import io.kjson.testclasses.Organization
+import io.kjson.testclasses.ValueClass
+import io.kjson.testclasses.ValueClassHolder
 
 class JSONSerializerTest {
 
@@ -938,6 +940,23 @@ class JSONSerializerTest {
             expect(JSONInt(987)) { get(0) }
             expect(JSONInt(654)) { get(1) }
             expect(JSONInt(321)) { get(2) }
+        }
+    }
+
+    @Test fun `should serialize value class`() {
+        val holder = ValueClassHolder(
+            innerValue = ValueClass("xyz"),
+            number = 999
+        )
+        with(JSONSerializer.serialize(holder)) {
+            assertTrue(this is JSONObject)
+            expect(2) { size }
+            with(get("innerValue")) {
+                assertTrue(this is JSONObject)
+                expect(1) { size }
+                expect(JSONString("xyz")) { get("string") }
+            }
+            expect(JSONInt(999)) { get("number") }
         }
     }
 

@@ -359,7 +359,7 @@ object JSONDeserializer {
     @Suppress("UNCHECKED_CAST")
     private fun <T : Any> deserializeNumber(
         resultClass: KClass<T>,
-        number: JSONNumberValue,
+        number: JSONNumber,
         pointer: JSONPointer,
     ): T {
         try {

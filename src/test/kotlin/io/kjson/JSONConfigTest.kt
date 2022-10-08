@@ -560,4 +560,17 @@ class JSONConfigTest {
         expect(options) { config2.parseOptions }
     }
 
+    @Test fun `should copy config with specified changes`() {
+        val config = JSONConfig {
+            stringifyInitialSize = 256
+            sealedClassDiscriminator = "?"
+        }
+        val copyConfig = config.copy {
+            stringifyInitialSize = 128
+        }
+        expect(128) { copyConfig.stringifyInitialSize }
+        expect("?") { copyConfig.sealedClassDiscriminator }
+        expect(256) { config.stringifyInitialSize }
+    }
+
 }

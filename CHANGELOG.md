@@ -2,6 +2,12 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [Unreleased]
+### Changed
+- tests: added tests for value classes
+- `JSONConfig`: added `copy` function
+- `pom.xml`: updated versions of `kjson-core` and `kjson-pointer`
+
 ## [3.5] - 2022-09-19
 ### Changed
 - `pom.xml`: updated version of `kjson-core`

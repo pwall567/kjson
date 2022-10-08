@@ -616,6 +616,16 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
         toJSONMap.putAll(config.toJSONMap)
     }
 
+    /**
+     * Create a copy of this `JSONConfig` with changes specified in a lambda.
+     *
+     * @param   configurator    the configuration lambda
+     */
+    fun copy(configurator: JSONConfig.() -> Unit = {}): JSONConfig = JSONConfig().also {
+        it.combineAll(this)
+        it.apply(configurator)
+    }
+
     companion object {
 
         val stringType = String::class.createType()

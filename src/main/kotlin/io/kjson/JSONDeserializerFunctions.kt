@@ -115,7 +115,7 @@ object JSONDeserializerFunctions {
     private fun KClass<*>.isNumberClass() = this.isSubclassOf(Number::class) || this == UInt::class ||
             this == ULong::class || this == UShort::class || this == UByte::class
 
-    fun JSONNumberValue.toBigInteger(): BigInteger = when (this) {
+    fun JSONNumber.toBigInteger(): BigInteger = when (this) {
         is JSONDecimal -> value.toBigInteger()
         is JSONLong -> BigInteger.valueOf(value)
         is JSONInt -> BigInteger.valueOf(toLong())
