@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [3.8] - 2022-10-16
+### Changed
+- `pom.xml`: updated version of `kjson-pointer` again
+
 ## [3.7] - 2022-10-11
 ### Changed
 - `pom.xml`: updated version of `kjson-pointer`
