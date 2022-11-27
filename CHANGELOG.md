@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [4.0] - 2022-11-27
+### Changed
+- `pom.xml`: updated versions of `kjson-core` and `kjson-pointer` (potential breaking change)
+
 ## [3.10] - 2022-11-20
 ### Changed
 - `pom.xml`: updated multiple dependency versions

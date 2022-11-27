@@ -156,7 +156,7 @@ object JSONDeserializerFunctions {
         if (!tm.match('-'))
             calendarError(tm)
         calendar.set(Calendar.DAY_OF_MONTH, tm.decimalField(JSONValidation.monthLength(year, month), 1))
-        if (tm.matchAny("Tt")) {
+        if (tm.match { it == 'T' || it == 't' }) {
             calendar.set(Calendar.HOUR_OF_DAY, tm.decimalField(23))
             if (!tm.match(':'))
                 calendarError(tm)
@@ -175,11 +175,11 @@ object JSONDeserializerFunctions {
                 }
                 calendar.set(Calendar.MILLISECOND, millis)
             }
-            if (tm.matchAny("Zz")) {
+            if (tm.match { it == 'Z' || it == 'z' }) {
                 calendar.timeZone = TimeZone.getTimeZone("GMT")
                 calendar.set(Calendar.ZONE_OFFSET, 0)
             }
-            else if (tm.matchAny("+-")) {
+            else if (tm.match { it == '+' || it == '-' }) {
                 val sb = StringBuilder("GMT")
                 val sign = tm.resultChar
                 sb.append(sign)
