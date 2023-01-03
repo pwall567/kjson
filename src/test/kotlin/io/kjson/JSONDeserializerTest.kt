@@ -74,7 +74,7 @@ class JSONDeserializerTest {
 
     @Test fun `should throw exception when non-null function called with null`() {
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserializeNonNull(String::class, null) }.let {
-            expect("Can't deserialize null as kotlin.String") { it.message }
+            expect("Can't deserialize null as String") { it.message }
         }
     }
 
@@ -347,10 +347,10 @@ class JSONDeserializerTest {
     @Test fun `should give error message with pointer`() {
         val json = JSON.parse("""{"field1":"abc","field2":"def"}""")
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<Dummy1>(json) }.let {
-            expect("Can't deserialize \"def\" as kotlin.Int at /field2") { it.message }
+            expect("Can't deserialize \"def\" as Int at /field2") { it.message }
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<Dummy1>>(JSONArray.of(json)) }.let {
-            expect("Can't deserialize \"def\" as kotlin.Int at /0/field2") { it.message }
+            expect("Can't deserialize \"def\" as Int at /0/field2") { it.message }
         }
     }
 

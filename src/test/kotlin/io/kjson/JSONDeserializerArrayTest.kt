@@ -94,7 +94,7 @@ class JSONDeserializerArrayTest {
             add(false)
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(BooleanArray::class, json) }.let {
-            expect("Can't deserialize 123 as kotlin.Boolean at /0") { it.message }
+            expect("Can't deserialize 123 as Boolean at /0") { it.message }
         }
     }
 
@@ -155,7 +155,7 @@ class JSONDeserializerArrayTest {
             add(321321)
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(IntArray::class, json) }.let {
-            expect("Can't deserialize \"12345\" as kotlin.Int at /0") { it.message }
+            expect("Can't deserialize \"12345\" as Int at /0") { it.message }
         }
     }
 
@@ -166,7 +166,7 @@ class JSONDeserializerArrayTest {
             add(321321)
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(IntArray::class, json) }.let {
-            expect("Can't deserialize 0.125 as kotlin.Int at /1") { it.message }
+            expect("Can't deserialize 0.125 as Int at /1") { it.message }
         }
     }
 

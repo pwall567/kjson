@@ -237,7 +237,7 @@ object JSONDeserializer {
             return config.applyFromJSON(it, json, pointer, resultClass) as T
         }
         if (json == null)
-            fatal("Can't deserialize null as ${resultClass.qualifiedName}")
+            fatal("Can't deserialize null as ${resultClass.displayName()}")
         return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, pointer, config)
     }
 
@@ -345,7 +345,7 @@ object JSONDeserializer {
                 if (resultClass.isSuperclassOf(Boolean::class))
                     json.value as T
                 else
-                    fatal("Can't deserialize Boolean as ${resultClass.qualifiedName}", pointer)
+                    fatal("Can't deserialize $json as ${resultClass.displayName()}", pointer)
             }
             is JSONString -> deserializeString(resultClass, json.value, pointer)
             is JSONInt -> deserializeNumber(resultClass, json, pointer)
@@ -395,13 +395,13 @@ object JSONDeserializer {
                     }
                 }
             }
-            fatal("Can't deserialize $number as ${resultClass.qualifiedName}", pointer)
+            fatal("Can't deserialize $number as ${resultClass.displayName()}", pointer)
         }
         catch (e: JSONException) {
             throw e
         }
         catch (e: Exception) {
-            fatal("Error deserializing $number as ${resultClass.qualifiedName}", pointer, e)
+            fatal("Error deserializing $number as ${resultClass.displayName()}", pointer, e)
         }
     }
 
@@ -457,10 +457,10 @@ object JSONDeserializer {
             throw e
         }
         catch (e: Exception) {
-            fatal("Error deserializing \"$str\" as ${resultClass.qualifiedName}", pointer, e)
+            fatal("Error deserializing \"$str\" as ${resultClass.displayName()}", pointer, e)
         }
 
-        fatal("Can't deserialize \"$str\" as ${resultClass.qualifiedName}", pointer)
+        fatal("Can't deserialize \"$str\" as ${resultClass.displayName()}", pointer)
     }
 
     @Suppress("UNCHECKED_CAST", "IMPLICIT_CAST_TO_ANY")
@@ -599,7 +599,7 @@ object JSONDeserializer {
                         call(LinkedHashSet<Any?>(json.size).apply {
                             fillFromJSON(resultType, json, type, pointer, config)
                         })
-                    } ?: fatal("Can't deserialize array as ${resultClass.qualifiedName}", pointer)
+                    } ?: fatal("Can't deserialize array as ${resultClass.displayName()}", pointer)
                 }
             }
         } as T
@@ -857,5 +857,8 @@ object JSONDeserializer {
 
     private fun KType.classifierAsClass(target: KType, pointer: JSONPointer): KClass<*> =
             classifier as? KClass<*> ?: fatal("Can't create $target - insufficient type information", pointer)
+
+    private fun KClass<*>.displayName() =
+            qualifiedName?.let { if (it.startsWith("kotlin.") && it.indexOf('.', 7) < 0) it.substring(7) else it }
 
 }

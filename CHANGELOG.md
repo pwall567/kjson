@@ -2,6 +2,11 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [4.1] - 2023-01-03
+### Changed
+- `JSONDeserializer`: minor improvements to error messages
+- `pom.xml`: updated multiple dependency versions
+
 ## [4.0] - 2022-11-27
 ### Changed
 - `pom.xml`: updated versions of `kjson-core` and `kjson-pointer` (potential breaking change)
