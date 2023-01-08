@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [4.2] - 2023-01-08
+### Changed
+- `pom.xml`: updated multiple dependency versions
+
 ## [4.1] - 2023-01-03
 ### Changed
 - `JSONDeserializer`: minor improvements to error messages
