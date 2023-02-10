@@ -30,9 +30,9 @@ import kotlin.test.expect
 
 import java.math.BigDecimal
 import java.math.BigInteger
+
 import io.kjson.testclasses.ConstructBigDecimal
 import io.kjson.testclasses.ConstructBigInteger
-
 import io.kjson.testclasses.ConstructByte
 import io.kjson.testclasses.ConstructDouble
 import io.kjson.testclasses.ConstructFloat

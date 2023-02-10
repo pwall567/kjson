@@ -51,7 +51,6 @@ import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.Super
 import io.kjson.testclasses.ValueClassHolder
-
 import net.pwall.util.ImmutableMap
 import net.pwall.util.ImmutableMapEntry
 

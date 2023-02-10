@@ -42,6 +42,7 @@ import java.util.stream.DoubleStream
 import java.util.stream.IntStream
 import java.util.stream.LongStream
 import java.util.stream.Stream
+
 import io.kjson.Constants.arrayListStringType
 import io.kjson.Constants.hashSetStringType
 import io.kjson.Constants.jsonArrayString
@@ -55,11 +56,9 @@ import io.kjson.Constants.setStringType
 import io.kjson.Constants.stringTypeProjection
 import io.kjson.Constants.tripleStringIntStringType
 import io.kjson.Constants.tripleStringStringStringType
-
 import io.kjson.testclasses.DummyList
 import io.kjson.testclasses.JavaClass1
 import io.kjson.testclasses.JavaClass2
-
 import net.pwall.util.ImmutableCollection
 import net.pwall.util.ImmutableList
 import net.pwall.util.ImmutableSet
