@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerObjectTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,7 @@ import kotlin.test.expect
 import kotlin.test.fail
 
 import java.time.LocalDate
+import java.util.UUID
 
 import io.kjson.Constants.jsonObjectInt
 import io.kjson.Constants.linkedHashMapStringIntType
@@ -50,6 +51,7 @@ import io.kjson.testclasses.DummyWithCustomNameAnnotation
 import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.Super
+import io.kjson.testclasses.TypeAliasData
 import io.kjson.testclasses.ValueClassHolder
 import net.pwall.util.ImmutableMap
 import net.pwall.util.ImmutableMapEntry
@@ -263,6 +265,50 @@ class JSONDeserializerObjectTest {
         val valueClassHolder = json.deserialize<ValueClassHolder>() ?: fail()
         expect("abc") { valueClassHolder.innerValue.string }
         expect(123) { valueClassHolder.number }
+    }
+
+    @Test fun `should deserialize into typealias Map`() {
+        val json = JSONObject.build {
+            add("aaa", "ttt")
+            add("bbb", JSONObject.build {
+                add("alpha", 111)
+                add("beta", 222)
+            })
+        }
+        val obj: TypeAliasData = json.deserialize() ?: fail()
+        expect("ttt") { obj.aaa }
+        with(obj.bbb) {
+            expect(2) { size }
+            expect(111) { this["alpha"] }
+            expect(222) { this["beta"] }
+        }
+    }
+
+    @Test fun `should deserialize into complex Map`() {
+        val uuid = UUID.fromString("35c94940-acfe-11ed-89a2-b30027b2e14c")
+        val json = JSONObject.build {
+            add(uuid.toString(), "2023-02-15")
+        }
+        val map: Map<UUID, LocalDate> = json.deserialize() ?: fail()
+        expect(LocalDate.of(2023, 2, 15)) { map[uuid] }
+    }
+
+    @Test fun `should deserialize into even more complex Map`() {
+        val config = JSONConfig {
+            fromJSONString<ObscureCase> {
+                ObscureCase(it.value.toInt())
+            }
+        }
+        val json = JSONObject.build {
+            add("12345", "works")
+        }
+        val map: Map<ObscureCase, String> = json.deserialize(config) ?: fail()
+        expect("works") { map[ObscureCase(12345)] }
+    }
+
+    class ObscureCase(val value: Int) {
+        override fun equals(other: Any?): Boolean = other is ObscureCase && value == other.value
+        override fun hashCode(): Int = value.hashCode()
     }
 
 }

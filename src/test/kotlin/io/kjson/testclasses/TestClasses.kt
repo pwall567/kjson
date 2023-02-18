@@ -312,3 +312,10 @@ data class ConstructFloat(val v: Float)
 data class ConstructBigDecimal(val v: BigDecimal)
 
 data class ConstructBigInteger(val v: BigInteger)
+
+typealias MapStringInt = Map<String, Int>
+
+data class TypeAliasData(
+    val aaa: String,
+    val bbb: MapStringInt,
+)

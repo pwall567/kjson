@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [Unreleased]
+### Changed
+- `JSONDeserializer`: fixed obscure bugs in deserialization of classes implementing `Map` interface
+
 ## [4.2] - 2023-01-08
 ### Changed
 - `pom.xml`: updated multiple dependency versions

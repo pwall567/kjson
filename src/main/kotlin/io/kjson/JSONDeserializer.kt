@@ -2,7 +2,7 @@
  * @(#) JSONDeserializer.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -94,6 +94,7 @@ import io.kjson.pointer.JSONPointer
 object JSONDeserializer {
 
     private val anyQType = Any::class.createType(emptyList(), true)
+    private val stringType = String::class.createType(emptyList(), false)
 
     /**
      * Deserialize a parsed [JSONValue] to a specified [KType].
@@ -157,8 +158,7 @@ object JSONDeserializer {
             return config.applyFromJSON(it, json, JSONPointer.root, resultType) ?:
                     fatal("Can't deserialize null as $resultType")
         }
-        val classifier = resultType.classifier as? KClass<*> ?:
-                fatal("Can't deserialize $resultType", JSONPointer.root)
+        val classifier = resultType.classifier as? KClass<*> ?: fatal("Can't deserialize $resultType", JSONPointer.root)
         return deserialize(resultType, classifier, resultType.arguments, json, JSONPointer.root, config)
     }
 
@@ -503,9 +503,12 @@ object JSONDeserializer {
             List::class,
             MutableList::class,
             Iterable::class,
-            Any::class,
             ArrayList::class -> ArrayList<Any?>(json.size).apply {
                 fillFromJSON(resultType, json, getTypeParam(types), pointer, config)
+            }
+
+            Any::class -> ArrayList<Any?>(json.size).apply {
+                fillFromJSON(resultType, json, anyQType, pointer, config)
             }
 
             LinkedList::class -> LinkedList<Any?>().apply {
@@ -647,14 +650,12 @@ object JSONDeserializer {
                 LinkedHashMap::class -> return deserializeMap(resultType, LinkedHashMap(json.size), types, json,
                         pointer, config) as T
             }
-        }
-
-        // If the target class has a constructor that takes a single Map parameter, create a Map and invoke that
-        // constructor.  This should catch the less frequently used Map classes.
-
-        resultClass.constructors.find { it.hasSingleParameter(Map::class) }?.apply {
-            return call(deserializeMap(resultType, LinkedHashMap(json.size), parameters[0].type.arguments, json,
+            // If the target class has a constructor that takes a single Map parameter, create a Map and invoke that
+            // constructor.  This should catch the less frequently used Map classes.
+            resultClass.constructors.find { it.hasSingleParameter(Map::class) }?.apply {
+                return call(deserializeMap(resultType, LinkedHashMap(json.size), parameters[0].type.arguments, json,
                     pointer, config))
+            }
         }
 
         val jsonCopy = LinkedHashMap(json)
@@ -676,6 +677,10 @@ object JSONDeserializer {
             return setRemainingFields(resultType, resultClass, it, json, pointer, config)
         }
 
+        if (resultClass == Any::class)
+            return deserializeMap(resultType, LinkedHashMap(json.size), stringType, anyQType, json, pointer,
+                config) as T
+
         if (resultClass.isSuperclassOf(Map::class))
             return deserializeMap(resultType, LinkedHashMap(json.size), types, json, pointer, config) as T
 
@@ -686,8 +691,13 @@ object JSONDeserializer {
                 val paramName = findParameterName(parameter, config) ?: "param$i"
                 if (!config.hasIgnoreAnnotation(parameter.annotations)) {
                     if (jsonCopy.containsKey(paramName)) {
-                        argMap[parameter] = deserializeNested(resultType, parameter.type, jsonCopy[paramName],
-                                pointer.child(paramName), config)
+                        argMap[parameter] = deserializeNested(
+                            enclosingType = resultType,
+                            resultType = parameter.type,
+                            json = jsonCopy[paramName],
+                            pointer = pointer.child(paramName),
+                            config = config,
+                        )
                     }
                     else {
                         if (!parameter.isOptional) {
@@ -730,12 +740,36 @@ object JSONDeserializer {
         pointer: JSONPointer,
         config: JSONConfig,
     ): MutableMap<Any, Any?> {
-        val keyClass = getTypeParam(types, 0).applyTypeParameters(resultType, pointer).classifier as? KClass<*> ?:
-                fatal("Key type can not be determined for Map", pointer)
+        val keyType = getTypeParam(types, 0)
         val valueType = getTypeParam(types, 1)
+        return deserializeMap(resultType, map, keyType, valueType, json, pointer, config)
+    }
+
+    private fun deserializeMap(
+        resultType: KType,
+        map: MutableMap<Any, Any?>,
+        keyType: KType,
+        valueType: KType,
+        json: JSONObject,
+        pointer: JSONPointer,
+        config: JSONConfig,
+    ): MutableMap<Any, Any?> {
         for (entry in json.entries) {
-            map[deserializeString(keyClass, entry.key, pointer)] = deserializeNested(resultType, valueType, entry.value,
-                    pointer.child(entry.key), config)
+            val child = pointer.child(entry.key)
+            val key = deserializeNested(
+                enclosingType = resultType,
+                resultType = keyType,
+                json = JSONString(entry.key),
+                pointer = child,
+                config = config,
+            ) ?: fatal("Key can not be determined for Map", pointer)
+            map[key] = deserializeNested(
+                enclosingType = resultType,
+                resultType = valueType,
+                json = entry.value,
+                pointer = child,
+                config = config,
+            )
         }
         return map
     }
@@ -752,8 +786,13 @@ object JSONDeserializer {
             val member = findField(resultClass.members, entry.key, config)
             if (member != null) {
                 if (!config.hasIgnoreAnnotation(member.annotations)) {
-                    val value = deserializeNested(resultType, member.returnType, entry.value, pointer.child(entry.key),
-                        config)
+                    val value = deserializeNested(
+                        enclosingType = resultType,
+                        resultType = member.returnType,
+                        json = entry.value,
+                        pointer = pointer.child(entry.key),
+                        config = config,
+                    )
                     if (member is KMutableProperty<*>) {
                         val wasAccessible = member.isAccessible
                         member.isAccessible = true
