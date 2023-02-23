@@ -25,6 +25,7 @@
 
 package io.kjson
 
+import kotlin.reflect.KCallable
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
@@ -106,14 +107,27 @@ object JSONDeserializerFunctions {
     private fun KParameter.isValueParameter(valueClass: KClass<*>) =
             kind == KParameter.Kind.VALUE && (type.classifier as KClass<*>).isSuperclassOf(valueClass)
 
-    fun KFunction<*>.hasSingleParameter(paramClass: KClass<*>) =
-            parameters.size == 1 && (parameters[0].type.classifier as? KClass<*>)?.isSuperclassOf(paramClass) ?: false
+    fun KFunction<*>.hasSingleParameter(paramClass: KClass<*>): Boolean = parameters.isNotEmpty() &&
+            ((parameters[0].type.classifier as? KClass<*>)?.isSuperclassOf(paramClass) ?: false) &&
+            subsequentParametersOptional()
 
-    fun KFunction<*>.hasNumberParameter() =
-            parameters.size == 1 && (parameters[0].type.classifier as? KClass<*>)?.isNumberClass() ?: false
+    fun KFunction<*>.hasNumberParameter(): Boolean = parameters.isNotEmpty() &&
+            ((parameters[0].type.classifier as? KClass<*>)?.isNumberClass() ?: false) &&
+            subsequentParametersOptional()
+
+    private fun KFunction<*>.subsequentParametersOptional(): Boolean {
+        for (i in 1 until parameters.size)
+            if (!parameters[i].isOptional)
+                return false
+        return true
+    }
 
     private fun KClass<*>.isNumberClass() = this.isSubclassOf(Number::class) || this == UInt::class ||
             this == ULong::class || this == UShort::class || this == UByte::class
+
+    fun <T> KCallable<T>.callWithSingle(parameters: List<KParameter>, arg: Any?): T {
+        return if (parameters.size == 1) call(arg) else callBy(mapOf(parameters[0] to arg))
+    }
 
     fun JSONNumber.toBigInteger(): BigInteger = when (this) {
         is JSONDecimal -> value.toBigInteger()

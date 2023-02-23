@@ -143,14 +143,16 @@ required to represent all levels of the object.
 
 Deserialization of classes other than those listed above is possibly the most complex aspect of the `kjson` library.
 
-If the JSON is a string and the target class has a constructor that takes a single string parameter, that constructor is
-invoked and the resulting object returned (this is the mechanism used internally for classes such as `StringBuilder` and
-`URL`, but it may also be employed for user-defined classes).
+If the JSON is a string and the target class has a constructor that takes a single string parameter (possibly with
+additional parameters provided they have default values), that constructor is invoked and the resulting object returned
+(this is the mechanism used internally for classes such as `StringBuilder` and `URL`, but it may also be employed for
+user-defined classes).
 
 If the target class has a constructor that takes a single numeric parameter (where numeric in this context means a class
 that derives from the system class `Number` &ndash; like `Int` or `Long` &ndash; or one of the unsigned integer classes
 `UInt`, `ULong` _etc._) and the JSON is a number that matches the parameter type, that constructor is invoked and the
 resulting object returned.
+Again, the constructor may have additional parameters provided they have default values.
 
 Otherwise, the JSON must be an object, and the deserialization functions will construct an object of the target class,
 following this pseudo-code:

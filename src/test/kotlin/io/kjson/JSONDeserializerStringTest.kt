@@ -29,6 +29,7 @@ import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.test.expect
+import kotlin.test.fail
 import kotlin.time.Duration.Companion.hours
 
 import java.math.BigDecimal
@@ -55,6 +56,7 @@ import java.util.Date
 import java.util.TimeZone
 import java.util.UUID
 
+import io.kjson.testclasses.Dummy1
 import io.kjson.testclasses.DummyEnum
 
 class JSONDeserializerStringTest {
@@ -254,6 +256,13 @@ class JSONDeserializerStringTest {
     @Test fun `should deserialize JSONString to Any`() {
         val json = JSONString("Hello!")
         expect("Hello!") { JSONDeserializer.deserializeAny(json) }
+    }
+
+    @Test fun `should use constructor with additional parameters defaulted`() {
+        val json = JSONString("Hello!")
+        val result: Dummy1 = JSONDeserializer.deserialize(json) ?: fail()
+        expect("Hello!") { result.field1 }
+        expect(999) { result.field2 }
     }
 
     companion object {

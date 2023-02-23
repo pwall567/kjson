@@ -73,6 +73,7 @@ import java.util.stream.LongStream
 import java.util.stream.Stream
 
 import io.kjson.JSON.asStringOrNull
+import io.kjson.JSONDeserializerFunctions.callWithSingle
 import io.kjson.JSONDeserializerFunctions.createUUID
 import io.kjson.JSONDeserializerFunctions.findFromJSONInvoker
 import io.kjson.JSONDeserializerFunctions.findParameterName
@@ -329,15 +330,19 @@ object JSONDeserializer {
                         findFromJSONInvoker(resultClass, json::class, companionObject)?.let {
                             return it.invoke(json, config) as T
                         }
-                    } catch (e: InvocationTargetException) {
+                    }
+                    catch (e: InvocationTargetException) {
                         fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", pointer, e.cause ?: e)
-                    } catch (e: Exception) {
+                    }
+                    catch (e: Exception) {
                         fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", pointer, e)
                     }
                 }
-            } catch (e: JSONException) {
+            }
+            catch (e: JSONException) {
                 throw e
-            } catch (_: Exception) {} // some classes don't allow getting companion object (Kotlin bug?)
+            }
+            catch (_: Exception) {} // some classes don't allow getting companion object (Kotlin bug?)
         }
 
         return when (json) {
@@ -380,18 +385,19 @@ object JSONDeserializer {
                 Any::class -> return number.value as T
                 else -> resultClass.constructors.singleOrNull { it.hasNumberParameter() }?.apply {
                     when (parameters[0].type.classifier) {
-                        Int::class -> if (number.isInt()) return call(number.toInt())
-                        Long::class -> if (number.isLong()) return call(number.toLong())
-                        Short::class -> if (number.isShort()) return call(number.toShort())
-                        Byte::class -> if (number.isByte()) return call(number.toByte())
-                        UInt::class -> if (number.isUInt()) return call(number.toUInt())
-                        ULong::class -> if (number.isULong()) return call(number.toULong())
-                        UShort::class -> if (number.isUShort()) return call(number.toUShort())
-                        UByte::class -> if (number.isUByte()) return call(number.toUByte())
-                        Double::class -> return call(number.toDouble())
-                        Float::class -> return call(number.toFloat())
-                        BigInteger::class -> if (number.isIntegral()) return call(number.toBigInteger())
-                        BigDecimal::class -> return call(number.toDecimal())
+                        Int::class -> if (number.isInt()) return callWithSingle(parameters, number.toInt())
+                        Long::class -> if (number.isLong()) return callWithSingle(parameters, number.toLong())
+                        Short::class -> if (number.isShort()) return callWithSingle(parameters, number.toShort())
+                        Byte::class -> if (number.isByte()) return callWithSingle(parameters, number.toByte())
+                        UInt::class -> if (number.isUInt()) return callWithSingle(parameters, number.toUInt())
+                        ULong::class -> if (number.isULong()) return callWithSingle(parameters, number.toULong())
+                        UShort::class -> if (number.isUShort()) return callWithSingle(parameters, number.toUShort())
+                        UByte::class -> if (number.isUByte()) return callWithSingle(parameters, number.toUByte())
+                        Double::class -> return callWithSingle(parameters, number.toDouble())
+                        Float::class -> return callWithSingle(parameters, number.toFloat())
+                        BigInteger::class ->
+                                if (number.isIntegral()) return callWithSingle(parameters, number.toBigInteger())
+                        BigDecimal::class -> return callWithSingle(parameters, number.toDecimal())
                     }
                 }
             }
@@ -446,11 +452,13 @@ object JSONDeserializer {
             // is the target class an enum?
 
             if (resultClass.isSubclassOf(Enum::class))
-                resultClass.staticFunctions.find { it.name == "valueOf" }?.let { return it.call(str) as T }
+                resultClass.staticFunctions.find { it.name == "valueOf" }?.apply { return call(str) as T }
 
             // does the target class have a public constructor that takes String? (e.g. StringBuilder, URL, ... )
 
-            resultClass.constructors.singleOrNull { it.hasSingleParameter(String::class) }?.apply { return call(str) }
+            resultClass.constructors.singleOrNull { it.hasSingleParameter(String::class) }?.apply {
+                return callWithSingle(parameters, str)
+            }
 
         }
         catch (e: JSONException) {
@@ -594,12 +602,12 @@ object JSONDeserializer {
 
                     resultClass.constructors.find { it.hasSingleParameter(List::class) }?.run {
                         val type = getTypeParam(parameters[0].type.arguments)
-                        call(ArrayList<Any?>(json.size).apply {
+                        callWithSingle(parameters, ArrayList<Any?>(json.size).apply {
                             fillFromJSON(resultType, json, type, pointer, config)
                         })
                     } ?: resultClass.constructors.find { it.hasSingleParameter(Set::class) }?.run {
                         val type = getTypeParam(parameters[0].type.arguments)
-                        call(LinkedHashSet<Any?>(json.size).apply {
+                        callWithSingle(parameters, LinkedHashSet<Any?>(json.size).apply {
                             fillFromJSON(resultType, json, type, pointer, config)
                         })
                     } ?: fatal("Can't deserialize array as ${resultClass.displayName()}", pointer)
@@ -653,8 +661,8 @@ object JSONDeserializer {
             // If the target class has a constructor that takes a single Map parameter, create a Map and invoke that
             // constructor.  This should catch the less frequently used Map classes.
             resultClass.constructors.find { it.hasSingleParameter(Map::class) }?.apply {
-                return call(deserializeMap(resultType, LinkedHashMap(json.size), parameters[0].type.arguments, json,
-                    pointer, config))
+                return callWithSingle(parameters, deserializeMap(resultType, LinkedHashMap(json.size),
+                        parameters[0].type.arguments, json, pointer, config))
             }
         }
 
@@ -684,10 +692,10 @@ object JSONDeserializer {
         if (resultClass.isSuperclassOf(Map::class))
             return deserializeMap(resultType, LinkedHashMap(json.size), types, json, pointer, config) as T
 
-        findBestConstructor(resultClass.constructors, json, config)?.let { constructor ->
+        findBestConstructor(resultClass.constructors, json, config)?.apply {
             val argMap = HashMap<KParameter, Any?>()
-            for (i in constructor.parameters.indices) {
-                val parameter = constructor.parameters[i]
+            for (i in parameters.indices) {
+                val parameter = parameters[i]
                 val paramName = findParameterName(parameter, config) ?: "param$i"
                 if (!config.hasIgnoreAnnotation(parameter.annotations)) {
                     if (jsonCopy.containsKey(paramName)) {
@@ -710,7 +718,7 @@ object JSONDeserializer {
                 }
                 jsonCopy.remove(paramName)
             }
-            return setRemainingFields(resultType, resultClass, constructor.callBy(argMap), jsonCopy, pointer, config)
+            return setRemainingFields(resultType, resultClass, callBy(argMap), jsonCopy, pointer, config)
         }
         // there is no matching constructor
         if (resultClass.constructors.size == 1) {
