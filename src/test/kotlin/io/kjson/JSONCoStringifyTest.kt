@@ -2,7 +2,7 @@
  * @(#) JSONCoStringifyTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2022 Peter Wall
+ * Copyright (c) 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -59,6 +59,7 @@ import java.util.stream.IntStream
 import java.util.stream.Stream
 
 import io.kjson.JSONCoStringify.outputJSON
+import io.kjson.optional.Opt
 import io.kjson.test.JSONExpect.Companion.expectJSON
 import io.kjson.testclasses.Circular1
 import io.kjson.testclasses.Circular2
@@ -86,7 +87,10 @@ import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.ListEnum
 import io.kjson.testclasses.NotANumber
+import io.kjson.testclasses.OptData
 import io.kjson.testclasses.Organization
+import io.kjson.testclasses.ValueClass
+import io.kjson.testclasses.ValueClassHolder
 import net.pwall.util.CoOutput
 import net.pwall.util.output
 
@@ -1050,8 +1054,42 @@ class JSONCoStringifyTest {
         circular1.ref = circular2
         circular2.ref = circular1
         assertFailsWith<JSONKotlinException> { JSONCoStringify.coStringify(circular1) { capture.accept(it) } }.let {
-            expect("Circular reference: field ref in Circular2") { it.message }
+            expect("Circular reference: property ref in Circular2") { it.message }
         }
+    }
+
+    @Test fun `should stringify value class`() = runBlocking {
+        val coCapture = CoCapture()
+        val holder = ValueClassHolder(
+            innerValue = ValueClass("xyz"),
+            number = 999,
+        )
+        coCapture.outputJSON(holder)
+        expect("""{"innerValue":{"string":"xyz"},"number":999}""") { coCapture.toString() }
+    }
+
+    @Test fun `should stringify Opt`() = runBlocking {
+        val coCapture = CoCapture()
+        coCapture.outputJSON(Opt.of(123))
+        expect("123") { coCapture.toString() }
+    }
+
+    @Test fun `should stringify Opt missing`() = runBlocking {
+        val coCapture = CoCapture()
+        coCapture.outputJSON(Opt.unset<Any>())
+        expect("""null""") { coCapture.toString() }
+    }
+
+    @Test fun `should stringify Opt property`() = runBlocking {
+        val coCapture = CoCapture()
+        coCapture.outputJSON(OptData(Opt.of(123)))
+        expect("""{"aaa":123}""") { coCapture.toString() }
+    }
+
+    @Test fun `should stringify Opt property missing`() = runBlocking {
+        val coCapture = CoCapture()
+        coCapture.outputJSON(OptData(Opt.unset()))
+        expect("""{}""") { coCapture.toString() }
     }
 
     class OutputCapture(size: Int = 256) {

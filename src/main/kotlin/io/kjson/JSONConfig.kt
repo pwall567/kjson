@@ -100,7 +100,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
     /** Switch to control whether to output non-ASCII characters or use escape sequences */
     var stringifyNonASCII = defaultStringifyNonASCII
 
-    /** Switch to control whether `json-ktor` uses streamed output */
+    /** Switch to control whether `kjson-ktor` uses streamed output */
     var streamOutput = defaultStreamOutput
 
     private val fromJSONMap: MutableMap<KType, FromJSONMapping> = LinkedHashMap()

@@ -2,7 +2,7 @@
  * @(#) JSONSerializerTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -59,6 +59,7 @@ import java.util.UUID
 import java.util.stream.IntStream
 import java.util.stream.Stream
 
+import io.kjson.optional.Opt
 import io.kjson.testclasses.Circular1
 import io.kjson.testclasses.Circular2
 import io.kjson.testclasses.Const
@@ -92,6 +93,7 @@ import io.kjson.testclasses.JavaClass1
 import io.kjson.testclasses.ListEnum
 import io.kjson.testclasses.NestedDummy
 import io.kjson.testclasses.NotANumber
+import io.kjson.testclasses.OptData
 import io.kjson.testclasses.Organization
 import io.kjson.testclasses.ValueClass
 import io.kjson.testclasses.ValueClassHolder
@@ -909,7 +911,7 @@ class JSONSerializerTest {
         circular1.ref = circular2
         circular2.ref = circular1
         assertFailsWith<JSONKotlinException> { JSONSerializer.serialize(circular1) }.let {
-            expect("Circular reference: field ref in Circular2") { it.message }
+            expect("Circular reference: property ref in Circular2") { it.message }
         }
     }
 
@@ -957,6 +959,39 @@ class JSONSerializerTest {
                 expect(JSONString("xyz")) { get("string") }
             }
             expect(JSONInt(999)) { get("number") }
+        }
+    }
+
+    @Test fun `should serialize Opt`() {
+        val opt = Opt.of(123)
+        with(JSONSerializer.serialize(opt)) {
+            assertTrue(this is JSONInt)
+            expect(123) { value }
+        }
+    }
+
+    @Test fun `should serialize Opt missing`() {
+        val opt = Opt.unset<Any>()
+        assertNull(JSONSerializer.serialize(opt))
+    }
+
+    @Test fun `should serialize Opt property`() {
+        val optData = OptData(Opt.of(123))
+        with(JSONSerializer.serialize(optData)) {
+            assertTrue(this is JSONObject)
+            expect(1) { size }
+            with(this["aaa"]) {
+                assertTrue(this is JSONInt)
+                expect(123) { value }
+            }
+        }
+    }
+
+    @Test fun `should serialize Opt property missing`() {
+        val optData = OptData(Opt.unset())
+        with(JSONSerializer.serialize(optData)) {
+            assertTrue(this is JSONObject)
+            expect(0) { size }
         }
     }
 

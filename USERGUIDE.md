@@ -4,6 +4,7 @@
 
 - [Introduction](#introduction)
 - [Type Mapping](#type-mapping)
+- [Optional Properties](#optional-properties)
 - [Configuration](#configuration)
 - [Serialize Kotlin object to String](#serialize-kotlin-object-to-string)
 - [Deserialize String to Kotlin object](#deserialize-string-to-kotlin-object)
@@ -268,6 +269,37 @@ annotation:
     @JSONIdentifier("CONST")
     data class Const(val number: Double) : Expr()
 ```
+
+## Optional Properties
+
+The library includes special handling of optional properties defined using the `Opt` class of the
+[`kjson-optional`](https://github.com/pwall567/kjson-optional) library.
+
+Take this class as an example:
+```kotlin
+data class Address(
+    val firstName: String,
+    val middleName: Opt<String> = Opt.unset(),
+    val surname: String,
+)
+```
+
+When serializing or stringifying an `Address` object, if the `middleName` is set to a `String` value, it will be added
+to the JSON as a string.
+If it is unset, the property will be omitted from the JSON object.
+
+When deserializing an `Address`, if `middleName` is present it will be expected to be a string, and will be deserialized
+as an `Opt<String>`.
+If it is not present, `Opt.unset()` will be stored in the`middleName` property of the `Address`.
+
+The above examples use `Opt<String>`, but the `Opt` may be of any type, including complex objects.
+
+The special treatment of `Opt` is relevant only when it is a property of an object, where it can be used to indicate the
+presence or absence of the property.
+In all other cases (_e.g._ as an array item, or as the main target class) the `Opt` class will serialize or deserialize
+as the parameter type class, using `null` for output of an unset value, and converting `null` on input to unset.
+
+See the [`kjson-optional`](https://github.com/pwall567/kjson-optional) library for more details.
 
 ## Configuration
 
@@ -673,4 +705,4 @@ the [Spring and `kjson`](SPRING.md) guide.
 **UPDATE:** the [`kjson-spring`](https://github.com/pwall567/kjson-spring) library now provides a simple way to
 integrate with Spring.
 
-2022-09-05
+2023-04-23

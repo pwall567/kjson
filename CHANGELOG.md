@@ -2,10 +2,13 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [Unreleased]
+## [4.3] - 2023-04-23
 ### Changed
 - `JSONDeserializer`: fixed obscure bugs in deserialization of classes implementing `Map` interface
 - `JSONDeserializer`: allow use of constructor with additional default parameters
+- `JSONDeserializer`, `JSONSerializer`, `JSONStringify`, `JSONCoStringify`: add coverage of `Opt`
+- `JSONSerializer`, `JSONStringify`, `JSONCoStringify`: change error message on circular reference
+- `pom.xml`: updated Kotlin and dependency versions
 
 ## [4.2] - 2023-01-08
 ### Changed

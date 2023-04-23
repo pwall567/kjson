@@ -2,7 +2,7 @@
  * @(#) JSONCoStringify.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2022 Peter Wall
+ * Copyright (c) 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -58,6 +58,7 @@ import io.kjson.JSONSerializerFunctions.findToJSON
 import io.kjson.JSONSerializerFunctions.isToStringClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
+import io.kjson.optional.Opt
 import net.pwall.json.JSONCoFunctions.outputChar
 import net.pwall.json.JSONCoFunctions.outputString
 import net.pwall.util.CoDateOutput.outputCalendar
@@ -95,7 +96,11 @@ object JSONCoStringify {
      * @param   config  an optional [JSONConfig] to customise the conversion
      * @param   out     the output function (`(char) -> Unit`)
      */
-    suspend fun coStringify(obj: Any?, config: JSONConfig = JSONConfig.defaultConfig, out: CoOutput) {
+    suspend fun coStringify(
+        obj: Any?,
+        config: JSONConfig = JSONConfig.defaultConfig,
+        out: CoOutput,
+    ) {
         when (obj) {
             null -> out.output("null")
             else -> out.outputJSON(obj, config)
@@ -110,11 +115,18 @@ object JSONCoStringify {
      * @param   obj     the object to be converted to JSON (`null` will be converted to `"null"`)
      * @param   config  an optional [JSONConfig] to customise the conversion
      */
-    suspend fun CoOutput.outputJSON(obj: Any?, config: JSONConfig = JSONConfig.defaultConfig) {
+    suspend fun CoOutput.outputJSON(
+        obj: Any?,
+        config: JSONConfig = JSONConfig.defaultConfig,
+    ) {
         outputJSONInternal(obj, config, mutableSetOf())
     }
 
-    private suspend fun CoOutput.outputJSONInternal(obj: Any?, config: JSONConfig, references: MutableSet<Any>) {
+    private suspend fun CoOutput.outputJSONInternal(
+        obj: Any?,
+        config: JSONConfig,
+        references: MutableSet<Any>,
+    ) {
 
         if (obj == null) {
             output("null")
@@ -155,7 +167,11 @@ object JSONCoStringify {
 
     }
 
-    private suspend fun CoOutput.outputNumber(number: Number, config: JSONConfig, references: MutableSet<Any>) {
+    private suspend fun CoOutput.outputNumber(
+        number: Number,
+        config: JSONConfig,
+        references: MutableSet<Any>,
+    ) {
         when (number) {
             is Int -> outputInt(number)
             is Long -> outputLong(number)
@@ -177,7 +193,11 @@ object JSONCoStringify {
         }
     }
 
-    private suspend fun CoOutput.outputArray(array: Array<*>, config: JSONConfig, references: MutableSet<Any>) {
+    private suspend fun CoOutput.outputArray(
+        array: Array<*>,
+        config: JSONConfig,
+        references: MutableSet<Any>,
+    ) {
         if (array.isArrayOf<Char>()) {
             outputQuoted {
                 for (i in array.indices)
@@ -191,7 +211,10 @@ object JSONCoStringify {
         }
     }
 
-    private suspend fun CoOutput.outputTypedArray(size: Int, itemFunction: suspend (Int) -> Unit) {
+    private suspend fun CoOutput.outputTypedArray(
+        size: Int,
+        itemFunction: suspend (Int) -> Unit,
+    ) {
         output('[')
         if (size > 0) {
             for (i in 0 until size) {
@@ -203,7 +226,11 @@ object JSONCoStringify {
         output(']')
     }
 
-    private suspend fun CoOutput.outputPair(pair: Pair<*, *>, config: JSONConfig, references: MutableSet<Any>) {
+    private suspend fun CoOutput.outputPair(
+        pair: Pair<*, *>,
+        config: JSONConfig,
+        references: MutableSet<Any>,
+    ) {
         output('[')
         outputJSONInternal(pair.first, config, references)
         output(',')
@@ -211,8 +238,11 @@ object JSONCoStringify {
         output(']')
     }
 
-    private suspend fun CoOutput.outputTriple(triple: Triple<*, *, *>, config: JSONConfig,
-            references: MutableSet<Any>) {
+    private suspend fun CoOutput.outputTriple(
+        triple: Triple<*, *, *>,
+        config: JSONConfig,
+        references: MutableSet<Any>,
+    ) {
         output('[')
         outputJSONInternal(triple.first, config, references)
         output(',')
@@ -222,7 +252,11 @@ object JSONCoStringify {
         output(']')
     }
 
-    private suspend fun CoOutput.outputObject(obj: Any, config: JSONConfig, references: MutableSet<Any>) {
+    private suspend fun CoOutput.outputObject(
+        obj: Any,
+        config: JSONConfig,
+        references: MutableSet<Any>,
+    ) {
         val objClass = obj::class
         if (objClass.isToStringClass() || obj is Enum<*>) {
             outputString(obj.toString(), config.stringifyNonASCII)
@@ -260,6 +294,7 @@ object JSONCoStringify {
             is MonthDay -> outputQuoted { outputMonthDay(obj) }
             is Duration -> outputQuoted { output(obj.toIsoString()) }
             is UUID -> outputQuoted { outputUUID(obj) }
+            is Opt<*> -> outputJSONInternal(obj.orNull, config, references)
             else -> {
                 references.add(obj)
                 try {
@@ -333,15 +368,19 @@ object JSONCoStringify {
                 try {
                     val v = member.getter.call(obj)
                     if (v != null && v in references)
-                        fatal("Circular reference: field ${member.name} in ${obj::class.simpleName}")
+                        fatal("Circular reference: property ${member.name} in ${obj::class.simpleName}")
                     if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls ||
                             includeAll) {
-                        if (continuation)
-                            output(',')
-                        outputString(name, config.stringifyNonASCII)
-                        output(':')
-                        outputJSONInternal(v, config, references)
-                        return true
+                        if (v is Opt<*>) {
+                            if (v.isSet) {
+                                outputObjectValue(name, v.value, config, references, continuation)
+                                return true
+                            }
+                        }
+                        else {
+                            outputObjectValue(name, v, config, references, continuation)
+                            return true
+                        }
                     }
                 }
                 catch (e: JSONException) {
@@ -358,8 +397,25 @@ object JSONCoStringify {
         return continuation
     }
 
-    private suspend fun CoOutput.outputIterator(iterator: Iterator<*>, config: JSONConfig,
-            references: MutableSet<Any>) {
+    private suspend fun CoOutput.outputObjectValue(
+        name: String,
+        value: Any?,
+        config: JSONConfig,
+        references: MutableSet<Any>,
+        continuation: Boolean,
+    ) {
+        if (continuation)
+            output(',')
+        outputString(name, config.stringifyNonASCII)
+        output(':')
+        outputJSONInternal(value, config, references)
+    }
+
+    private suspend fun CoOutput.outputIterator(
+        iterator: Iterator<*>,
+        config: JSONConfig,
+        references: MutableSet<Any>,
+    ) {
         output('[')
         if (iterator.hasNext()) {
             while (true) {
@@ -372,7 +428,11 @@ object JSONCoStringify {
         output(']')
     }
 
-    private suspend fun CoOutput.outputMap(map: Map<*, *>, config: JSONConfig, references: MutableSet<Any>) {
+    private suspend fun CoOutput.outputMap(
+        map: Map<*, *>,
+        config: JSONConfig,
+        references: MutableSet<Any>,
+    ) {
         output('{')
         map.entries.iterator().let {
             if (it.hasNext()) {
@@ -419,8 +479,11 @@ object JSONCoStringify {
         output(']')
     }
 
-    private suspend fun CoOutput.outputChannel(iterator: ChannelIterator<*>, config: JSONConfig,
-            references: MutableSet<Any>) {
+    private suspend fun CoOutput.outputChannel(
+        iterator: ChannelIterator<*>,
+        config: JSONConfig,
+        references: MutableSet<Any>,
+    ) {
         output('[')
         if (iterator.hasNext()) {
             while (true) {
@@ -433,7 +496,11 @@ object JSONCoStringify {
         output(']')
     }
 
-    private suspend fun CoOutput.outputFlow(flow: Flow<*>, config: JSONConfig, references: MutableSet<Any>) {
+    private suspend fun CoOutput.outputFlow(
+        flow: Flow<*>,
+        config: JSONConfig,
+        references: MutableSet<Any>,
+    ) {
         output('[')
         var continuation = false
         flow.collect {

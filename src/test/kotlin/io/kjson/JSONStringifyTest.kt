@@ -2,7 +2,7 @@
  * @(#) JSONStringifyTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -54,6 +54,7 @@ import java.util.stream.IntStream
 import java.util.stream.Stream
 
 import io.kjson.JSONStringify.appendJSON
+import io.kjson.optional.Opt
 import io.kjson.test.JSONExpect.Companion.expectJSON
 import io.kjson.testclasses.Circular1
 import io.kjson.testclasses.Circular2
@@ -81,6 +82,7 @@ import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.ListEnum
 import io.kjson.testclasses.NotANumber
+import io.kjson.testclasses.OptData
 import io.kjson.testclasses.Organization
 import io.kjson.testclasses.ValueClass
 import io.kjson.testclasses.ValueClassHolder
@@ -779,7 +781,7 @@ class JSONStringifyTest {
         circular1.ref = circular2
         circular2.ref = circular1
         assertFailsWith<JSONKotlinException> { JSONStringify.stringify(circular1) }.let {
-            expect("Circular reference: field ref in Circular2") { it.message }
+            expect("Circular reference: property ref in Circular2") { it.message }
         }
     }
 
@@ -797,9 +799,29 @@ class JSONStringifyTest {
     @Test fun `should stringify value class`() {
         val holder = ValueClassHolder(
             innerValue = ValueClass("xyz"),
-            number = 999
+            number = 999,
         )
         expect("""{"innerValue":{"string":"xyz"},"number":999}""") { holder.stringifyJSON() }
+    }
+
+    @Test fun `should stringify Opt`() {
+        val opt = Opt.of(123)
+        expect("123") { opt.stringifyJSON() }
+    }
+
+    @Test fun `should stringify Opt missing`() {
+        val opt = Opt.unset<Any>()
+        expect("""null""") { opt.stringifyJSON() }
+    }
+
+    @Test fun `should stringify Opt property`() {
+        val optData = OptData(Opt.of(123))
+        expect("""{"aaa":123}""") { optData.stringifyJSON() }
+    }
+
+    @Test fun `should stringify Opt property missing`() {
+        val optData = OptData(Opt.unset())
+        expect("""{}""") { optData.stringifyJSON() }
     }
 
 }

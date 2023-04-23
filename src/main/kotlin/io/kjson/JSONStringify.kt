@@ -2,7 +2,7 @@
  * @(#) JSONStringify.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -56,6 +56,7 @@ import io.kjson.JSONSerializerFunctions.findToJSON
 import io.kjson.JSONSerializerFunctions.isToStringClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
+import io.kjson.optional.Opt
 
 import net.pwall.json.JSONFunctions
 import net.pwall.util.DateOutput
@@ -238,6 +239,7 @@ object JSONStringify {
             is YearMonth -> appendQuoted { DateOutput.appendYearMonth(this, obj) }
             is MonthDay -> appendQuoted { DateOutput.appendMonthDay(this, obj) }
             is UUID -> appendQuoted { appendUUID(obj) }
+            is Opt<*> -> appendJSON(obj.orNull, config, references)
             else -> {
                 try {
                     references.add(obj)
@@ -311,15 +313,19 @@ object JSONStringify {
                 try {
                     val v = member.getter.call(obj)
                     if (v != null && v in references)
-                        fatal("Circular reference: field ${member.name} in ${obj::class.simpleName}")
+                        fatal("Circular reference: property ${member.name} in ${obj::class.simpleName}")
                     if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls ||
                             includeAll) {
-                        if (continuation)
-                            append(',')
-                        JSONFunctions.appendString(this, name, config.stringifyNonASCII)
-                        append(':')
-                        appendJSON(v, config, references)
-                        return true
+                        if (v is Opt<*>) {
+                            if (v.isSet) {
+                                appendObjectValue(name, v.value, config, references, continuation)
+                                return true
+                            }
+                        }
+                        else {
+                            appendObjectValue(name, v, config, references, continuation)
+                            return true
+                        }
                     }
                 }
                 catch (e: JSONException) {
@@ -334,6 +340,15 @@ object JSONStringify {
             }
         }
         return continuation
+    }
+
+    private fun Appendable.appendObjectValue(name: String, value: Any?, config: JSONConfig, references: MutableSet<Any>,
+            continuation: Boolean) {
+        if (continuation)
+            append(',')
+        JSONFunctions.appendString(this, name, config.stringifyNonASCII)
+        append(':')
+        appendJSON(value, config, references)
     }
 
     private fun Appendable.appendJSONIterator(iterator: Iterator<*>, config: JSONConfig, references: MutableSet<Any>) {

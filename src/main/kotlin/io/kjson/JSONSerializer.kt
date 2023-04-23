@@ -2,7 +2,7 @@
  * @(#) JSONSerializer.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -56,6 +56,7 @@ import io.kjson.JSONSerializerFunctions.findToJSON
 import io.kjson.JSONSerializerFunctions.isToStringClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
+import io.kjson.optional.Opt
 import net.pwall.util.DateOutput
 
 /**
@@ -103,6 +104,7 @@ object JSONSerializer {
             is FloatArray -> serializeTypedArray(obj.size) { JSONDecimal.of(BigDecimal(obj[it].toDouble())) }
             is DoubleArray -> serializeTypedArray(obj.size) { JSONDecimal.of(BigDecimal(obj[it])) }
             is BooleanArray -> serializeTypedArray(obj.size) { JSONBoolean.of(obj[it]) }
+            is Opt<*> -> serialize(obj.orNull, config, references)
             else -> serializeObject(obj, config, references)
         }
 
@@ -246,10 +248,14 @@ object JSONSerializer {
                 try {
                     val v = member.getter.call(obj)
                     if (v != null && v in references)
-                        fatal("Circular reference: field ${member.name} in ${obj::class.simpleName}")
+                        fatal("Circular reference: property ${member.name} in ${obj::class.simpleName}")
                     if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls ||
-                            includeAll)
-                        add(name, serialize(v, config, references))
+                            includeAll) {
+                        if (v is Opt<*>)
+                            v.ifSet { add(name, serialize(it, config, references)) }
+                        else
+                            add(name, serialize(v, config, references))
+                    }
                 }
                 catch (e: JSONException) {
                     throw e

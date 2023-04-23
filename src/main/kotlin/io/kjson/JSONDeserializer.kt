@@ -85,6 +85,7 @@ import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.JSONSerializerFunctions.isUncachedClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
+import io.kjson.optional.Opt
 import io.kjson.pointer.JSONPointer
 
 /**
@@ -127,13 +128,14 @@ object JSONDeserializer {
         config: JSONConfig = JSONConfig.defaultConfig,
     ): Any? {
         config.findFromJSONMapping(resultType)?.let { return config.applyFromJSON(it, json, pointer, resultType) }
+        val classifier = resultType.classifier as? KClass<*> ?: fatal("Can't deserialize $resultType", pointer)
         if (json == null) {
+            if (classifier == Opt::class)
+                return Opt.UNSET
             if (!resultType.isMarkedNullable)
                 fatal("Can't deserialize null as $resultType", pointer)
             return null
         }
-        val classifier = resultType.classifier as? KClass<*> ?:
-                fatal("Can't deserialize $resultType", pointer)
         return deserialize(resultType, classifier, resultType.arguments, json, pointer, config)
     }
 
@@ -197,7 +199,7 @@ object JSONDeserializer {
             return config.applyFromJSON(it, json, JSONPointer.root, resultClass) as T?
         }
         if (json == null)
-            return null
+            return if (resultClass == Opt::class) Opt.UNSET as T else null
         return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, JSONPointer.root, config)
     }
 
@@ -320,6 +322,11 @@ object JSONDeserializer {
 
         if (resultClass.isSubclassOf(JSONValue::class) && resultClass.isSuperclassOf(json::class))
             return json as T
+
+        // is it Opt?
+
+        if (resultClass == Opt::class)
+            return Opt.ofNullable(deserializeNested(resultType, getTypeParam(types), json, pointer, config)) as T
 
         // does the target class companion object have a "fromJSON()" method?
 
@@ -699,20 +706,33 @@ object JSONDeserializer {
                 val paramName = findParameterName(parameter, config) ?: "param$i"
                 if (!config.hasIgnoreAnnotation(parameter.annotations)) {
                     if (jsonCopy.containsKey(paramName)) {
-                        argMap[parameter] = deserializeNested(
-                            enclosingType = resultType,
-                            resultType = parameter.type,
-                            json = jsonCopy[paramName],
-                            pointer = pointer.child(paramName),
-                            config = config,
-                        )
+                        argMap[parameter] = if (parameter.type.classifier == Opt::class) {
+                            val value = deserializeNested(
+                                enclosingType = resultType,
+                                resultType = getTypeParam(parameter.type.arguments),
+                                json = jsonCopy[paramName],
+                                pointer = pointer.child(paramName),
+                                config = config,
+                            )
+                            Opt.of(value)
+                        }
+                        else {
+                            deserializeNested(
+                                enclosingType = resultType,
+                                resultType = parameter.type,
+                                json = jsonCopy[paramName],
+                                pointer = pointer.child(paramName),
+                                config = config,
+                            )
+                        }
                     }
                     else {
                         if (!parameter.isOptional) {
-                            if (parameter.type.isMarkedNullable)
-                                argMap[parameter] = null
-                            else
-                                fatal("Can't create $resultClass - missing property $paramName", pointer)
+                            argMap[parameter] = when {
+                                parameter.type.classifier == Opt::class -> Opt.UNSET
+                                parameter.type.isMarkedNullable -> null
+                                else -> fatal("Can't create $resultClass - missing property $paramName", pointer)
+                            }
                         }
                     }
                 }
@@ -857,11 +877,11 @@ object JSONDeserializer {
 
     private fun findMatchingParameters(parameters: List<KParameter>, json: JSONObject, config: JSONConfig): Int {
         var n = 0
-        for (parameter in parameters) {
-            if (json.containsKey(findParameterName(parameter, config)))
+        for (param in parameters) {
+            if (json.containsKey(findParameterName(param, config)))
                 n++
             else {
-                if (!(parameter.isOptional || parameter.type.isMarkedNullable))
+                if (!(param.isOptional || param.type.isMarkedNullable || param.type.classifier == Opt::class))
                     return -1
             }
         }

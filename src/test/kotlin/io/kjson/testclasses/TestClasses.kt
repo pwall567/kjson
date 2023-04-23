@@ -2,7 +2,7 @@
  * @(#) TestClasses.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -43,6 +43,7 @@ import io.kjson.annotation.JSONIncludeAllProperties
 import io.kjson.annotation.JSONIncludeIfNull
 import io.kjson.annotation.JSONName
 import io.kjson.fromJSONValue
+import io.kjson.optional.Opt
 
 data class Dummy1(val field1: String, val field2: Int = 999)
 
@@ -318,4 +319,12 @@ typealias MapStringInt = Map<String, Int>
 data class TypeAliasData(
     val aaa: String,
     val bbb: MapStringInt,
+)
+
+data class OptData(
+    val aaa: Opt<Int> = Opt.unset(),
+)
+
+data class OptComplexData(
+    val aaa: Opt<List<String>>,
 )
