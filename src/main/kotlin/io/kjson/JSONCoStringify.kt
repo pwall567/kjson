@@ -79,6 +79,7 @@ import net.pwall.util.CoIntOutput.outputLong
 import net.pwall.util.CoIntOutput.outputUnsignedInt
 import net.pwall.util.CoIntOutput.outputUnsignedLong
 import net.pwall.util.CoOutput
+import net.pwall.util.CoOutputFlushable
 import net.pwall.util.output
 
 /**
@@ -488,6 +489,8 @@ object JSONCoStringify {
         if (iterator.hasNext()) {
             while (true) {
                 outputJSONInternal(iterator.next(), config, references)
+                if (this is CoOutputFlushable)
+                    flush()
                 if (!iterator.hasNext())
                     break
                 output(',')
@@ -507,6 +510,8 @@ object JSONCoStringify {
             if (continuation)
                 output(',')
             outputJSONInternal(it, config, references)
+            if (this is CoOutputFlushable)
+                flush()
             continuation = true
         }
         output(']')

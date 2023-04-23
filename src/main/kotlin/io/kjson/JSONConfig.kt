@@ -79,7 +79,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
                 fatal("Stringify initial allocation size invalid - $newValue")
         }
 
-    /** Character set (for `json-ktor` and  `json-ktor-client`) */
+    /** Character set (for `kjson-ktor`) */
     var charset = defaultCharset
 
     /** Parse options (for lenient parsing) */

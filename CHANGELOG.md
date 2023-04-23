@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [4.4] - 2023-04-23
+### Changed
+- `JSONCoStringify`: auto-flush `Channel` and `Flow`
+
 ## [4.3] - 2023-04-23
 ### Changed
 - `JSONDeserializer`: fixed obscure bugs in deserialization of classes implementing `Map` interface
