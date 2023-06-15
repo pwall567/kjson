@@ -2,7 +2,7 @@
  * @(#) JSONFun.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -97,7 +97,12 @@ inline fun <reified T : Any> CharSequence.parseJSON(
 fun Reader.parseJSON(
     resultType: KType,
     config: JSONConfig = JSONConfig.defaultConfig,
-): Any? = JSONDeserializer.deserialize(resultType, callParser(readText(), config), config)
+): Any? {
+    val json = JSONStreamer(config.parseOptions).also {
+        it.accept(this)
+    }.result
+    return JSONDeserializer.deserialize(resultType, json, config)
+}
 
 /**
  * Deserialize JSON from a [Reader] to a specified [KClass].
@@ -111,7 +116,12 @@ fun Reader.parseJSON(
 fun <T : Any> Reader.parseJSON(
     resultClass: KClass<T>,
     config: JSONConfig = JSONConfig.defaultConfig,
-): T? = JSONDeserializer.deserialize(resultClass, callParser(readText(), config), config)
+): T? {
+    val json = JSONStreamer(config.parseOptions).also {
+        it.accept(this)
+    }.result
+    return JSONDeserializer.deserialize(resultClass, json, config)
+}
 
 /**
  * Deserialize JSON from a [Reader] to the inferred [KType].
