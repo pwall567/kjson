@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerStringTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,6 @@ import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.test.expect
-import kotlin.test.fail
 import kotlin.time.Duration.Companion.hours
 
 import java.math.BigDecimal
@@ -50,7 +49,6 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
-import java.util.Arrays
 import java.util.Calendar
 import java.util.Date
 import java.util.TimeZone
@@ -76,13 +74,13 @@ class JSONDeserializerStringTest {
     @Test fun `should return character array from JSONString`() {
         val json = JSONString("abcdef")
         val expected = arrayOf('a', 'b', 'c', 'd', 'e', 'f').toCharArray()
-        assertTrue(Arrays.equals(expected, JSONDeserializer.deserialize(json)))
+        assertTrue(expected.contentEquals(JSONDeserializer.deserialize(json)))
     }
 
     @Test fun `should return array of Char from JSONString`() {
         val json = JSONString("abcdef")
         val expected = arrayOf('a', 'b', 'c', 'd', 'e', 'f')
-        assertTrue(Arrays.equals(expected, JSONDeserializer.deserialize(Array<Char>::class, json)))
+        assertTrue(expected.contentEquals(JSONDeserializer.deserialize(Array<Char>::class, json)))
     }
 
     @Test fun `should return Calendar from JSONString`() {
@@ -91,7 +89,7 @@ class JSONDeserializerStringTest {
         cal.set(2019, 3, 19, 15, 34, 2) // month value is month - 1
         cal.set(Calendar.MILLISECOND, 234)
         cal.set(Calendar.ZONE_OFFSET, 10 * 60 * 60 * 1000)
-        assertTrue(calendarEquals(cal, JSONDeserializer.deserialize(json)!!))
+        assertTrue(calendarEquals(cal, JSONDeserializer.deserialize(json)))
     }
 
     @Test fun `should return Date from JSONString`() {
@@ -260,7 +258,7 @@ class JSONDeserializerStringTest {
 
     @Test fun `should use constructor with additional parameters defaulted`() {
         val json = JSONString("Hello!")
-        val result: Dummy1 = JSONDeserializer.deserialize(json) ?: fail()
+        val result: Dummy1 = JSONDeserializer.deserialize(json)
         expect("Hello!") { result.field1 }
         expect(999) { result.field2 }
     }

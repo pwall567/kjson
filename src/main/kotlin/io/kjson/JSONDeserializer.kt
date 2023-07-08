@@ -104,7 +104,7 @@ object JSONDeserializer {
      * @param   resultType  the target type
      * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
      * @param   config      an optional [JSONConfig]
-     * @return              the converted object
+     * @return              the converted object (will be `null` only if the target type is nullable)
      */
     fun deserialize(
         resultType: KType,
@@ -128,57 +128,17 @@ object JSONDeserializer {
         config: JSONConfig = JSONConfig.defaultConfig,
     ): Any? {
         config.findFromJSONMapping(resultType)?.let { return config.applyFromJSON(it, json, pointer, resultType) }
-        val classifier = resultType.classifier as? KClass<*> ?: fatal("Can't deserialize $resultType", pointer)
+        val classifier = resultType.classifier as? KClass<*> ?:
+            fatal("Can't deserialize ${resultType.displayName()}", pointer)
         if (json == null) {
             if (classifier == Opt::class)
                 return Opt.UNSET
             if (!resultType.isMarkedNullable)
-                fatal("Can't deserialize null as $resultType", pointer)
+                fatal("Can't deserialize null as ${resultType.displayName()}", pointer)
             return null
         }
         return deserialize(resultType, classifier, resultType.arguments, json, pointer, config)
     }
-
-    /**
-     * Deserialize a non-null parsed [JSONValue] to a specified non-nullable [KType].
-     *
-     * This is not to be confused with the `deserializeNonNull()` functions, which take a nullable parameter and throw
-     * an exception if it is in fact null.
-     *
-     * @param   resultType  the target type
-     * @param   json        the parsed JSON, as a [JSONValue]
-     * @param   config      an optional [JSONConfig]
-     * @return              the converted object
-     */
-    fun deserializeNonNullable(
-        resultType: KType,
-        json: JSONValue,
-        config: JSONConfig = JSONConfig.defaultConfig,
-    ): Any {
-        if (resultType.isMarkedNullable)
-            fatal("Attempt to deserialize nullable type using non-nullable function")
-        config.findFromJSONMapping(resultType)?.let {
-            return config.applyFromJSON(it, json, JSONPointer.root, resultType) ?:
-                    fatal("Can't deserialize null as $resultType")
-        }
-        val classifier = resultType.classifier as? KClass<*> ?: fatal("Can't deserialize $resultType", JSONPointer.root)
-        return deserialize(resultType, classifier, resultType.arguments, json, JSONPointer.root, config)
-    }
-
-    /**
-     * Deserialize a non-null parsed [JSONValue] to an implied non-nullable [KType].
-     *
-     * This is not to be confused with the `deserializeNonNull()` functions, which take a nullable parameter and throw
-     * an exception if it is in fact null.
-     *
-     * @param   json        the parsed JSON, as a [JSONValue]
-     * @param   config      an optional [JSONConfig]
-     * @return              the converted object
-     */
-    inline fun <reified T : Any> deserializeNonNullable(
-        json: JSONValue,
-        config: JSONConfig = JSONConfig.defaultConfig,
-    ): T = deserializeNonNullable(typeOf<T>(), json, config) as T
 
     /**
      * Deserialize a parsed [JSONValue] to a specified [KClass].
@@ -194,29 +154,15 @@ object JSONDeserializer {
         resultClass: KClass<T>,
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
-    ): T? {
+    ): T {
         config.findFromJSONMapping(resultClass)?.let {
-            return config.applyFromJSON(it, json, JSONPointer.root, resultClass) as T?
+            return config.applyFromJSON(it, json, JSONPointer.root, resultClass) as T
         }
         if (json == null)
-            return if (resultClass == Opt::class) Opt.UNSET as T else null
+            return if (resultClass == Opt::class) Opt.UNSET as T else
+                    fatal("Can't deserialize null as ${resultClass.displayName()}")
         return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, JSONPointer.root, config)
     }
-
-    /**
-     * Deserialize a parsed [JSONValue] to a specified [KClass], where the result may not be `null`.
-     *
-     * @param   resultClass the target class
-     * @param   json        the parsed JSON, as a [JSONValue]
-     * @param   config      an optional [JSONConfig]
-     * @param   T           the target class
-     * @return              the converted object
-     */
-    fun <T : Any> deserializeNonNull(
-        resultClass: KClass<T>,
-        json: JSONValue?,
-        config: JSONConfig = JSONConfig.defaultConfig,
-    ): T = deserializeNonNull(resultClass, json, JSONPointer.root, config)
 
     /**
      * Deserialize a parsed [JSONValue] to a specified [KClass], where the result may not be `null` (specifying
@@ -230,7 +176,7 @@ object JSONDeserializer {
      * @return              the converted object
      */
     @Suppress("UNCHECKED_CAST")
-    fun <T : Any> deserializeNonNull(
+    private fun <T : Any> deserializeNonNull(
         resultClass: KClass<T>,
         json: JSONValue?,
         pointer: JSONPointer,
@@ -256,7 +202,7 @@ object JSONDeserializer {
         javaType: Type,
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
-    ): Any? = deserialize(javaType.toKType(nullable = true), json, config)
+    ): Any = deserialize(javaType.toKType(), json, config) ?: fatal("Can't deserialize null as $javaType")
 
     /**
      * Deserialize a parsed [JSONValue] to an unspecified([Any]) type.  Strings will be converted to `String`, numbers
@@ -283,7 +229,7 @@ object JSONDeserializer {
     inline fun <reified T : Any> deserialize(
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
-    ): T? = deserialize(typeOf<T>(), json, config) as T?
+    ): T = deserialize(typeOf<T>(), json, config) as T
 
     private fun JSONConfig.applyFromJSON(
         fromJSONMapping: FromJSONMapping,
@@ -678,10 +624,10 @@ object JSONDeserializer {
         if (resultClass.isSealed) {
             val discriminator = resultClass.findAnnotation<JSONDiscriminator>()?.id ?: config.sealedClassDiscriminator
             val subClassName = jsonCopy[discriminator].asStringOrNull ?:
-                    fatal("No discriminator for sealed class", pointer)
+                    fatal("No discriminator for sealed class ${resultClass.displayName()}", pointer)
             val subClass = resultClass.sealedSubclasses.find {
                 (it.findAnnotation<JSONIdentifier>()?.id ?: it.simpleName) == subClassName
-            } ?: fatal("Can't find identifier $subClassName for sealed class", pointer)
+            } ?: fatal("Can't find identifier $subClassName for sealed class ${resultClass.displayName()}", pointer)
             if (findField(resultClass.members, discriminator, config) == null)
                 jsonCopy.remove(discriminator)
             return deserializeObject(subClass.createType(types, nullable = resultType.isMarkedNullable), subClass,
@@ -901,8 +847,8 @@ object JSONDeserializer {
             val enclosingClass = enclosingType.classifierAsClass(this, pointer)
             val index = enclosingClass.typeParameters.indexOfFirst { it.name == typeParameter.name }
             return enclosingType.arguments.getOrNull(index)?.type ?:
-                    enclosingClass.typeParameters.getOrNull(index)?.upperBounds?.singleOrNull() ?:
-                    fatal("Can't create $this - no type information for ${typeParameter.name}", pointer)
+            enclosingClass.typeParameters.getOrNull(index)?.upperBounds?.singleOrNull() ?:
+            fatal("Can't create ${displayName()} - no type information for ${typeParameter.name}", pointer)
         }
 
         if (arguments.isEmpty())
@@ -922,10 +868,13 @@ object JSONDeserializer {
         }, isMarkedNullable, annotations)
     }
 
-    private fun KType.classifierAsClass(target: KType, pointer: JSONPointer): KClass<*> =
-            classifier as? KClass<*> ?: fatal("Can't create $target - insufficient type information", pointer)
+    private fun KType.classifierAsClass(target: KType, pointer: JSONPointer): KClass<*> = classifier as? KClass<*> ?:
+            fatal("Can't create ${target.displayName()} - insufficient type information", pointer)
 
-    private fun KClass<*>.displayName() =
-            qualifiedName?.let { if (it.startsWith("kotlin.") && it.indexOf('.', 7) < 0) it.substring(7) else it }
+    private fun KClass<*>.displayName() = qualifiedName?.displayName()
+
+    private fun KType.displayName() = toString().displayName()
+
+    private fun String.displayName() = if (startsWith("kotlin.") && indexOf('.', 7) < 0) substring(7) else this
 
 }

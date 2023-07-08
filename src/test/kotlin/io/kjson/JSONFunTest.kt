@@ -2,7 +2,7 @@
  * @(#) JSONFunTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ import kotlin.reflect.KTypeProjection
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.starProjectedType
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.expect
 
@@ -48,6 +49,17 @@ class JSONFunTest {
         expect(expected) { json.parseJSON() }
     }
 
+    @Test fun `should parse null into nullable type`() {
+        val string: String? = "null".parseJSON()
+        assertNull(string)
+    }
+
+    @Test fun `should throw exception parsing null into non-nullable type`() {
+        assertFailsWith<JSONKotlinException> {
+            "null".parseJSON<String>()
+        }.let { expect("Can't deserialize null as String") { it.message } }
+    }
+
     @Test fun `should correctly parse string using parameterised type`() {
         val json = """{"field1":"Hi there!","field2":888}"""
         val actual = json.parseJSON<Dummy1>()
@@ -59,9 +71,21 @@ class JSONFunTest {
         expect(Dummy1("Hi there!", 888)) { json.parseJSON(Dummy1::class) }
     }
 
+    @Test fun `should throw exception parsing null into non-nullable explicit KClass`() {
+        assertFailsWith<JSONKotlinException> {
+            "null".parseJSON(String::class)
+        }.let { expect("Can't deserialize null as String") { it.message } }
+    }
+
     @Test fun `should correctly parse string using explicit KType`() {
         val json = """{"field1":"Hi there!","field2":888}"""
         expect(Dummy1("Hi there!", 888)) { json.parseJSON(Dummy1::class.starProjectedType) }
+    }
+
+    @Test fun `should throw exception parsing null into non-nullable explicit KType`() {
+        assertFailsWith<JSONKotlinException> {
+            "null".parseJSON(String::class.starProjectedType)
+        }.let { expect("Can't deserialize null as String") { it.message } }
     }
 
     @Test fun `should correctly parse from Reader`() {
@@ -206,50 +230,6 @@ class JSONFunTest {
         }
         val expected = Dummy1("abdef", 54321)
         expect(expected) { json.deserialize(Dummy1::class.java) }
-    }
-
-    @Test fun `should convert a JSONObject to a specified type using fromJSONValueNullable`() {
-        val json = JSONObject.build {
-            add("field1", "abdef")
-            add("field2", 54321)
-        }
-        val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.fromJSONValueNullable(Dummy1::class.starProjectedType) }
-        val nullValue: JSONValue? = null
-        assertNull(nullValue.fromJSONValueNullable(Dummy1::class.createType(nullable = true)))
-    }
-
-    @Test fun `should convert a JSONObject to a specified class using fromJSONValueNullable`() {
-        val json = JSONObject.build {
-            add("field1", "abdef")
-            add("field2", 54321)
-        }
-        val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.fromJSONValueNullable(Dummy1::class) }
-        val nullValue: JSONValue? = null
-        assertNull(nullValue.fromJSONValueNullable(Dummy1::class))
-    }
-
-    @Test fun `should convert a JSONObject to an implied class using fromJSONValueNullable`() {
-        val json = JSONObject.build {
-            add("field1", "abdef")
-            add("field2", 54321)
-        }
-        val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.fromJSONValueNullable() }
-        val nullValue: JSONValue? = null
-        assertNull(nullValue.fromJSONValueNullable<Dummy1?>())
-    }
-
-    @Test fun `should convert a JSONObject to a specified Java class using fromJSONValueNullable`() {
-        val json = JSONObject.build {
-            add("field1", "abdef")
-            add("field2", 54321)
-        }
-        val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.fromJSONValueNullable(Dummy1::class.java) }
-        val nullValue: JSONValue? = null
-        assertNull(nullValue.fromJSONValueNullable(Dummy1::class.java))
     }
 
     @Test fun `should convert a JSONObject to a specified type using fromJSONValue`() {

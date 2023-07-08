@@ -222,25 +222,30 @@ In this case, the result type can not be inferred from the lambda result so it m
 This function (in `JSONConfig`) provides a means of deserializing polymorphic types &ndash; an input object may be
 deserialized into one of a number of possible derived types by examining the properties of the object:
 ```kotlin
- config.fromJSONPolymorphic(Party::class, "type",
+    config.fromJSONPolymorphic<Party>("type",
         "PERSON" to typeOf<Person>(),
-        "ORGANIZATION" to typeOf<Organization>()
- )
+        "ORGANIZATION" to typeOf<Organization>(),
+    )
 ```
 In this example, the base class `Party` has two derived types `Person` and `Organization`, and the containing class
 (say, `Account`) has a reference only to the base class.
-If the object has a property named "type" with a value (string) of "PERSON", the object will be deserialized as a
-`Person`, and if the "type" property is "ORGANIZATION" the object will be deserialized as an `Organization`.
+If the object has a property named &ldquo;type&rdquo; with a value (string) of &ldquo;PERSON&rdquo;, the object will be
+deserialized as a `Person`, and if the &ldquo;type&rdquo; property is &ldquo;ORGANIZATION&rdquo; the object will be
+deserialized as an `Organization`.
 
-In some cases, the discriminator field may not be at the top level of the object.
+In some cases, the discriminator field might not be at the top level of the object.
 In this case, a `JSONPointer` may be used to specify the location of the discriminator field, relative to the root of
 object:
 ```kotlin
- config.fromJSONPolymorphic(Party::class, JSONPointer("/type/name"),
+    config.fromJSONPolymorphic<Party>(JSONPointer("/type/name"),
         "PERSON" to typeOf<Person>(),
-        "ORGANIZATION" to typeOf<Organization>()
- )
+        "ORGANIZATION" to typeOf<Organization>(),
+    )
 ```
-In this example, a property located by the pointer "`/type/name`" will be tested against the values specified.
+In this example, a property located by the pointer &ldquo;`/type/name`&rdquo; will be tested against the values
+specified.
 
-2022-10-09
+Additional versions of the function take either a `KType` or a `KClass` as the first parameter, instead of using the
+type parameter.
+
+2023-07-03

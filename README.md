@@ -7,7 +7,7 @@
 
 Reflection-based JSON serialization and deserialization for Kotlin.
 
-This library is an evolution of the [json-kotlin](https://github.com/pwall567/json-kotlin) library.
+This library is an evolution of the [`json-kotlin`](https://github.com/pwall567/json-kotlin) library.
 Users of that library should find the transition relatively painless &ndash; in most cases just a change to the
 dependency specifications and the `import` statements.
 
@@ -97,7 +97,7 @@ This can be achieved in a number of ways (the following examples assume `jsonStr
 
 The type can be inferred from the context:
 ```kotlin
-    val example: Example? = jsonString.parseJSON()
+    val example: Example = jsonString.parseJSON()
 ```
 
 The type may be specified as a type parameter:
@@ -257,25 +257,25 @@ See the [Custom Serialization and Deserialization](CUSTOM.md) guide for more inf
 
 ## Dependency Specification
 
-The latest version of the library is 4.4, and it may be obtained from the Maven Central repository.
+The latest version of the library is 5.0, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>4.4</version>
+      <version>5.0</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:4.4'
+    implementation 'io.kjson:kjson:5.0'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:4.4")
+    implementation("io.kjson:kjson:5.0")
 ```
 
 Peter Wall
 
-2023-04-23
+2023-07-07

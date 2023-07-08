@@ -94,7 +94,7 @@ class JSONDeserializerObjectTest {
         expected.extra = "XXX"
         val result = JSONDeserializer.deserialize<Dummy2>(json)
         assertEquals(expected, result)
-        assertEquals("XXX", result?.extra)
+        assertEquals("XXX", result.extra)
     }
 
     @Test fun `should return nested data class from JSONObject`() {
@@ -262,7 +262,7 @@ class JSONDeserializerObjectTest {
             add("innerValue", "abc")
             add("number", 123)
         }
-        val valueClassHolder = json.deserialize<ValueClassHolder>() ?: fail()
+        val valueClassHolder = json.deserialize<ValueClassHolder>()
         expect("abc") { valueClassHolder.innerValue.string }
         expect(123) { valueClassHolder.number }
     }
@@ -275,7 +275,7 @@ class JSONDeserializerObjectTest {
                 add("beta", 222)
             })
         }
-        val obj: TypeAliasData = json.deserialize() ?: fail()
+        val obj: TypeAliasData = json.deserialize()
         expect("ttt") { obj.aaa }
         with(obj.bbb) {
             expect(2) { size }
@@ -289,7 +289,7 @@ class JSONDeserializerObjectTest {
         val json = JSONObject.build {
             add(uuid.toString(), "2023-02-15")
         }
-        val map: Map<UUID, LocalDate> = json.deserialize() ?: fail()
+        val map: Map<UUID, LocalDate> = json.deserialize()
         expect(LocalDate.of(2023, 2, 15)) { map[uuid] }
     }
 
@@ -302,7 +302,7 @@ class JSONDeserializerObjectTest {
         val json = JSONObject.build {
             add("12345", "works")
         }
-        val map: Map<ObscureCase, String> = json.deserialize(config) ?: fail()
+        val map: Map<ObscureCase, String> = json.deserialize(config)
         expect("works") { map[ObscureCase(12345)] }
     }
 

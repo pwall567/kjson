@@ -2,7 +2,7 @@
  * @(#) JSONConfigTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -81,7 +81,7 @@ class JSONConfigTest {
         val config = JSONConfig()
         assertNull(config.findFromJSONMapping(stringType))
         assertNull(config.findFromJSONMapping(String::class))
-        config.fromJSON { json -> json?.toString() }
+        config.fromJSON { json -> json.toString() }
         assertNotNull(config.findFromJSONMapping(stringType))
         assertNotNull(config.findFromJSONMapping(String::class))
     }
@@ -428,6 +428,36 @@ class JSONConfigTest {
         }
     }
 
+    @Test fun `should distinguish between polymorphic mappings using reified type`() {
+        val config = JSONConfig {
+            fromJSONPolymorphic<PolymorphicBase>("type",
+                JSONString("TYPE1") to typeOf<PolymorphicDerived1>(),
+                JSONString("TYPE2") to typeOf<PolymorphicDerived2>()
+            )
+        }
+        expect(PolymorphicDerived1("TYPE1", 987)) {
+            """{"type":"TYPE1","extra1":987}""".parseJSON<PolymorphicBase>(config)
+        }
+        expect(PolymorphicDerived2("TYPE2", "bye")) {
+            """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config)
+        }
+    }
+
+    @Test fun `should distinguish between polymorphic mappings using reified type and JSONPointer`() {
+        val config = JSONConfig {
+            fromJSONPolymorphic<PolymorphicBase>(JSONPointer("/type"),
+                "TYPE1" to typeOf<PolymorphicDerived1>(),
+                "TYPE2" to typeOf<PolymorphicDerived2>()
+            )
+        }
+        expect(PolymorphicDerived1("TYPE1", 987)) {
+            """{"type":"TYPE1","extra1":987}""".parseJSON<PolymorphicBase>(config)
+        }
+        expect(PolymorphicDerived2("TYPE2", "bye")) {
+            """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config)
+        }
+    }
+
     @Test fun `should use multiple JSONConfig mappings`() {
         val config = JSONConfig {
             toJSON<Dummy1> { obj ->
@@ -452,7 +482,7 @@ class JSONConfigTest {
             }
             fromJSON { json ->
                 require(json is JSONObject) { "Must be JSONObject" }
-                Dummy3(JSONDeserializer.deserialize(json["dummy"].asObject, this) ?: fail(), json["text"].asString)
+                Dummy3(JSONDeserializer.deserialize(json["dummy"].asObject, this), json["text"].asString)
             }
         }
         val json1 = JSONObject.build {

@@ -2,6 +2,13 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [5.0] - 2023-07-07
+### Changed
+- `JSONDeserializer`, `JSONFun`: changed deserialization return types, removed some functions (breaking change)
+- `JSONConfig`, `JSONFun`: changed custom deserialization return types (breaking change)
+- `JSONConfig`: added version of `fromJSONPolymorphic` that takes reified type parameter
+- `pom.xml`: updated multiple dependency versions
+
 ## [4.4] - 2023-04-23
 ### Changed
 - `JSONCoStringify`: auto-flush `Channel` and `Flow`

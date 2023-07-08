@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,14 +26,12 @@
 package io.kjson
 
 import kotlin.reflect.full.createType
-import kotlin.reflect.typeOf
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.test.expect
-import kotlin.test.fail
 
 import java.math.BigDecimal
 
@@ -69,13 +67,7 @@ import io.kjson.testclasses.SealedClassContainer
 class JSONDeserializerTest {
 
     @Test fun `should return null from null input`() {
-        assertNull(JSONDeserializer.deserialize(String::class, null))
-    }
-
-    @Test fun `should throw exception when non-null function called with null`() {
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserializeNonNull(String::class, null) }.let {
-            expect("Can't deserialize null as String") { it.message }
-        }
+        assertNull(JSONDeserializer.deserialize(String::class.createType(nullable = true), null))
     }
 
     @Test fun `should pass JSONValue through unchanged`() {
@@ -137,7 +129,7 @@ class JSONDeserializerTest {
 
     @Test fun `should fail deserializing null for non-nullable String`() {
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(stringType, null) }.let {
-            expect("Can't deserialize null as kotlin.String") { it.message }
+            expect("Can't deserialize null as String") { it.message }
         }
     }
 
@@ -375,38 +367,9 @@ class JSONDeserializerTest {
 
     @Test fun `should use type projection upperBounds`() {
         val json = JSON.parse("""{"expr":{"class":"Const","number":20.0}}""")
-        val expr = JSONDeserializer.deserialize<SealedClassContainer<*>>(json)?.expr
+        val expr = JSONDeserializer.deserialize<SealedClassContainer<*>>(json).expr
         assertTrue(expr is Const)
         expect(20.0) { expr.number }
-    }
-
-    @Test fun `should use deserializeNonNullable`() {
-        val json = JSON.parse("""{"field1":"abc","field2":123}""") ?: fail()
-        val dummy1 = JSONDeserializer.deserializeNonNullable<Dummy1>(json)
-        expect("abc") { dummy1.field1 }
-    }
-
-    @Test fun `should fail on attempt to use deserializeNonNullable for nullable type`() {
-        val json = JSON.parse("""{"field1":"abc","field2":123}""") ?: fail()
-        assertFailsWith<JSONKotlinException> {
-            JSONDeserializer.deserializeNonNullable(typeOf<Dummy1?>(), json)
-        }.let {
-            expect("Attempt to deserialize nullable type using non-nullable function") { it.message }
-        }
-    }
-
-    @Test fun `should fail when custom deserialize returns null using deserializeNonNullable`() {
-        val json = JSON.parse("""{"field1":"abc","field2":123}""") ?: fail()
-        val config = JSONConfig {
-            fromJSON<Dummy1> {
-                null
-            }
-        }
-        assertFailsWith<JSONKotlinException> {
-            JSONDeserializer.deserializeNonNullable<Dummy1>(json, config)
-        }.let {
-            expect("Can't deserialize null as ${Dummy1::class.qualifiedName}") { it.message }
-        }
     }
 
     data class TestPage<T>(val header: String? = null, val lines: List<T>)

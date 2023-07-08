@@ -2,7 +2,7 @@
  * @(#) JSONConfig.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -216,7 +216,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   type    the target type
      * @param   mapping the mapping function
      */
-    fun fromJSONObject(type: KType, mapping: JSONConfig.(JSONObject) -> Any?) {
+    fun fromJSONObject(type: KType, mapping: JSONConfig.(JSONObject) -> Any) {
         fromSpecific(type, mapping)
     }
 
@@ -226,7 +226,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   type    the target type
      * @param   mapping the mapping function
      */
-    fun fromJSONArray(type: KType, mapping: JSONConfig.(JSONArray) -> Any?) {
+    fun fromJSONArray(type: KType, mapping: JSONConfig.(JSONArray) -> Any) {
         fromSpecific(type, mapping)
     }
 
@@ -237,11 +237,11 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   type    the target type
      */
-    fun fromJSONString(type: KType, mapping: JSONConfig.(JSONString) -> Any? = getDefaultStringMapping(type)) {
+    fun fromJSONString(type: KType, mapping: JSONConfig.(JSONString) -> Any = getDefaultStringMapping(type)) {
         fromSpecific(type, mapping)
     }
 
-    private inline fun <reified T : JSONValue> fromSpecific(type: KType, crossinline mapping: JSONConfig.(T) -> Any?) {
+    private inline fun <reified T : JSONValue> fromSpecific(type: KType, crossinline mapping: JSONConfig.(T) -> Any) {
         fromJSON(type) { json ->
             when (json) {
                 null -> if (type.isMarkedNullable) null else fatal("Can't deserialize null as $type")
@@ -276,7 +276,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T : Any> fromJSON(noinline mapping: JSONConfig.(JSONValue?) -> T?) {
+    inline fun <reified T : Any> fromJSON(noinline mapping: JSONConfig.(JSONValue?) -> T) {
         fromJSON(typeOf<T>(), mapping as FromJSONMapping)
     }
 
@@ -286,7 +286,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T : Any> fromJSONObject(noinline mapping: JSONConfig.(JSONObject) -> T?) {
+    inline fun <reified T : Any> fromJSONObject(noinline mapping: JSONConfig.(JSONObject) -> T) {
         fromJSONObject(typeOf<T>(), mapping)
     }
 
@@ -296,7 +296,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T : Any> fromJSONArray(noinline mapping: JSONConfig.(JSONArray) -> T?) {
+    inline fun <reified T : Any> fromJSONArray(noinline mapping: JSONConfig.(JSONArray) -> T) {
         fromJSONArray(typeOf<T>(), mapping)
     }
 
@@ -307,7 +307,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T : Any> fromJSONString(noinline mapping: JSONConfig.(JSONString) -> Any? =
+    inline fun <reified T : Any> fromJSONString(noinline mapping: JSONConfig.(JSONString) -> Any =
             getDefaultStringMapping(typeOf<T>())) {
         fromJSONString(typeOf<T>(), mapping)
     }
@@ -318,7 +318,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      *
      * @param   type    the required type
      */
-    fun getDefaultStringMapping(type: KType): JSONConfig.(JSONString) -> Any? = { json ->
+    fun getDefaultStringMapping(type: KType): JSONConfig.(JSONString) -> Any = { json ->
         val resultClass = type.classifier as? KClass<*> ?: fatal("Can't deserialize $type")
         val constructor = resultClass.constructors.find {
             it.hasSingleParameter(String::class)
@@ -427,6 +427,38 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
                 fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
             JSONDeserializer.deserialize(mapping.second, jsonValue, this)
         }
+    }
+
+    /**
+     * Add a polymorphic mapping to the parameter target type, using the nominated property and a list of pairs of
+     * property value and target type.
+     *
+     * @param   T               the target type
+     * @param   property        the property name
+     * @param   mappings        a set of `Pair<Any, KType>` entries, each of which identifies a value for the
+     *                          discriminator property and its associated type
+     */
+    inline fun <reified T> fromJSONPolymorphic(
+        property: String,
+        vararg mappings: Pair<Any, KType>,
+    ) {
+        fromJSONPolymorphic(typeOf<T>(), JSONPointer.root.child(property), *mappings)
+    }
+
+    /**
+     * Add a polymorphic mapping to the parameter target type, using the value selected by a [JSONPointer] and a list of
+     * pairs of property value and target type.
+     *
+     * @param   T               the target type
+     * @param   discriminator   the "discriminator" [JSONPointer]
+     * @param   mappings        a set of `Pair<Any, KType>` entries, each of which identifies a value for the
+     *                          discriminator property and its associated type
+     */
+    inline fun <reified T> fromJSONPolymorphic(
+        discriminator: JSONPointer,
+        vararg mappings: Pair<Any, KType>,
+    ) {
+        fromJSONPolymorphic(typeOf<T>(), discriminator, *mappings)
     }
 
     /**

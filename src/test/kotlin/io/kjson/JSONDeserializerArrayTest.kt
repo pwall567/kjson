@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerArrayTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,6 @@ import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.test.expect
-import kotlin.test.fail
 
 import java.lang.reflect.Type
 import java.math.BigDecimal
@@ -333,7 +332,7 @@ class JSONDeserializerArrayTest {
 
     @Test fun `should deserialize Java Stream`() {
         val json = JSONArray.of(JSONString("abc"), JSONString("def"))
-        val result: Stream<String> = JSONDeserializer.deserialize(json) ?: fail("result was null")
+        val result: Stream<String> = JSONDeserializer.deserialize(json)
         val iterator = result.iterator()
         expect(true) { iterator.hasNext() }
         expect("abc") { iterator.next() }
@@ -344,7 +343,7 @@ class JSONDeserializerArrayTest {
 
     @Test fun `should deserialize Java IntStream`() {
         val json = JSONArray.of(JSONInt(2345), JSONInt(6789))
-        val result: IntStream = JSONDeserializer.deserialize(json) ?: fail("result was null")
+        val result: IntStream = JSONDeserializer.deserialize(json)
         val iterator = result.iterator()
         expect(true) { iterator.hasNext() }
         expect(2345) { iterator.next() }
@@ -355,7 +354,7 @@ class JSONDeserializerArrayTest {
 
     @Test fun `should deserialize Java LongStream`() {
         val json = JSONArray.of(JSONLong(1234567812345678), JSONLong(9876543298765432))
-        val result: LongStream = JSONDeserializer.deserialize(json) ?: fail("result was null")
+        val result: LongStream = JSONDeserializer.deserialize(json)
         val iterator = result.iterator()
         expect(true) { iterator.hasNext() }
         expect(1234567812345678) { iterator.next() }
@@ -366,7 +365,7 @@ class JSONDeserializerArrayTest {
 
     @Test fun `should deserialize Java DoubleStream`() {
         val json = JSONArray.of(JSONDecimal("1234.5"), JSONDecimal("1e40"))
-        val result: DoubleStream = JSONDeserializer.deserialize(json) ?: fail("result was null")
+        val result: DoubleStream = JSONDeserializer.deserialize(json)
         val iterator = result.iterator()
         expect(true) { iterator.hasNext() }
         expect(1234.5) { iterator.next() }
@@ -413,7 +412,7 @@ class JSONDeserializerArrayTest {
             add("abc")
         }
         // there's no equals defined for Collection, so we have to do this the hard way...
-        val immutableCollection: ImmutableCollection<String> = json.deserialize() ?: fail()
+        val immutableCollection: ImmutableCollection<String> = json.deserialize()
         expect(4) { immutableCollection.size }
         assertTrue(immutableCollection.contains("aaa"))
         assertTrue(immutableCollection.contains("ccc"))
