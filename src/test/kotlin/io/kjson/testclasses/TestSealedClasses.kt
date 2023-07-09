@@ -67,7 +67,7 @@ data class Sum3(val e1: Expr3, val e2: Expr3) : Expr3()
 object NotANumber3 : Expr3()
 
 @JSONDiscriminator("type")
-sealed class Party() {
+sealed class Party {
     abstract val type: String
 }
 

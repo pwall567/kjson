@@ -14,6 +14,12 @@ dependency specifications and the `import` statements.
 This document provides introductory information on the `kjson` library; fuller information is available in the
 [User Guide](USERGUIDE.md).
 
+**IMPORTANT**
+Version 5.0 introduced changes to the API for deserialization which may be breaking changes for some users (and version
+6.0 made further changes of a similar nature).
+This document describes the API for version 6.0; see [`kjson` 6](KJSON6.md) for further details, including the reasons
+behind the changes.
+
 ## Background
 
 This library provides JSON serialization and deserialization functionality for Kotlin.
@@ -105,7 +111,8 @@ The type may be specified as a type parameter:
     val example = jsonString.parseJSON<Example>()
 ```
 
-The type may be specified as a `KClass`:
+The type may be specified as a `KClass` (because this form does not convey nullability, the result `example` will be of
+type `Example?`):
 ```kotlin
     val example = jsonString.parseJSON(Example::class)
 ```
@@ -257,25 +264,25 @@ See the [Custom Serialization and Deserialization](CUSTOM.md) guide for more inf
 
 ## Dependency Specification
 
-The latest version of the library is 5.0, and it may be obtained from the Maven Central repository.
+The latest version of the library is 6.0, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>5.0</version>
+      <version>6.0</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:5.0'
+    implementation 'io.kjson:kjson:6.0'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:5.0")
+    implementation("io.kjson:kjson:6.0")
 ```
 
 Peter Wall
 
-2023-07-07
+2023-07-09

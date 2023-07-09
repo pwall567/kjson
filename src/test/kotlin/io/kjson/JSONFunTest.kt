@@ -71,10 +71,8 @@ class JSONFunTest {
         expect(Dummy1("Hi there!", 888)) { json.parseJSON(Dummy1::class) }
     }
 
-    @Test fun `should throw exception parsing null into non-nullable explicit KClass`() {
-        assertFailsWith<JSONKotlinException> {
-            "null".parseJSON(String::class)
-        }.let { expect("Can't deserialize null as String") { it.message } }
+    @Test fun `should correctly parse null using explicit KClass`() {
+        assertNull("null".parseJSON(String::class))
     }
 
     @Test fun `should correctly parse string using explicit KType`() {
@@ -232,6 +230,23 @@ class JSONFunTest {
         expect(expected) { json.deserialize(Dummy1::class.java) }
     }
 
+    @Test fun `should convert a JSONArray to a specified Java type`() {
+        val json = JSONArray.build {
+            add(JSONObject.build {
+                add("field1", 567)
+                add("field2", "abcdef")
+            })
+            add(JSONObject.build {
+                add("field1", 9999)
+                add("field2", "qwerty")
+            })
+        }
+        val type: Type = JavaClass2::class.java.getField("field1").genericType
+        expect(listOf(JavaClass1(567, "abcdef"), JavaClass1(9999, "qwerty"))) {
+            json.deserialize(type)
+        }
+    }
+
     @Test fun `should convert a JSONObject to a specified type using fromJSONValue`() {
         val json = JSONObject.build {
             add("field1", "abdef")
@@ -266,6 +281,23 @@ class JSONFunTest {
         }
         val expected = Dummy1("abdef", 54321)
         expect(expected) { json.fromJSONValue(Dummy1::class.java) }
+    }
+
+    @Test fun `should convert a JSONArray to a specified Java type using fromJSONValue`() {
+        val json = JSONArray.build {
+            add(JSONObject.build {
+                add("field1", 567)
+                add("field2", "abcdef")
+            })
+            add(JSONObject.build {
+                add("field1", 9999)
+                add("field2", "qwerty")
+            })
+        }
+        val type: Type = JavaClass2::class.java.getField("field1").genericType
+        expect(listOf(JavaClass1(567, "abcdef"), JavaClass1(9999, "qwerty"))) {
+            json.fromJSONValue(type)
+        }
     }
 
     @Test fun `should use lenient parsing options if provided`() {

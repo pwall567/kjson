@@ -35,6 +35,7 @@ import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KTypeProjection
 import kotlin.reflect.KVariance
+import kotlin.reflect.typeOf
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.findAnnotation
@@ -43,7 +44,6 @@ import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.full.staticFunctions
 import kotlin.reflect.jvm.isAccessible
-import kotlin.reflect.typeOf
 import kotlin.time.Duration
 
 import java.lang.reflect.InvocationTargetException
@@ -99,12 +99,25 @@ object JSONDeserializer {
     private val stringType = String::class.createType(emptyList(), false)
 
     /**
+     * Deserialize a parsed [JSONValue] to the inferred [KType].
+     *
+     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
+     * @param   config      an optional [JSONConfig]
+     * @param   T           the target class
+     * @return              the converted object
+     */
+    inline fun <reified T> deserialize(
+        json: JSONValue?,
+        config: JSONConfig = JSONConfig.defaultConfig,
+    ): T = deserialize(typeOf<T>(), json, config) as T
+
+    /**
      * Deserialize a parsed [JSONValue] to a specified [KType].
      *
      * @param   resultType  the target type
      * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
      * @param   config      an optional [JSONConfig]
-     * @return              the converted object (will be `null` only if the target type is nullable)
+     * @return              the converted object, of [resultType] (will be `null` only if [resultType] is nullable)
      */
     fun deserialize(
         resultType: KType,
@@ -119,7 +132,7 @@ object JSONDeserializer {
      * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
      * @param   pointer     the [JSONPointer]
      * @param   config      an optional [JSONConfig]
-     * @return              the converted object
+     * @return              the converted object, of [resultType] (will be `null` only if [resultType] is nullable)
      */
     fun deserialize(
         resultType: KType,
@@ -128,16 +141,15 @@ object JSONDeserializer {
         config: JSONConfig = JSONConfig.defaultConfig,
     ): Any? {
         config.findFromJSONMapping(resultType)?.let { return config.applyFromJSON(it, json, pointer, resultType) }
-        val classifier = resultType.classifier as? KClass<*> ?:
-            fatal("Can't deserialize ${resultType.displayName()}", pointer)
+        val resultClass = resultType.classifierAsClass(resultType, pointer)
         if (json == null) {
-            if (classifier == Opt::class)
-                return Opt.UNSET
-            if (!resultType.isMarkedNullable)
-                fatal("Can't deserialize null as ${resultType.displayName()}", pointer)
-            return null
+            return when {
+                resultClass == Opt::class -> Opt.UNSET
+                resultType.isMarkedNullable -> null
+                else -> fatal("Can't deserialize null as ${resultType.displayName()}", pointer)
+            }
         }
-        return deserialize(resultType, classifier, resultType.arguments, json, pointer, config)
+        return deserialize(resultType, resultClass, resultType.arguments, json, pointer, config)
     }
 
     /**
@@ -147,48 +159,36 @@ object JSONDeserializer {
      * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
      * @param   config      an optional [JSONConfig]
      * @param   T           the target class
-     * @return              the converted object
+     * @return              the converted object, of [resultClass] (may be `null`)
      */
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> deserialize(
         resultClass: KClass<T>,
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
-    ): T {
+    ): T? {
         config.findFromJSONMapping(resultClass)?.let {
-            return config.applyFromJSON(it, json, JSONPointer.root, resultClass) as T
+            return config.applyFromJSON(it, json, JSONPointer.root, resultClass) as T?
         }
         if (json == null)
-            return if (resultClass == Opt::class) Opt.UNSET as T else
-                    fatal("Can't deserialize null as ${resultClass.displayName()}")
+            return if (resultClass == Opt::class) Opt.UNSET as T else null
         return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, JSONPointer.root, config)
     }
 
     /**
-     * Deserialize a parsed [JSONValue] to a specified [KClass], where the result may not be `null` (specifying
-     * [JSONPointer]).
+     * Deserialize a parsed [JSONValue] to a specified Java [Class].
      *
-     * @param   resultClass the target class
-     * @param   json        the parsed JSON, as a [JSONValue]
-     * @param   pointer     the [JSONPointer]
+     * @param   javaClass   the target class
+     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
      * @param   config      an optional [JSONConfig]
-     * @param   T           the target class
      * @return              the converted object
      */
     @Suppress("UNCHECKED_CAST")
-    private fun <T : Any> deserializeNonNull(
-        resultClass: KClass<T>,
+    fun <T : Any> deserialize(
+        javaClass: Class<T>,
         json: JSONValue?,
-        pointer: JSONPointer,
         config: JSONConfig = JSONConfig.defaultConfig,
-    ): T {
-        config.findFromJSONMapping(resultClass)?.let {
-            return config.applyFromJSON(it, json, pointer, resultClass) as T
-        }
-        if (json == null)
-            fatal("Can't deserialize null as ${resultClass.displayName()}")
-        return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, pointer, config)
-    }
+    ): T? = deserialize(javaClass.toKType(nullable = true), json, config)  as T?
 
     /**
      * Deserialize a parsed [JSONValue] to a specified Java [Type].
@@ -202,12 +202,12 @@ object JSONDeserializer {
         javaType: Type,
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
-    ): Any = deserialize(javaType.toKType(), json, config) ?: fatal("Can't deserialize null as $javaType")
+    ): Any? = deserialize(javaType.toKType(nullable = true), json, config)
 
     /**
      * Deserialize a parsed [JSONValue] to an unspecified([Any]) type.  Strings will be converted to `String`, numbers
      * to `Int`, `Long` or `BigDecimal`, booleans to `Boolean`, arrays to `ArrayList<Any?>` and objects to
-     * `ListMap<String, Any?>` (a simple implementation of `Map` that preserves order).
+     * `LinkedHashMap<String, Any?>` (an implementation of `Map` that preserves order).
      *
      * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
      * @param   config      an optional [JSONConfig]
@@ -219,17 +219,47 @@ object JSONDeserializer {
     ): Any? = deserialize(anyQType, json, config)
 
     /**
-     * Deserialize a parsed [JSONValue] to the inferred [KType].
+     * Deserialize a parsed [JSONValue] to a specified [KType], where the result may not be `null` (specifying
+     * [JSONPointer]).
      *
-     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
-     * @param   config      an optional [JSONConfig]
-     * @param   T           the target class
-     * @return              the converted object
+     * @param   json        the parsed JSON, as a [JSONValue]
+     * @param   pointer     the [JSONPointer]
+     * @param   config      the [JSONConfig]
+     * @param   T           the target type
+     * @return              the converted object, of type [T] (will be `null` only if [T] is nullable)
      */
-    inline fun <reified T : Any> deserialize(
+    private inline fun <reified T : Any> deserializeNonNull(
         json: JSONValue?,
-        config: JSONConfig = JSONConfig.defaultConfig,
-    ): T = deserialize(typeOf<T>(), json, config) as T
+        pointer: JSONPointer,
+        config: JSONConfig,
+    ): T = deserializeNonNull(typeOf<T>(), json, pointer, config)
+
+    /**
+     * Deserialize a parsed [JSONValue] to a specified [KType], where the result may not be `null` (specifying
+     * [JSONPointer]).
+     *
+     * @param   resultType  the target type
+     * @param   json        the parsed JSON, as a [JSONValue]
+     * @param   pointer     the [JSONPointer]
+     * @param   config      the [JSONConfig]
+     * @param   T           the target type
+     * @return              the converted object, of type [T]
+     */
+    @Suppress("UNCHECKED_CAST")
+    private fun <T : Any> deserializeNonNull(
+        resultType: KType,
+        json: JSONValue?,
+        pointer: JSONPointer,
+        config: JSONConfig,
+    ): T {
+        config.findFromJSONMapping(resultType)?.let {
+            return config.applyFromJSON(it, json, pointer, resultType) as T
+        }
+        if (json == null)
+            fatal("Can't deserialize null as ${resultType.displayName()}", pointer)
+        val resultClass = resultType.classifierAsClass(resultType, pointer)
+        return deserialize(resultType, resultClass, emptyList(), json, pointer, config) as T
+    }
 
     private fun JSONConfig.applyFromJSON(
         fromJSONMapping: FromJSONMapping,
@@ -435,28 +465,28 @@ object JSONDeserializer {
     ): T {
         return when (resultClass) {
             BooleanArray::class -> BooleanArray(json.size) { i ->
-                deserializeNonNull(Boolean::class, json[i], pointer.child(i))
+                deserializeNonNull<Boolean>(json[i], pointer.child(i), config)
             }
             ByteArray::class -> ByteArray(json.size) { i ->
-                deserializeNonNull(Byte::class, json[i], pointer.child(i))
+                deserializeNonNull<Byte>(json[i], pointer.child(i), config)
             }
             CharArray::class -> CharArray(json.size) { i ->
-                deserializeNonNull(Char::class, json[i], pointer.child(i))
+                deserializeNonNull<Char>(json[i], pointer.child(i), config)
             }
             DoubleArray::class -> DoubleArray(json.size) { i ->
-                deserializeNonNull(Double::class, json[i], pointer.child(i))
+                deserializeNonNull<Double>(json[i], pointer.child(i), config)
             }
             FloatArray::class -> FloatArray(json.size) { i ->
-                deserializeNonNull(Float::class, json[i], pointer.child(i))
+                deserializeNonNull<Float>(json[i], pointer.child(i), config)
             }
             IntArray::class -> IntArray(json.size) { i ->
-                deserializeNonNull(Int::class, json[i], pointer.child(i))
+                deserializeNonNull<Int>(json[i], pointer.child(i), config)
             }
             LongArray::class -> LongArray(json.size) { i ->
-                deserializeNonNull(Long::class, json[i], pointer.child(i))
+                deserializeNonNull<Long>(json[i], pointer.child(i), config)
             }
             ShortArray::class -> ShortArray(json.size) { i ->
-                deserializeNonNull(Short::class, json[i], pointer.child(i))
+                deserializeNonNull<Short>(json[i], pointer.child(i), config)
             }
 
             Collection::class,
@@ -482,21 +512,21 @@ object JSONDeserializer {
 
             IntStream::class -> {
                 val intArray = IntArray(json.size) {
-                    i -> deserializeNonNull(Int::class, json[i], pointer.child(i), config)
+                        i -> deserializeNonNull<Int>(json[i], pointer.child(i), config)
                 }
                 IntStream.of(*intArray)
             }
 
             LongStream::class -> {
                 val longArray = LongArray(json.size) {
-                    i -> deserializeNonNull(Long::class, json[i], pointer.child(i), config)
+                        i -> deserializeNonNull<Long>(json[i], pointer.child(i), config)
                 }
                 LongStream.of(*longArray)
             }
 
             DoubleStream::class -> {
                 val doubleArray = DoubleArray(json.size) {
-                    i -> deserializeNonNull(Double::class, json[i], pointer.child(i), config)
+                        i -> deserializeNonNull<Double>(json[i], pointer.child(i), config)
                 }
                 DoubleStream.of(*doubleArray)
             }
@@ -640,7 +670,7 @@ object JSONDeserializer {
 
         if (resultClass == Any::class)
             return deserializeMap(resultType, LinkedHashMap(json.size), stringType, anyQType, json, pointer,
-                config) as T
+                    config) as T
 
         if (resultClass.isSuperclassOf(Map::class))
             return deserializeMap(resultType, LinkedHashMap(json.size), types, json, pointer, config) as T
@@ -871,10 +901,10 @@ object JSONDeserializer {
     private fun KType.classifierAsClass(target: KType, pointer: JSONPointer): KClass<*> = classifier as? KClass<*> ?:
             fatal("Can't create ${target.displayName()} - insufficient type information", pointer)
 
-    private fun KClass<*>.displayName() = qualifiedName?.displayName()
+    private fun KClass<*>.displayName(): String = qualifiedName?.displayName() ?: "<unknown>"
 
-    private fun KType.displayName() = toString().displayName()
+    private fun KType.displayName(): String = toString().displayName()
 
-    private fun String.displayName() = if (startsWith("kotlin.") && indexOf('.', 7) < 0) substring(7) else this
+    private fun String.displayName(): String = if (startsWith("kotlin.") && indexOf('.', 7) < 0) substring(7) else this
 
 }

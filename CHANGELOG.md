@@ -2,6 +2,11 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [6.0] - 2023-07-09
+### Changed
+- `JSONDeserializer`, `JSONSerializerFunctions`, `JSONFun`: further changes to the specification of deserialization
+  return types (another breaking change)
+
 ## [5.0] - 2023-07-07
 ### Changed
 - `JSONDeserializer`, `JSONFun`: changed deserialization return types, removed some functions (breaking change)

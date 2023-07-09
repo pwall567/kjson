@@ -32,7 +32,6 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.test.expect
 
-import java.lang.reflect.Type
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.BitSet
@@ -56,8 +55,6 @@ import io.kjson.Constants.stringTypeProjection
 import io.kjson.Constants.tripleStringIntStringType
 import io.kjson.Constants.tripleStringStringStringType
 import io.kjson.testclasses.DummyList
-import io.kjson.testclasses.JavaClass1
-import io.kjson.testclasses.JavaClass2
 import net.pwall.util.ImmutableCollection
 import net.pwall.util.ImmutableList
 import net.pwall.util.ImmutableSet
@@ -255,23 +252,6 @@ class JSONDeserializerArrayTest {
             add("xyz")
         }
         expect(Triple("abc", 66, "xyz")) { JSONDeserializer.deserialize(tripleStringIntStringType, json) }
-    }
-
-    @Test fun `should deserialize List using Java Type correctly`() {
-        val json = JSONArray.build {
-            add(JSONObject.build {
-                add("field1", 567)
-                add("field2", "abcdef")
-            })
-            add(JSONObject.build {
-                add("field1", 9999)
-                add("field2", "qwerty")
-            })
-        }
-        val type: Type = JavaClass2::class.java.getField("field1").genericType
-        expect(listOf(JavaClass1(567, "abcdef"), JavaClass1(9999, "qwerty"))) {
-            JSONDeserializer.deserialize(type, json)
-        }
     }
 
     @Test fun `should deserialize JSONArray into List derived type`() {

@@ -487,13 +487,7 @@ There are several forms of the function, allowing the target type to be specifie
 
 The simplest form of the function is the one that uses the implied type:
 ```kotlin
-    val person: Person? = json.parseJSON()
-```
-Note that the result type must be specified as nullable.
-
-Of course, if a null value would represent an error, you can use something like:
-```kotlin
-    val person: Person = json.parseJSON() ?: throw NullPointerException("JSON should not be null")
+    val person: Person = json.parseJSON()
 ```
 
 #### Kotlin reified type
@@ -502,8 +496,6 @@ The same function may be invoked using the target type as type parameter:
 ```kotlin
     val person = json.parseJSON<Person>()
 ```
-Even though the type parameter is specified as the non-nullable type, the result type will be nullable
-(in this case, the type of `person` will be `Person?`).
 
 #### Explicit `KClass`
 
@@ -511,6 +503,8 @@ The class may be specified as a parameter:
 ```kotlin
     val person = json.parseJSON(Person::class)
 ```
+In this case, there is no way of specifying the nullability of the result, and the type of the result of this example
+will be `Person?`.
 
 #### Explicit `KType`
 
@@ -550,7 +544,6 @@ The examples in this section assume the input is a `JSONValue` resulting from th
 
 There are several forms of the `fromJSONValue()` extension function which may be applied to a `JSONValue` (actually a
 `JSONValue?`, so the receiver may be null).
-Each `fromJSONValue()` function has a corresponding `fromJSONValueNullable()` which allows the result to be `null`.
 
 #### Implied type
 
@@ -590,7 +583,7 @@ The `JSONDeserializer` object also has some additional functions to help with co
 
 Again, the simplest form is the one that uses the implied type:
 ```kotlin
-    val person: Person? = JSONDeserializer.deserialize(jsonValue)
+    val person: Person = JSONDeserializer.deserialize(jsonValue)
 ```
 
 #### Kotlin reified type
@@ -705,4 +698,4 @@ the [Spring and `kjson`](SPRING.md) guide.
 **UPDATE:** the [`kjson-spring`](https://github.com/pwall567/kjson-spring) library now provides a simple way to
 integrate with Spring.
 
-2023-04-23
+2023-07-09

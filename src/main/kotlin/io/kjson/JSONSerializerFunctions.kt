@@ -100,7 +100,6 @@ object JSONSerializerFunctions {
                         function.parameters.size == 1 &&
                         function.parameters[0].kind == KParameter.Kind.INSTANCE &&
                         function.returnType.isAcceptable())
-                    @Suppress("UNCHECKED_CAST")
                     return (function as KFunction<Any?>).also { toJsonCache[this] = it }
             }
         }

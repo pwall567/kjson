@@ -34,6 +34,7 @@ import kotlin.test.assertTrue
 import kotlin.test.expect
 
 import java.math.BigDecimal
+import java.lang.reflect.Type
 
 import io.kjson.Constants.stringType
 import io.kjson.JSON.asInt
@@ -57,6 +58,7 @@ import io.kjson.testclasses.Expr
 import io.kjson.testclasses.Expr2
 import io.kjson.testclasses.Expr3
 import io.kjson.testclasses.JavaClass1
+import io.kjson.testclasses.JavaClass2
 import io.kjson.testclasses.MultiConstructor
 import io.kjson.testclasses.NotANumber
 import io.kjson.testclasses.Organization
@@ -122,6 +124,11 @@ class JSONDeserializerTest {
         expect(expected3) { JSONDeserializer.deserialize(json3) }
     }
 
+    @Test fun `should return null for nullable type from null`() {
+        val json: JSONValue? = null
+        assertNull(JSONDeserializer.deserialize<Dummy1?>(json))
+    }
+
     @Test fun `should return null for nullable String from null`() {
         val json: JSONValue? = null
         assertNull(JSONDeserializer.deserialize(String::class.createType(emptyList(), true), json))
@@ -138,12 +145,50 @@ class JSONDeserializerTest {
         expect(DummyWithVal()) { JSONDeserializer.deserialize(DummyWithVal::class, json) }
     }
 
+    @Test fun `should deserialize null as specified class correctly`() {
+        assertNull(JSONDeserializer.deserialize(Dummy1::class, null))
+    }
+
     @Test fun `should deserialize java class correctly`() {
         val json = JSONObject.build {
             add("field1", 1234)
             add("field2", "Hello!")
         }
         expect(JavaClass1(1234, "Hello!")) { JSONDeserializer.deserialize(JavaClass1::class, json) }
+    }
+
+    @Test fun `should deserialize object using Java Class correctly`() {
+        val json = JSONObject.build {
+            add("field1", 567)
+            add("field2", "abcdef")
+        }
+        expect(JavaClass1(567, "abcdef")) { JSONDeserializer.deserialize(JavaClass1::class.java, json) }
+    }
+
+    @Test fun `should deserialize null using Java Class correctly`() {
+        assertNull(JSONDeserializer.deserialize(JavaClass1::class.java, null))
+    }
+
+    @Test fun `should deserialize List using Java Type correctly`() {
+        val json = JSONArray.build {
+            add(JSONObject.build {
+                add("field1", 567)
+                add("field2", "abcdef")
+            })
+            add(JSONObject.build {
+                add("field1", 9999)
+                add("field2", "qwerty")
+            })
+        }
+        val type: Type = JavaClass2::class.java.getField("field1").genericType
+        expect(listOf(JavaClass1(567, "abcdef"), JavaClass1(9999, "qwerty"))) {
+            JSONDeserializer.deserialize(type, json)
+        }
+    }
+
+    @Test fun `should deserialize null using Java Type correctly`() {
+        val type: Type = JavaClass2::class.java.getField("field1").genericType
+        assertNull(JSONDeserializer.deserialize(type, null))
     }
 
     @Test fun `should deserialize JSONBoolean to Any`() {

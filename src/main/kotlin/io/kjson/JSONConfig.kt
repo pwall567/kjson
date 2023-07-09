@@ -128,7 +128,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   type    the target type
      * @return          the mapping function, or `null` if not found
      */
-    fun findFromJSONMapping(type: KType): FromJSONMapping? {
+    internal fun findFromJSONMapping(type: KType): FromJSONMapping? {
         if (type.classifier == Any::class)
             return null
         var best: Map.Entry<KType, FromJSONMapping>? = null
@@ -145,7 +145,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   targetClass the target class
      * @return              the mapping function, or `null` if not found
      */
-    fun findFromJSONMapping(targetClass: KClass<*>): FromJSONMapping? {
+    internal fun findFromJSONMapping(targetClass: KClass<*>): FromJSONMapping? {
         if (targetClass == Any::class)
             return null
         var best: KClass<*>? = null
@@ -169,7 +169,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   type    the source type
      * @return          the mapping function, or `null` if not found
      */
-    fun findToJSONMapping(type: KType): ToJSONMapping? {
+    internal fun findToJSONMapping(type: KType): ToJSONMapping? {
         var best: Map.Entry<KType, ToJSONMapping>? = null
         for (entry in toJSONMap.entries) {
             if (entry.key.isSupertypeOf(type) && (best == null || best.key.isSupertypeOf(entry.key)))
@@ -184,7 +184,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   sourceClass the source class
      * @return              the mapping function, or `null` if not found
      */
-    fun findToJSONMapping(sourceClass: KClass<*>): ToJSONMapping? {
+    internal fun findToJSONMapping(sourceClass: KClass<*>): ToJSONMapping? {
         var best: KClass<*>? = null
         var nullable = false
         var result: ToJSONMapping? = null
@@ -424,7 +424,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
                 fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
             val discriminatorValue = JSONDeserializer.deserialize(mappingClass, discriminator.find(jsonValue), this)
             val mapping = mappings.find { it.first == discriminatorValue } ?:
-                fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
+                    fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
             JSONDeserializer.deserialize(mapping.second, jsonValue, this)
         }
     }
@@ -676,6 +676,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
             objectKeyUnquoted = getBooleanPropertyOrFalse("io.kjson.objectKeyUnquoted"),
             objectTrailingComma = getBooleanPropertyOrFalse("io.kjson.objectTrailingComma"),
             arrayTrailingComma = getBooleanPropertyOrFalse("io.kjson.arrayTrailingComma"),
+            maximumNestingDepth = getIntProperty("io.kjson.maximumNestingDepth", 1000),
         )
         val defaultConfig = JSONConfig()
 
