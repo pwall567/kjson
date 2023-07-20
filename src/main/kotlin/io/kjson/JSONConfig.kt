@@ -424,7 +424,8 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
                 fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
             val discriminatorValue = JSONDeserializer.deserialize(mappingClass, discriminator.find(jsonValue), this)
             val mapping = mappings.find { it.first == discriminatorValue } ?:
-                    fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
+                    fatal("Can't deserialize ${jsonValue.displayValue()} as $type, discriminator value was " +
+                            discriminatorValue)
             JSONDeserializer.deserialize(mapping.second, jsonValue, this)
         }
     }
