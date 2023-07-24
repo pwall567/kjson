@@ -2,6 +2,13 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [6.1] - 2023-07-25
+### Changed
+- `JSONConfig`: improved error message on polymorphic deserialization
+- `JSONSerializer`, `JSONStringify`, `JSONCoStringify`: improved recursion checking
+- `pom.xml`: updated Kotlin version to 1.8.22
+- `pom.xml`: updated multiple dependency versions
+
 ## [6.0] - 2023-07-09
 ### Changed
 - `JSONDeserializer`, `JSONSerializerFunctions`, `JSONFun`: further changes to the specification of deserialization
