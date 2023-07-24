@@ -59,6 +59,7 @@ import io.kjson.JSONSerializerFunctions.isToStringClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
 import io.kjson.optional.Opt
+import io.kjson.pointer.JSONPointer
 import net.pwall.json.JSONCoFunctions.outputChar
 import net.pwall.json.JSONCoFunctions.outputString
 import net.pwall.util.CoDateOutput.outputCalendar
@@ -112,7 +113,7 @@ object JSONCoStringify {
      * Stringify an object to JSON, as an extension function to a non-blocking output function.  The output of the
      * serialization process will be supplied to the output function a character at a time.
      *
-     * @receiver        the output function (`(char) -> Unit`)
+     * @receiver        the output function (`(Char) -> Unit`)
      * @param   obj     the object to be converted to JSON (`null` will be converted to `"null"`)
      * @param   config  an optional [JSONConfig] to customise the conversion
      */
@@ -120,13 +121,26 @@ object JSONCoStringify {
         obj: Any?,
         config: JSONConfig = JSONConfig.defaultConfig,
     ) {
-        outputJSONInternal(obj, config, mutableSetOf())
+        outputJSONInternal(obj, config, mutableListOf(), mutableListOf())
+    }
+
+    private suspend fun CoOutput.outputJSONInternalChild(
+        obj: Any?,
+        config: JSONConfig,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
+        child: String,
+    ) {
+        pointer.add(child)
+        outputJSONInternal(obj, config, references, pointer)
+        pointer.removeLast()
     }
 
     private suspend fun CoOutput.outputJSONInternal(
         obj: Any?,
         config: JSONConfig,
-        references: MutableSet<Any>,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
     ) {
 
         if (obj == null) {
@@ -135,27 +149,43 @@ object JSONCoStringify {
         }
 
         config.findToJSONMapping(obj::class)?.let {
-            outputJSONInternal(config.it(obj), config, references)
+            outputJSONInternal(config.it(obj), config, references, pointer)
+            return
+        }
+
+        if (obj is Enum<*> || obj::class.isToStringClass()) {
+            outputString(obj.toString(), config.stringifyNonASCII)
             return
         }
 
         when (obj) {
             is JSONValue -> obj.coOutput(this)
             is CharSequence -> outputString(obj, config.stringifyNonASCII)
-            is Char -> outputQuoted { outputChar(obj, config.stringifyNonASCII) }
             is CharArray -> outputQuoted {
                 for (i in obj.indices)
                     outputChar(obj[i], config.stringifyNonASCII)
             }
-            is Number -> outputNumber(obj, config, references)
+            is Char -> outputQuoted { outputChar(obj, config.stringifyNonASCII) }
+            is Number -> outputNumber(obj, config, references, pointer)
+            is Boolean -> output(obj.toString())
             is UInt -> outputUnsignedInt(obj.toInt())
-            is ULong -> outputUnsignedLong(obj.toLong())
             is UShort -> outputInt(obj.toInt())
             is UByte -> outputInt(obj.toInt())
-            is Boolean -> output(obj.toString())
-            is Array<*> -> outputArray(obj, config, references)
-            is Pair<*, *> -> outputPair(obj, config, references)
-            is Triple<*, *, *> -> outputTriple(obj, config, references)
+            is ULong -> outputUnsignedLong(obj.toLong())
+            is BitSet -> outputBitSet(obj)
+            is Calendar -> outputQuoted { outputCalendar(obj) }
+            is Date -> outputQuoted { outputDate(obj) }
+            is Duration -> outputQuoted { output(obj.toIsoString()) }
+            is Instant -> outputQuoted { outputInstant(obj) }
+            is OffsetDateTime -> outputQuoted { outputOffsetDateTime(obj) }
+            is OffsetTime -> outputQuoted { outputOffsetTime(obj) }
+            is LocalDateTime -> outputQuoted { outputLocalDateTime(obj) }
+            is LocalDate -> outputQuoted { outputLocalDate(obj) }
+            is LocalTime -> outputQuoted { outputLocalTime(obj) }
+            is Year -> outputQuoted { outputYear(obj) }
+            is YearMonth -> outputQuoted { outputYearMonth(obj) }
+            is MonthDay -> outputQuoted { outputMonthDay(obj) }
+            is UUID -> outputQuoted { outputUUID(obj) }
             is IntArray -> outputTypedArray(obj.size) { outputInt(obj[it]) }
             is LongArray -> outputTypedArray(obj.size) { outputLong(obj[it]) }
             is ByteArray -> outputTypedArray(obj.size) { outputInt(obj[it].toInt()) }
@@ -163,7 +193,7 @@ object JSONCoStringify {
             is FloatArray -> outputTypedArray(obj.size) { output(obj[it].toString()) }
             is DoubleArray -> outputTypedArray(obj.size) { output(obj[it].toString()) }
             is BooleanArray -> outputTypedArray(obj.size) { output(obj[it].toString()) }
-            else -> outputObject(obj, config, references)
+            else -> outputObject(obj, config, references, pointer)
         }
 
     }
@@ -171,7 +201,8 @@ object JSONCoStringify {
     private suspend fun CoOutput.outputNumber(
         number: Number,
         config: JSONConfig,
-        references: MutableSet<Any>,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
     ) {
         when (number) {
             is Int -> outputInt(number)
@@ -190,14 +221,163 @@ object JSONCoStringify {
                 else
                     output(number.toString())
             }
-            else -> outputObject(number, config, references)
+            else -> outputObject(number, config, references, pointer)
         }
+    }
+
+    private suspend fun CoOutput.outputObject(
+        obj: Any,
+        config: JSONConfig,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
+    ) {
+        if (obj in references)
+            fatal("Circular reference to ${obj::class.simpleName}", JSONPointer.from(pointer))
+        references.add(obj)
+        try {
+            val objClass = obj::class
+            objClass.findToJSON()?.let {
+                try {
+                    outputJSONInternal(it.call(obj), config, references, pointer)
+                    return
+                }
+                catch (e: Exception) {
+                    fatal("Error in custom toJSON - ${objClass.simpleName}", JSONPointer.from(pointer), e)
+                }
+            }
+            when (obj) {
+                is Array<*> -> outputArray(obj, config, references, pointer)
+                is Pair<*, *> -> outputPair(obj, config, references, pointer)
+                is Triple<*, *, *> -> outputTriple(obj, config, references, pointer)
+                is Iterable<*> -> outputIterator(obj.iterator(), config, references, pointer)
+                is Iterator<*> -> outputIterator(obj, config, references, pointer)
+                is Sequence<*> -> outputIterator(obj.iterator(), config, references, pointer)
+                is Channel<*> -> outputChannel(obj.iterator(), config, references, pointer)
+                is Flow<*> -> outputFlow(obj, config, references, pointer)
+                is Enumeration<*> -> outputIterator(obj.iterator(), config, references, pointer)
+                is BaseStream<*, *> -> outputIterator(obj.iterator(), config, references, pointer)
+                is Map<*, *> -> outputMap(obj, config, references, pointer)
+                is Opt<*> -> outputJSONInternal(obj.orNull, config, references, pointer)
+                else -> {
+                    output('{')
+                    var continuation = false
+                    val skipName = objClass.findSealedClass()?.let {
+                        val discriminatorName = it.findAnnotation<JSONDiscriminator>()?.id ?:
+                                config.sealedClassDiscriminator
+                        outputString(discriminatorName, config.stringifyNonASCII)
+                        output(':')
+                        outputString(objClass.findAnnotation<JSONIdentifier>()?.id ?: objClass.simpleName ?: "null",
+                                config.stringifyNonASCII)
+                        continuation = true
+                        discriminatorName
+                    }
+                    val includeAll = config.hasIncludeAllPropertiesAnnotation(objClass.annotations)
+                    val statics: Collection<KProperty<*>> = objClass.staticProperties
+                    if (objClass.isData && objClass.constructors.isNotEmpty()) {
+                        // data classes will be a frequent use of serialization, so optimise for them
+                        val constructor = objClass.constructors.first()
+                        for (parameter in constructor.parameters) {
+                            val member = objClass.members.find { it.name == parameter.name }
+                            if (member is KProperty<*>)
+                                continuation = outputUsingGetter(member, parameter.annotations, obj, config, references,
+                                        pointer, includeAll, skipName, continuation)
+                        }
+                        // now check whether there are any more properties not in constructor
+                        for (member in objClass.members) {
+                            if (member is KProperty<*> && !statics.contains(member) &&
+                                    !constructor.parameters.any { it.name == member.name })
+                                continuation = outputUsingGetter(member, member.annotations, obj, config, references,
+                                        pointer, includeAll, skipName, continuation)
+                        }
+                    }
+                    else {
+                        for (member in objClass.members) {
+                            if (member is KProperty<*> && !statics.contains(member)) {
+                                val combinedAnnotations = ArrayList(member.annotations)
+                                objClass.constructors.firstOrNull()?.parameters?.find { it.name == member.name }?.let {
+                                    combinedAnnotations.addAll(it.annotations)
+                                }
+                                continuation = outputUsingGetter(member, combinedAnnotations, obj, config, references,
+                                        pointer, includeAll, skipName, continuation)
+                            }
+                        }
+                    }
+                    output('}')
+                }
+            }
+        }
+        finally {
+            references.remove(obj)
+        }
+    }
+
+    private suspend fun CoOutput.outputUsingGetter(
+        member: KProperty<*>,
+        annotations: List<Annotation>?,
+        obj: Any,
+        config: JSONConfig,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
+        includeAll: Boolean,
+        skipName: String?,
+        continuation: Boolean,
+    ): Boolean {
+        if (!config.hasIgnoreAnnotation(annotations)) {
+            val name = config.findNameFromAnnotation(annotations) ?: member.name
+            if (name != skipName) {
+                val wasAccessible = member.isAccessible
+                member.isAccessible = true
+                try {
+                    val v = member.getter.call(obj)
+                    if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls ||
+                            includeAll) {
+                        if (v is Opt<*>) {
+                            if (v.isSet) {
+                                outputObjectValue(name, v.value, config, references, pointer, continuation)
+                                return true
+                            }
+                        }
+                        else {
+                            outputObjectValue(name, v, config, references, pointer, continuation)
+                            return true
+                        }
+                    }
+                }
+                catch (e: JSONException) {
+                    throw e
+                }
+                catch (e: Exception) {
+                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}",
+                            JSONPointer.from(pointer), e)
+                }
+                finally {
+                    member.isAccessible = wasAccessible
+                }
+            }
+        }
+        return continuation
+    }
+
+    private suspend fun CoOutput.outputObjectValue(
+        name: String,
+        value: Any?,
+        config: JSONConfig,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
+        continuation: Boolean,
+    ) {
+        if (continuation)
+            output(',')
+        outputString(name, config.stringifyNonASCII)
+        output(':')
+        outputJSONInternalChild(value, config, references, pointer, name)
     }
 
     private suspend fun CoOutput.outputArray(
         array: Array<*>,
         config: JSONConfig,
-        references: MutableSet<Any>,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
     ) {
         if (array.isArrayOf<Char>()) {
             outputQuoted {
@@ -207,7 +387,7 @@ object JSONCoStringify {
         }
         else {
             outputTypedArray(array.size) {
-                outputJSONInternal(array[it], config, references)
+                outputJSONInternalChild(array[it], config, references, pointer, it.toString())
             }
         }
     }
@@ -230,197 +410,42 @@ object JSONCoStringify {
     private suspend fun CoOutput.outputPair(
         pair: Pair<*, *>,
         config: JSONConfig,
-        references: MutableSet<Any>,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
     ) {
         output('[')
-        outputJSONInternal(pair.first, config, references)
+        outputJSONInternalChild(pair.first, config, references, pointer, "0")
         output(',')
-        outputJSONInternal(pair.second, config, references)
+        outputJSONInternalChild(pair.second, config, references, pointer, "1")
         output(']')
     }
 
     private suspend fun CoOutput.outputTriple(
         triple: Triple<*, *, *>,
         config: JSONConfig,
-        references: MutableSet<Any>,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
     ) {
         output('[')
-        outputJSONInternal(triple.first, config, references)
+        outputJSONInternalChild(triple.first, config, references, pointer, "0")
         output(',')
-        outputJSONInternal(triple.second, config, references)
+        outputJSONInternalChild(triple.second, config, references, pointer, "1")
         output(',')
-        outputJSONInternal(triple.third, config, references)
+        outputJSONInternalChild(triple.third, config, references, pointer, "2")
         output(']')
-    }
-
-    private suspend fun CoOutput.outputObject(
-        obj: Any,
-        config: JSONConfig,
-        references: MutableSet<Any>,
-    ) {
-        val objClass = obj::class
-        if (objClass.isToStringClass() || obj is Enum<*>) {
-            outputString(obj.toString(), config.stringifyNonASCII)
-            return
-        }
-        objClass.findToJSON()?.let {
-            try {
-                outputJSONInternal(it.call(obj), config, references)
-                return
-            }
-            catch (e: Exception) {
-                fatal("Error in custom toJSON - ${objClass.simpleName}", e)
-            }
-        }
-        when (obj) {
-            is Iterable<*> -> outputIterator(obj.iterator(), config, references)
-            is Iterator<*> -> outputIterator(obj, config, references)
-            is Sequence<*> -> outputIterator(obj.iterator(), config, references)
-            is Channel<*> -> outputChannel(obj.iterator(), config, references)
-            is Flow<*> -> outputFlow(obj, config, references)
-            is Enumeration<*> -> outputIterator(obj.iterator(), config, references)
-            is BaseStream<*, *> -> outputIterator(obj.iterator(), config, references)
-            is Map<*, *> -> outputMap(obj, config, references)
-            is BitSet -> outputBitSet(obj)
-            is Calendar -> outputQuoted { outputCalendar(obj) }
-            is Date -> outputQuoted { outputDate(obj) }
-            is Instant -> outputQuoted { outputInstant(obj) }
-            is LocalDate -> outputQuoted { outputLocalDate(obj) }
-            is LocalDateTime -> outputQuoted { outputLocalDateTime(obj) }
-            is LocalTime -> outputQuoted { outputLocalTime(obj) }
-            is OffsetTime -> outputQuoted { outputOffsetTime(obj) }
-            is OffsetDateTime -> outputQuoted { outputOffsetDateTime(obj) }
-            is Year -> outputQuoted { outputYear(obj) }
-            is YearMonth -> outputQuoted { outputYearMonth(obj) }
-            is MonthDay -> outputQuoted { outputMonthDay(obj) }
-            is Duration -> outputQuoted { output(obj.toIsoString()) }
-            is UUID -> outputQuoted { outputUUID(obj) }
-            is Opt<*> -> outputJSONInternal(obj.orNull, config, references)
-            else -> {
-                references.add(obj)
-                try {
-                    output('{')
-                    var continuation = false
-                    val skipName = objClass.findSealedClass()?.let {
-                        val discriminatorName = it.findAnnotation<JSONDiscriminator>()?.id ?:
-                                config.sealedClassDiscriminator
-                        outputString(discriminatorName, config.stringifyNonASCII)
-                        output(':')
-                        outputString(objClass.findAnnotation<JSONIdentifier>()?.id ?: objClass.simpleName ?: "null",
-                                config.stringifyNonASCII)
-                        continuation = true
-                        discriminatorName
-                    }
-                    val includeAll = config.hasIncludeAllPropertiesAnnotation(objClass.annotations)
-                    val statics: Collection<KProperty<*>> = objClass.staticProperties
-                    if (objClass.isData && objClass.constructors.isNotEmpty()) {
-                        // data classes will be a frequent use of serialization, so optimise for them
-                        val constructor = objClass.constructors.first()
-                        for (parameter in constructor.parameters) {
-                            val member = objClass.members.find { it.name == parameter.name }
-                            if (member is KProperty<*>)
-                                continuation = outputUsingGetter(member, parameter.annotations, obj, config, references,
-                                        includeAll, skipName, continuation)
-                        }
-                        // now check whether there are any more properties not in constructor
-                        for (member in objClass.members) {
-                            if (member is KProperty<*> && !statics.contains(member) &&
-                                    !constructor.parameters.any { it.name == member.name })
-                                continuation = outputUsingGetter(member, member.annotations, obj, config, references,
-                                        includeAll, skipName, continuation)
-                        }
-                    }
-                    else {
-                        for (member in objClass.members) {
-                            if (member is KProperty<*> && !statics.contains(member)) {
-                                val combinedAnnotations = ArrayList(member.annotations)
-                                objClass.constructors.firstOrNull()?.parameters?.find { it.name == member.name }?.let {
-                                    combinedAnnotations.addAll(it.annotations)
-                                }
-                                continuation = outputUsingGetter(member, combinedAnnotations, obj, config, references,
-                                        includeAll, skipName, continuation)
-                            }
-                        }
-                    }
-                    output('}')
-                }
-                finally {
-                    references.remove(obj)
-                }
-            }
-        }
-    }
-
-    private suspend fun CoOutput.outputUsingGetter(
-        member: KProperty<*>,
-        annotations: List<Annotation>?,
-        obj: Any,
-        config: JSONConfig,
-        references: MutableSet<Any>,
-        includeAll: Boolean,
-        skipName: String?,
-        continuation: Boolean,
-    ): Boolean {
-        if (!config.hasIgnoreAnnotation(annotations)) {
-            val name = config.findNameFromAnnotation(annotations) ?: member.name
-            if (name != skipName) {
-                val wasAccessible = member.isAccessible
-                member.isAccessible = true
-                try {
-                    val v = member.getter.call(obj)
-                    if (v != null && v in references)
-                        fatal("Circular reference: property ${member.name} in ${obj::class.simpleName}")
-                    if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls ||
-                            includeAll) {
-                        if (v is Opt<*>) {
-                            if (v.isSet) {
-                                outputObjectValue(name, v.value, config, references, continuation)
-                                return true
-                            }
-                        }
-                        else {
-                            outputObjectValue(name, v, config, references, continuation)
-                            return true
-                        }
-                    }
-                }
-                catch (e: JSONException) {
-                    throw e
-                }
-                catch (e: Exception) {
-                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}", e)
-                }
-                finally {
-                    member.isAccessible = wasAccessible
-                }
-            }
-        }
-        return continuation
-    }
-
-    private suspend fun CoOutput.outputObjectValue(
-        name: String,
-        value: Any?,
-        config: JSONConfig,
-        references: MutableSet<Any>,
-        continuation: Boolean,
-    ) {
-        if (continuation)
-            output(',')
-        outputString(name, config.stringifyNonASCII)
-        output(':')
-        outputJSONInternal(value, config, references)
     }
 
     private suspend fun CoOutput.outputIterator(
         iterator: Iterator<*>,
         config: JSONConfig,
-        references: MutableSet<Any>,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
     ) {
         output('[')
         if (iterator.hasNext()) {
+            var index = 0
             while (true) {
-                outputJSONInternal(iterator.next(), config, references)
+                outputJSONInternalChild(iterator.next(), config, references, pointer, (index++).toString())
                 if (!iterator.hasNext())
                     break
                 output(',')
@@ -432,16 +457,18 @@ object JSONCoStringify {
     private suspend fun CoOutput.outputMap(
         map: Map<*, *>,
         config: JSONConfig,
-        references: MutableSet<Any>,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
     ) {
         output('{')
         map.entries.iterator().let {
             if (it.hasNext()) {
                 while (true) {
                     val (key, value) = it.next()
-                    outputString(key.toString(), config.stringifyNonASCII)
+                    val keyString = key.toString()
+                    outputString(keyString, config.stringifyNonASCII)
                     output(':')
-                    outputJSONInternal(value, config, references)
+                    outputJSONInternalChild(value, config, references, pointer, keyString)
                     if (!it.hasNext())
                         break
                     output(',')
@@ -483,12 +510,14 @@ object JSONCoStringify {
     private suspend fun CoOutput.outputChannel(
         iterator: ChannelIterator<*>,
         config: JSONConfig,
-        references: MutableSet<Any>,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
     ) {
         output('[')
         if (iterator.hasNext()) {
+            var index = 0
             while (true) {
-                outputJSONInternal(iterator.next(), config, references)
+                outputJSONInternalChild(iterator.next(), config, references, pointer, (index++).toString())
                 if (this is CoOutputFlushable)
                     flush()
                 if (!iterator.hasNext())
@@ -502,14 +531,16 @@ object JSONCoStringify {
     private suspend fun CoOutput.outputFlow(
         flow: Flow<*>,
         config: JSONConfig,
-        references: MutableSet<Any>,
+        references: MutableList<Any>,
+        pointer: MutableList<String>,
     ) {
         output('[')
+        var index = 0
         var continuation = false
         flow.collect {
             if (continuation)
                 output(',')
-            outputJSONInternal(it, config, references)
+            outputJSONInternalChild(it, config, references, pointer, (index++).toString())
             if (this is CoOutputFlushable)
                 flush()
             continuation = true

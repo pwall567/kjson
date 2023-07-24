@@ -908,10 +908,26 @@ class JSONSerializerTest {
     @Test fun `should fail on use of circular reference`() {
         val circular1 = Circular1()
         val circular2 = Circular2()
-        circular1.ref = circular2
-        circular2.ref = circular1
+        circular1.ref2 = circular2
+        circular2.ref1 = circular1
         assertFailsWith<JSONKotlinException> { JSONSerializer.serialize(circular1) }.let {
-            expect("Circular reference: property ref in Circular2") { it.message }
+            expect("Circular reference to Circular1 at /ref2/ref1") { it.message }
+        }
+    }
+
+    @Test fun `should fail on use of circular reference in List`() {
+        val circularList = mutableListOf<Any>()
+        circularList.add(circularList)
+        assertFailsWith<JSONKotlinException> { JSONSerializer.serialize(circularList) }.let {
+            expect("Circular reference to ArrayList at /0") { it.message }
+        }
+    }
+
+    @Test fun `should fail on use of circular reference in Map`() {
+        val circularMap = mutableMapOf<String, Any>()
+        circularMap["test1"] = circularMap
+        assertFailsWith<JSONKotlinException> { JSONSerializer.serialize(circularMap) }.let {
+            expect("Circular reference to LinkedHashMap at /test1") { it.message }
         }
     }
 

@@ -995,18 +995,19 @@ class JSONCoStringifyTest {
         }
         coCapture.outputJSON(channel)
         expectJSON(coCapture.toString()) {
-            count(3)
-            item(0) {
-                property("field1", "first")
-                property("field2", 123)
-            }
-            item(1) {
-                property("field1", "second")
-                property("field2", 456)
-            }
-            item(2) {
-                property("field1", "third")
-                property("field2", 789)
+            valueIsArray(3) {
+                item(0) {
+                    property("field1", "first")
+                    property("field2", 123)
+                }
+                item(1) {
+                    property("field1", "second")
+                    property("field2", 456)
+                }
+                item(2) {
+                    property("field1", "third")
+                    property("field2", 789)
+                }
             }
         }
         job.join()
@@ -1051,10 +1052,28 @@ class JSONCoStringifyTest {
         val capture = OutputCapture()
         val circular1 = Circular1()
         val circular2 = Circular2()
-        circular1.ref = circular2
-        circular2.ref = circular1
+        circular1.ref2 = circular2
+        circular2.ref1 = circular1
         assertFailsWith<JSONKotlinException> { JSONCoStringify.coStringify(circular1) { capture.accept(it) } }.let {
-            expect("Circular reference: property ref in Circular2") { it.message }
+            expect("Circular reference to Circular1 at /ref2/ref1") { it.message }
+        }
+    }
+
+    @Test fun `should fail on use of circular reference in List`() = runBlocking {
+        val capture = OutputCapture()
+        val circularList = mutableListOf<Any>()
+        circularList.add(circularList)
+        assertFailsWith<JSONKotlinException> { JSONCoStringify.coStringify(circularList) { capture.accept(it) } }.let {
+            expect("Circular reference to ArrayList at /0") { it.message }
+        }
+    }
+
+    @Test fun `should fail on use of circular reference in Map`() = runBlocking {
+        val capture = OutputCapture()
+        val circularMap = mutableMapOf<String, Any>()
+        circularMap["test1"] = circularMap
+        assertFailsWith<JSONKotlinException> { JSONCoStringify.coStringify(circularMap) { capture.accept(it) } }.let {
+            expect("Circular reference to LinkedHashMap at /test1") { it.message }
         }
     }
 

@@ -277,11 +277,11 @@ data class Dummy9(val str: String) {
 }
 
 class Circular1 {
-    var ref: Circular2? = null
+    var ref2: Circular2? = null
 }
 
 class Circular2 {
-    var ref: Circular1? = null
+    var ref1: Circular1? = null
 }
 
 open class PolymorphicBase
