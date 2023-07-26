@@ -159,7 +159,7 @@ Otherwise, the JSON must be an object, and the deserialization functions will co
 following this pseudo-code:
 ```text
 create a shortlist of potential constructors
-for each constructor in the target class:
+for each public constructor in the target class:
     for each parameter in the constructor (there may be no parameters):
         if there is no property in the JSON object with the same name, and the parameter has no default value,
                     and the parameter is not nullable:
@@ -191,7 +191,7 @@ return the instantiated object
 ```
 
 The above steps allow for a wide variety of target classes, but in the common case of a Kotlin data class with a single
-constructor and no additional properties, the steps reduce to:
+public constructor and no additional properties in the body of the class, the steps reduce to:
 ```text
 for each parameter in the constructor:
     if the parameter has a matching property in the JSON:

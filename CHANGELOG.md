@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [Unreleased]
+### Changed
+- `JSONDeserializer`: block attempt to use private constructor
+
 ## [6.1] - 2023-07-25
 ### Changed
 - `JSONConfig`: improved error message on polymorphic deserialization

@@ -87,6 +87,7 @@ import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
 import io.kjson.optional.Opt
 import io.kjson.pointer.JSONPointer
+import kotlin.reflect.KVisibility
 
 /**
  * Reflection-based JSON deserialization for Kotlin.
@@ -675,7 +676,8 @@ object JSONDeserializer {
         if (resultClass.isSuperclassOf(Map::class))
             return deserializeMap(resultType, LinkedHashMap(json.size), types, json, pointer, config) as T
 
-        findBestConstructor(resultClass.constructors, json, config)?.apply {
+        val publicConstructors = resultClass.constructors.filter { it.visibility == KVisibility.PUBLIC }
+        findBestConstructor(publicConstructors, json, config)?.apply {
             val argMap = HashMap<KParameter, Any?>()
             for (i in parameters.indices) {
                 val parameter = parameters[i]
@@ -717,7 +719,7 @@ object JSONDeserializer {
             return setRemainingFields(resultType, resultClass, callBy(argMap), jsonCopy, pointer, config)
         }
         // there is no matching constructor
-        if (resultClass.constructors.size == 1) {
+        if (publicConstructors.size == 1) {
             val missing = resultClass.constructors.first().parameters.filter {
                 !config.hasIgnoreAnnotation(it.annotations) && !it.isOptional && !it.type.isMarkedNullable
             }.map {
@@ -731,7 +733,7 @@ object JSONDeserializer {
             jsonCopy.isNotEmpty() -> jsonCopy.keys.displayList()
             else -> "none"
         }
-        fatal("Can't locate constructor for ${resultClass.qualifiedName}; properties: $propMessage", pointer)
+        fatal("Can't locate public constructor for ${resultClass.qualifiedName}; properties: $propMessage", pointer)
     }
 
     private fun Collection<Any?>.displayList(): String = joinToString(", ")

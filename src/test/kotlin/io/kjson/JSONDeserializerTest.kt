@@ -406,7 +406,7 @@ class JSONDeserializerTest {
         val json = JSON.parse("""[{"aaa":"X"},{"bbb":1},{"ccc":true,"ddd":0}]""")
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<MultiConstructor>>(json) }.let {
             val className = MultiConstructor::class.qualifiedName
-            expect("Can't locate constructor for $className; properties: ccc, ddd at /2") { it.message }
+            expect("Can't locate public constructor for $className; properties: ccc, ddd at /2") { it.message }
         }
     }
 
@@ -415,6 +415,19 @@ class JSONDeserializerTest {
         val expr = JSONDeserializer.deserialize<SealedClassContainer<*>>(json).expr
         assertTrue(expr is Const)
         expect(20.0) { expr.number }
+    }
+
+    @Test fun `should fail on use of private constructor`() {
+        val json = JSON.parse("""{"xxx":123}""")
+        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<TestPrivate>(json) }.let {
+            val className = TestPrivate::class.qualifiedName
+            expect("Can't locate public constructor for $className; properties: xxx") { it.message }
+        }
+    }
+
+    class TestPrivate private constructor(xxx: Int) {
+        @Suppress("unused")
+        val yyy: Int = xxx
     }
 
     data class TestPage<T>(val header: String? = null, val lines: List<T>)
