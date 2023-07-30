@@ -3,8 +3,11 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## [Unreleased]
+### Added
+- `JSONContext`: serialization / deserialization context
 ### Changed
 - `JSONDeserializer`: block attempt to use private constructor
+- `JSONDeserializer`: switch to use `JSONContext`
 
 ## [6.1] - 2023-07-25
 ### Changed

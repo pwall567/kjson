@@ -2,7 +2,7 @@
  * @(#) JSONKotlinException.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -50,6 +50,14 @@ class JSONKotlinException(val text: String, val pointer: JSONPointer? = null) : 
         }
 
     companion object {
+
+        internal fun fatal(text: String, context: JSONContext): Nothing {
+            throw JSONKotlinException(text, context.pointer)
+        }
+
+        internal fun fatal(text: String, context: JSONContext, nested: Throwable): Nothing {
+            throw JSONKotlinException(text, context.pointer, nested)
+        }
 
         internal fun fatal(text: String, pointer: JSONPointer? = null): Nothing {
             throw JSONKotlinException(text, pointer)
