@@ -59,7 +59,6 @@ import io.kjson.JSONSerializerFunctions.isToStringClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
 import io.kjson.optional.Opt
-import io.kjson.pointer.JSONPointer
 import net.pwall.json.JSONCoFunctions.outputChar
 import net.pwall.json.JSONCoFunctions.outputString
 import net.pwall.util.CoDateOutput.outputCalendar
@@ -121,26 +120,13 @@ object JSONCoStringify {
         obj: Any?,
         config: JSONConfig = JSONConfig.defaultConfig,
     ) {
-        outputJSONInternal(obj, config, mutableListOf(), mutableListOf())
-    }
-
-    private suspend fun CoOutput.outputJSONInternalChild(
-        obj: Any?,
-        config: JSONConfig,
-        references: MutableList<Any>,
-        pointer: MutableList<String>,
-        child: String,
-    ) {
-        pointer.add(child)
-        outputJSONInternal(obj, config, references, pointer)
-        pointer.removeLast()
+        outputJSONInternal(obj, JSONContext(config), mutableListOf())
     }
 
     private suspend fun CoOutput.outputJSONInternal(
         obj: Any?,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
 
         if (obj == null) {
@@ -148,8 +134,9 @@ object JSONCoStringify {
             return
         }
 
+        val config = context.config
         config.findToJSONMapping(obj::class)?.let {
-            outputJSONInternal(config.it(obj), config, references, pointer)
+            outputJSONInternal(config.it(obj), context, references)
             return
         }
 
@@ -166,7 +153,7 @@ object JSONCoStringify {
                     outputChar(obj[i], config.stringifyNonASCII)
             }
             is Char -> outputQuoted { outputChar(obj, config.stringifyNonASCII) }
-            is Number -> outputNumber(obj, config, references, pointer)
+            is Number -> outputNumber(obj, context, references)
             is Boolean -> output(obj.toString())
             is UInt -> outputUnsignedInt(obj.toInt())
             is UShort -> outputInt(obj.toInt())
@@ -193,16 +180,15 @@ object JSONCoStringify {
             is FloatArray -> outputTypedArray(obj.size) { output(obj[it].toString()) }
             is DoubleArray -> outputTypedArray(obj.size) { output(obj[it].toString()) }
             is BooleanArray -> outputTypedArray(obj.size) { output(obj[it].toString()) }
-            else -> outputObject(obj, config, references, pointer)
+            else -> outputObject(obj, context, references)
         }
 
     }
 
     private suspend fun CoOutput.outputNumber(
         number: Number,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         when (number) {
             is Int -> outputInt(number)
@@ -210,55 +196,55 @@ object JSONCoStringify {
             is Short, is Byte -> outputInt(number.toInt())
             is Float, is Double -> output(number.toString())
             is BigInteger -> {
-                if (config.bigIntegerString)
+                if (context.config.bigIntegerString)
                     outputString(number.toString(), false)
                 else
                     output(number.toString())
             }
             is BigDecimal -> {
-                if (config.bigDecimalString)
+                if (context.config.bigDecimalString)
                     outputString(number.toString(), false)
                 else
                     output(number.toString())
             }
-            else -> outputObject(number, config, references, pointer)
+            else -> outputObject(number, context, references)
         }
     }
 
     private suspend fun CoOutput.outputObject(
         obj: Any,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         if (obj in references)
-            fatal("Circular reference to ${obj::class.simpleName}", JSONPointer.from(pointer))
+            fatal("Circular reference to ${obj::class.simpleName}", context)
         references.add(obj)
         try {
             val objClass = obj::class
             objClass.findToJSON()?.let {
                 try {
-                    outputJSONInternal(it.call(obj), config, references, pointer)
+                    outputJSONInternal(it.call(obj), context, references)
                     return
                 }
                 catch (e: Exception) {
-                    fatal("Error in custom toJSON - ${objClass.simpleName}", JSONPointer.from(pointer), e)
+                    fatal("Error in custom toJSON - ${objClass.simpleName}", context, e)
                 }
             }
             when (obj) {
-                is Array<*> -> outputArray(obj, config, references, pointer)
-                is Pair<*, *> -> outputPair(obj, config, references, pointer)
-                is Triple<*, *, *> -> outputTriple(obj, config, references, pointer)
-                is Iterable<*> -> outputIterator(obj.iterator(), config, references, pointer)
-                is Iterator<*> -> outputIterator(obj, config, references, pointer)
-                is Sequence<*> -> outputIterator(obj.iterator(), config, references, pointer)
-                is Channel<*> -> outputChannel(obj.iterator(), config, references, pointer)
-                is Flow<*> -> outputFlow(obj, config, references, pointer)
-                is Enumeration<*> -> outputIterator(obj.iterator(), config, references, pointer)
-                is BaseStream<*, *> -> outputIterator(obj.iterator(), config, references, pointer)
-                is Map<*, *> -> outputMap(obj, config, references, pointer)
-                is Opt<*> -> outputJSONInternal(obj.orNull, config, references, pointer)
+                is Array<*> -> outputArray(obj, context, references)
+                is Pair<*, *> -> outputPair(obj, context, references)
+                is Triple<*, *, *> -> outputTriple(obj, context, references)
+                is Iterable<*> -> outputIterator(obj.iterator(), context, references)
+                is Iterator<*> -> outputIterator(obj, context, references)
+                is Sequence<*> -> outputIterator(obj.iterator(), context, references)
+                is Channel<*> -> outputChannel(obj.iterator(), context, references)
+                is Flow<*> -> outputFlow(obj, context, references)
+                is Enumeration<*> -> outputIterator(obj.iterator(), context, references)
+                is BaseStream<*, *> -> outputIterator(obj.iterator(), context, references)
+                is Map<*, *> -> outputMap(obj, context, references)
+                is Opt<*> -> outputJSONInternal(obj.orNull, context, references)
                 else -> {
+                    val config = context.config
                     output('{')
                     var continuation = false
                     val skipName = objClass.findSealedClass()?.let {
@@ -279,15 +265,15 @@ object JSONCoStringify {
                         for (parameter in constructor.parameters) {
                             val member = objClass.members.find { it.name == parameter.name }
                             if (member is KProperty<*>)
-                                continuation = outputUsingGetter(member, parameter.annotations, obj, config, references,
-                                        pointer, includeAll, skipName, continuation)
+                                continuation = outputUsingGetter(member, parameter.annotations, obj, context,
+                                        references, includeAll, skipName, continuation)
                         }
                         // now check whether there are any more properties not in constructor
                         for (member in objClass.members) {
                             if (member is KProperty<*> && !statics.contains(member) &&
                                     !constructor.parameters.any { it.name == member.name })
-                                continuation = outputUsingGetter(member, member.annotations, obj, config, references,
-                                        pointer, includeAll, skipName, continuation)
+                                continuation = outputUsingGetter(member, member.annotations, obj, context, references,
+                                        includeAll, skipName, continuation)
                         }
                     }
                     else {
@@ -297,8 +283,8 @@ object JSONCoStringify {
                                 objClass.constructors.firstOrNull()?.parameters?.find { it.name == member.name }?.let {
                                     combinedAnnotations.addAll(it.annotations)
                                 }
-                                continuation = outputUsingGetter(member, combinedAnnotations, obj, config, references,
-                                        pointer, includeAll, skipName, continuation)
+                                continuation = outputUsingGetter(member, combinedAnnotations, obj, context, references,
+                                        includeAll, skipName, continuation)
                             }
                         }
                     }
@@ -315,13 +301,13 @@ object JSONCoStringify {
         member: KProperty<*>,
         annotations: List<Annotation>?,
         obj: Any,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
         includeAll: Boolean,
         skipName: String?,
         continuation: Boolean,
     ): Boolean {
+        val config = context.config
         if (!config.hasIgnoreAnnotation(annotations)) {
             val name = config.findNameFromAnnotation(annotations) ?: member.name
             if (name != skipName) {
@@ -333,12 +319,12 @@ object JSONCoStringify {
                             includeAll) {
                         if (v is Opt<*>) {
                             if (v.isSet) {
-                                outputObjectValue(name, v.value, config, references, pointer, continuation)
+                                outputObjectValue(name, v.value, context, references, continuation)
                                 return true
                             }
                         }
                         else {
-                            outputObjectValue(name, v, config, references, pointer, continuation)
+                            outputObjectValue(name, v, context, references, continuation)
                             return true
                         }
                     }
@@ -347,8 +333,7 @@ object JSONCoStringify {
                     throw e
                 }
                 catch (e: Exception) {
-                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}",
-                            JSONPointer.from(pointer), e)
+                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}", context, e)
                 }
                 finally {
                     member.isAccessible = wasAccessible
@@ -361,33 +346,31 @@ object JSONCoStringify {
     private suspend fun CoOutput.outputObjectValue(
         name: String,
         value: Any?,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
         continuation: Boolean,
     ) {
         if (continuation)
             output(',')
-        outputString(name, config.stringifyNonASCII)
+        outputString(name, context.config.stringifyNonASCII)
         output(':')
-        outputJSONInternalChild(value, config, references, pointer, name)
+        outputJSONInternal(value, context.child(name), references)
     }
 
     private suspend fun CoOutput.outputArray(
         array: Array<*>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         if (array.isArrayOf<Char>()) {
             outputQuoted {
                 for (i in array.indices)
-                    outputChar(array[i] as Char, config.stringifyNonASCII)
+                    outputChar(array[i] as Char, context.config.stringifyNonASCII)
             }
         }
         else {
             outputTypedArray(array.size) {
-                outputJSONInternalChild(array[it], config, references, pointer, it.toString())
+                outputJSONInternal(array[it], context.child(it), references)
             }
         }
     }
@@ -409,43 +392,40 @@ object JSONCoStringify {
 
     private suspend fun CoOutput.outputPair(
         pair: Pair<*, *>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         output('[')
-        outputJSONInternalChild(pair.first, config, references, pointer, "0")
+        outputJSONInternal(pair.first, context.child(0), references)
         output(',')
-        outputJSONInternalChild(pair.second, config, references, pointer, "1")
+        outputJSONInternal(pair.second, context.child(1), references)
         output(']')
     }
 
     private suspend fun CoOutput.outputTriple(
         triple: Triple<*, *, *>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         output('[')
-        outputJSONInternalChild(triple.first, config, references, pointer, "0")
+        outputJSONInternal(triple.first, context.child(0), references)
         output(',')
-        outputJSONInternalChild(triple.second, config, references, pointer, "1")
+        outputJSONInternal(triple.second, context.child(1), references)
         output(',')
-        outputJSONInternalChild(triple.third, config, references, pointer, "2")
+        outputJSONInternal(triple.third, context.child(2), references)
         output(']')
     }
 
     private suspend fun CoOutput.outputIterator(
         iterator: Iterator<*>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         output('[')
         if (iterator.hasNext()) {
             var index = 0
             while (true) {
-                outputJSONInternalChild(iterator.next(), config, references, pointer, (index++).toString())
+                outputJSONInternal(iterator.next(), context.child(index++), references)
                 if (!iterator.hasNext())
                     break
                 output(',')
@@ -456,9 +436,8 @@ object JSONCoStringify {
 
     private suspend fun CoOutput.outputMap(
         map: Map<*, *>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         output('{')
         map.entries.iterator().let {
@@ -466,9 +445,9 @@ object JSONCoStringify {
                 while (true) {
                     val (key, value) = it.next()
                     val keyString = key.toString()
-                    outputString(keyString, config.stringifyNonASCII)
+                    outputString(keyString, context.config.stringifyNonASCII)
                     output(':')
-                    outputJSONInternalChild(value, config, references, pointer, keyString)
+                    outputJSONInternal(value, context.child(keyString), references)
                     if (!it.hasNext())
                         break
                     output(',')
@@ -509,15 +488,14 @@ object JSONCoStringify {
 
     private suspend fun CoOutput.outputChannel(
         iterator: ChannelIterator<*>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         output('[')
         if (iterator.hasNext()) {
             var index = 0
             while (true) {
-                outputJSONInternalChild(iterator.next(), config, references, pointer, (index++).toString())
+                outputJSONInternal(iterator.next(), context.child(index++), references)
                 if (this is CoOutputFlushable)
                     flush()
                 if (!iterator.hasNext())
@@ -530,9 +508,8 @@ object JSONCoStringify {
 
     private suspend fun CoOutput.outputFlow(
         flow: Flow<*>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         output('[')
         var index = 0
@@ -540,7 +517,7 @@ object JSONCoStringify {
         flow.collect {
             if (continuation)
                 output(',')
-            outputJSONInternalChild(it, config, references, pointer, (index++).toString())
+            outputJSONInternal(it, context.child(index++), references)
             if (this is CoOutputFlushable)
                 flush()
             continuation = true

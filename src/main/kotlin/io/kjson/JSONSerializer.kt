@@ -57,7 +57,6 @@ import io.kjson.JSONSerializerFunctions.isToStringClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
 import io.kjson.optional.Opt
-import io.kjson.pointer.JSONPointer
 import net.pwall.util.DateOutput
 
 /**
@@ -75,30 +74,20 @@ object JSONSerializer {
      * @return              the [JSONValue] (or `null` if the input is `null`)
      */
     fun serialize(obj: Any?, config: JSONConfig = JSONConfig.defaultConfig): JSONValue? =
-            serialize(obj, config, mutableListOf(), mutableListOf())
-
-    private fun serializeChild(
-        obj: Any?,
-        config: JSONConfig,
-        references: MutableList<Any>,
-        pointer: MutableList<String>,
-        child: String,
-    ): JSONValue? {
-        pointer.add(child)
-        return serialize(obj, config, references, pointer).also { pointer.removeLast() }
-    }
+            serialize(obj, JSONContext(config), mutableListOf())
 
     private fun serialize(
         obj: Any?,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ): JSONValue? {
 
         if (obj == null)
             return null
 
-        config.findToJSONMapping(obj::class)?.let { return serialize(config.it(obj), config, references, pointer) }
+        context.config.findToJSONMapping(obj::class)?.let {
+            return serialize(context.config.it(obj), context, references)
+        }
 
         if (obj is Enum<*> || obj::class.isToStringClass())
             return JSONString.of(obj.toString())
@@ -108,7 +97,7 @@ object JSONSerializer {
             is CharSequence -> JSONString.of(obj)
             is CharArray -> JSONString.of(StringBuilder().append(obj))
             is Char -> JSONString.of(StringBuilder().append(obj))
-            is Number -> serializeNumber(obj, config, references, pointer)
+            is Number -> serializeNumber(obj, context, references)
             is Boolean -> JSONBoolean.of(obj)
             is UInt -> if (obj.toInt() >= 0) JSONInt(obj.toInt()) else JSONLong(obj.toLong())
             is UShort -> JSONInt(obj.toInt())
@@ -135,16 +124,15 @@ object JSONSerializer {
             is FloatArray -> serializeTypedArray(obj.size) { JSONDecimal.of(BigDecimal(obj[it].toDouble())) }
             is DoubleArray -> serializeTypedArray(obj.size) { JSONDecimal.of(BigDecimal(obj[it])) }
             is BooleanArray -> serializeTypedArray(obj.size) { JSONBoolean.of(obj[it]) }
-            else -> serializeObject(obj, config, references, pointer)
+            else -> serializeObject(obj, context, references)
         }
 
     }
 
     private fun serializeNumber(
         number: Number,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ): JSONValue? = when (number) {
         is Int -> JSONInt.of(number)
         is Long -> JSONLong.of(number)
@@ -152,67 +140,66 @@ object JSONSerializer {
         is Byte -> JSONInt.of(number.toInt())
         is Double -> JSONDecimal.of(BigDecimal(number))
         is Float -> JSONDecimal.of(BigDecimal(number.toDouble()))
-        is BigInteger -> if (config.bigIntegerString) JSONString(number.toString()) else
+        is BigInteger -> if (context.config.bigIntegerString) JSONString(number.toString()) else
                 JSONDecimal(BigDecimal(number))
-        is BigDecimal -> if (config.bigDecimalString) JSONString(number.toString()) else JSONDecimal(number)
-        else -> serializeObject(number, config, references, pointer)
+        is BigDecimal -> if (context.config.bigDecimalString) JSONString(number.toString()) else JSONDecimal(number)
+        else -> serializeObject(number, context, references)
     }
 
     private fun serializeObject(
         obj: Any,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ): JSONValue? {
         if (obj in references)
-            fatal("Circular reference to ${obj::class.simpleName}", JSONPointer.from(pointer))
+            fatal("Circular reference to ${obj::class.simpleName}", context)
         references.add(obj)
         try {
             val objClass = obj::class
 
             try {
-                objClass.findToJSON()?.let { return serialize(it.call(obj), config, references, pointer) }
+                objClass.findToJSON()?.let { return serialize(it.call(obj), context, references) }
             }
             catch (e: Exception) {
-                fatal("Error in custom toJSON - ${objClass.simpleName}", JSONPointer.from(pointer), e)
+                fatal("Error in custom toJSON - ${objClass.simpleName}", context, e)
             }
 
             return when (obj) {
-                is Array<*> -> serializeArray(obj, config, references, pointer)
-                is Pair<*, *> -> serializePair(obj, config, references, pointer)
-                is Triple<*, *, *> -> serializeTriple(obj, config, references, pointer)
-                is List<*> -> serializeIterator(obj.iterator(), obj.size, config, references, pointer)
-                is Iterable<*> -> serializeIterator(obj.iterator(), 8, config, references, pointer)
-                is Sequence<*> -> serializeIterator(obj.iterator(), 8, config, references, pointer)
-                is BaseStream<*, *> -> serializeIterator(obj.iterator(), 8, config, references, pointer)
-                is Iterator<*> -> serializeIterator(obj, 8, config, references, pointer)
-                is Enumeration<*> -> serializeEnumeration(obj, config, references, pointer)
-                is Map<*, *> -> serializeMap(obj, config, references, pointer)
-                is Opt<*> -> serialize(obj.orNull, config, references, pointer)
+                is Array<*> -> serializeArray(obj, context, references)
+                is Pair<*, *> -> serializePair(obj, context, references)
+                is Triple<*, *, *> -> serializeTriple(obj, context, references)
+                is List<*> -> serializeIterator(obj.iterator(), obj.size, context, references)
+                is Iterable<*> -> serializeIterator(obj.iterator(), 8, context, references)
+                is Sequence<*> -> serializeIterator(obj.iterator(), 8, context, references)
+                is BaseStream<*, *> -> serializeIterator(obj.iterator(), 8, context, references)
+                is Iterator<*> -> serializeIterator(obj, 8, context, references)
+                is Enumeration<*> -> serializeEnumeration(obj, context, references)
+                is Map<*, *> -> serializeMap(obj, context, references)
+                is Opt<*> -> serialize(obj.orNull, context, references)
                 else -> JSONObject.build {
                     val skipName = objClass.findSealedClass()?.let {
                         val discriminator = it.findAnnotation<JSONDiscriminator>()?.id ?:
-                                config.sealedClassDiscriminator
+                                context.config.sealedClassDiscriminator
                         add(discriminator,
                                 objClass.findAnnotation<JSONIdentifier>()?.id ?: objClass.simpleName ?: "null")
                         discriminator
                     }
-                    val includeAll = config.hasIncludeAllPropertiesAnnotation(objClass.annotations)
+                    val includeAll = context.config.hasIncludeAllPropertiesAnnotation(objClass.annotations)
                     if (objClass.isData && objClass.constructors.isNotEmpty()) {
                         // data classes will be a frequent use of serialization, so optimise for them
                         val constructor = objClass.constructors.first()
                         for (parameter in constructor.parameters) {
                             val member = objClass.members.find { it.name == parameter.name }
                             if (member is KProperty<*>)
-                                addUsingGetter(member, parameter.annotations, obj, config, references, pointer,
-                                        includeAll, skipName)
+                                addUsingGetter(member, parameter.annotations, obj, context, references, includeAll,
+                                        skipName)
                         }
                         // now check whether there are any more properties not in constructor
                         val statics: Collection<KProperty<*>> = objClass.staticProperties
                         for (member in objClass.members) {
                             if (member is KProperty<*> && !statics.contains(member) &&
                                 !constructor.parameters.any { it.name == member.name })
-                                addUsingGetter(member, member.annotations, obj, config, references, pointer, includeAll,
+                                addUsingGetter(member, member.annotations, obj, context, references, includeAll,
                                         skipName)
                         }
                     }
@@ -224,8 +211,8 @@ object JSONSerializer {
                                 objClass.constructors.firstOrNull()?.parameters?.find { it.name == member.name }?.let {
                                     combinedAnnotations.addAll(it.annotations)
                                 }
-                                addUsingGetter(member, combinedAnnotations, obj, config, references, pointer,
-                                        includeAll, skipName)
+                                addUsingGetter(member, combinedAnnotations, obj, context, references, includeAll,
+                                        skipName)
                             }
                         }
                     }
@@ -242,12 +229,12 @@ object JSONSerializer {
         member: KProperty<*>,
         annotations: List<Annotation>?,
         obj: Any,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
         includeAll: Boolean,
         skipName: String?,
     ) {
+        val config = context.config
         if (!config.hasIgnoreAnnotation(annotations)) {
             val name = config.findNameFromAnnotation(annotations) ?: member.name
             if (name != skipName) {
@@ -258,17 +245,16 @@ object JSONSerializer {
                     if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls ||
                             includeAll) {
                         if (v is Opt<*>)
-                            v.ifSet { add(name, serializeChild(it, config, references, pointer, name)) }
+                            v.ifSet { add(name, serialize(it, context.child(name), references)) }
                         else
-                            add(name, serializeChild(v, config, references, pointer, name))
+                            add(name, serialize(v, context.child(name), references))
                     }
                 }
                 catch (e: JSONException) {
                     throw e
                 }
                 catch (e: Exception) {
-                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}",
-                            JSONPointer.from(pointer), e)
+                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}", context, e)
                 }
                 finally {
                     member.isAccessible = wasAccessible
@@ -279,9 +265,8 @@ object JSONSerializer {
 
     private fun serializeArray(
         array: Array<*>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ): JSONValue = if (array.isArrayOf<Char>())
         JSONString.of(StringBuilder(array.size).apply {
             for (ch in array)
@@ -290,7 +275,7 @@ object JSONSerializer {
     else
         JSONArray.Builder(array.size) {
             for (i in array.indices)
-                add(serializeChild(array[i], config, references, pointer, i.toString()))
+                add(serialize(array[i], context.child(i), references))
         }.build()
 
     private fun serializeTypedArray(
@@ -303,57 +288,52 @@ object JSONSerializer {
 
     private fun serializePair(
         pair: Pair<*, *>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) = JSONArray.Builder(2) {
-        add(serializeChild(pair.first, config, references, pointer, "0"))
-        add(serializeChild(pair.second, config, references, pointer, "1"))
+        add(serialize(pair.first, context.child(0), references))
+        add(serialize(pair.second, context.child(1), references))
     }.build()
 
     private fun serializeTriple(
         triple: Triple<*, *, *>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) = JSONArray.Builder(3) {
-        add(serializeChild(triple.first, config, references, pointer, "0"))
-        add(serializeChild(triple.second, config, references, pointer, "1"))
-        add(serializeChild(triple.third, config, references, pointer, "2"))
+        add(serialize(triple.first, context.child(0), references))
+        add(serialize(triple.second, context.child(1), references))
+        add(serialize(triple.third, context.child(2), references))
     }.build()
 
     private fun serializeIterator(
         iterator: Iterator<*>,
         size: Int,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) = JSONArray.Builder(size) {
         var index = 0
         while (iterator.hasNext())
-            add(serializeChild(iterator.next(), config, references, pointer, (index++).toString()))
+            add(serialize(iterator.next(), context.child(index++), references))
     }.build()
 
     private fun serializeEnumeration(
         enumeration: Enumeration<*>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) = JSONArray.build {
         var index = 0
         while (enumeration.hasMoreElements())
-            add(serializeChild(enumeration.nextElement(), config, references, pointer, (index++).toString()))
+            add(serialize(enumeration.nextElement(), context.child(index++), references))
     }
 
     private fun serializeMap(
         map: Map<*, *>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) = JSONObject.Builder(map.size) {
         for (entry in map.entries) {
             val keyString = entry.key.toString()
-            add(keyString, serializeChild(entry.value, config, references, pointer, keyString))
+            add(keyString, serialize(entry.value, context.child(keyString), references))
         }
     }.build()
 

@@ -57,7 +57,6 @@ import io.kjson.JSONSerializerFunctions.isToStringClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
 import io.kjson.optional.Opt
-import io.kjson.pointer.JSONPointer
 
 import net.pwall.json.JSONFunctions
 import net.pwall.util.DateOutput
@@ -97,26 +96,13 @@ object JSONStringify {
      * @param   config  an optional [JSONConfig] to customise the conversion
      */
     fun Appendable.appendJSON(obj: Any?, config: JSONConfig = JSONConfig.defaultConfig) {
-        appendJSON(obj, config, mutableListOf(), mutableListOf())
-    }
-
-    private fun Appendable.appendJSONChild(
-        obj: Any?,
-        config: JSONConfig,
-        references: MutableList<Any>,
-        pointer: MutableList<String>,
-        child: String,
-    ) {
-        pointer.add(child)
-        appendJSON(obj, config, references, pointer)
-        pointer.removeLast()
+        appendJSON(obj, JSONContext(config), mutableListOf())
     }
 
     private fun Appendable.appendJSON(
         obj: Any?,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
 
         if (obj == null) {
@@ -124,8 +110,9 @@ object JSONStringify {
             return
         }
 
+        val config = context.config
         config.findToJSONMapping(obj::class)?.let {
-            appendJSON(config.it(obj), config, references, pointer)
+            appendJSON(config.it(obj), context, references)
             return
         }
 
@@ -142,7 +129,7 @@ object JSONStringify {
                     JSONFunctions.appendChar(this, ch, config.stringifyNonASCII)
             }
             is Char -> appendQuoted { JSONFunctions.appendChar(this, obj, config.stringifyNonASCII) }
-            is Number -> appendJSONNumber(obj, config, references, pointer)
+            is Number -> appendJSONNumber(obj, context, references)
             is Boolean -> append(obj.toString())
             is UInt -> appendUnsignedInt(this, obj.toInt())
             is UShort -> appendInt(this, obj.toInt())
@@ -169,16 +156,15 @@ object JSONStringify {
             is FloatArray -> appendJSONTypedArray(obj.size) { append(obj[it].toString()) }
             is DoubleArray -> appendJSONTypedArray(obj.size) { append(obj[it].toString()) }
             is BooleanArray -> appendJSONTypedArray(obj.size) { append(obj[it].toString()) }
-            else -> appendJSONObject(obj, config, references, pointer)
+            else -> appendJSONObject(obj, context, references)
         }
 
     }
 
     private fun Appendable.appendJSONNumber(
         number: Number,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         when (number) {
             is Int -> appendInt(this, number)
@@ -186,53 +172,53 @@ object JSONStringify {
             is Long -> appendLong(this, number)
             is Float, is Double -> append(number.toString())
             is BigInteger -> {
-                if (config.bigIntegerString)
+                if (context.config.bigIntegerString)
                     JSONFunctions.appendString(this, number.toString(), false)
                 else
                     append(number.toString())
             }
             is BigDecimal -> {
-                if (config.bigDecimalString)
+                if (context.config.bigDecimalString)
                     JSONFunctions.appendString(this, number.toString(), false)
                 else
                     append(number.toString())
             }
-            else -> appendJSONObject(number, config, references, pointer)
+            else -> appendJSONObject(number, context, references)
         }
     }
 
     private fun Appendable.appendJSONObject(
         obj: Any,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         if (obj in references)
-            fatal("Circular reference to ${obj::class.simpleName}", JSONPointer.from(pointer))
+            fatal("Circular reference to ${obj::class.simpleName}", context)
         references.add(obj)
         try {
             val objClass = obj::class
             objClass.findToJSON()?.let {
                 try {
-                    appendJSON(it.call(obj), config, references, pointer)
+                    appendJSON(it.call(obj), context, references)
                     return
                 }
                 catch (e: Exception) {
-                    fatal("Error in custom toJSON - ${objClass.simpleName}", JSONPointer.from(pointer), e)
+                    fatal("Error in custom toJSON - ${objClass.simpleName}", context, e)
                 }
             }
             when (obj) {
-                is Array<*> -> appendJSONArray(obj, config, references, pointer)
-                is Pair<*, *> -> appendJSONPair(obj, config, references, pointer)
-                is Triple<*, *, *> -> appendJSONTriple(obj, config, references, pointer)
-                is Iterable<*> -> appendJSONIterator(obj.iterator(), config, references, pointer)
-                is Iterator<*> -> appendJSONIterator(obj, config, references, pointer)
-                is Sequence<*> -> appendJSONIterator(obj.iterator(), config, references, pointer)
-                is Enumeration<*> -> appendJSONIterator(obj.iterator(), config, references, pointer)
-                is BaseStream<*, *> -> appendJSONIterator(obj.iterator(), config, references, pointer)
-                is Map<*, *> -> appendJSONMap(obj, config, references, pointer)
-                is Opt<*> -> appendJSON(obj.orNull, config, references, pointer)
+                is Array<*> -> appendJSONArray(obj, context, references)
+                is Pair<*, *> -> appendJSONPair(obj, context, references)
+                is Triple<*, *, *> -> appendJSONTriple(obj, context, references)
+                is Iterable<*> -> appendJSONIterator(obj.iterator(), context, references)
+                is Iterator<*> -> appendJSONIterator(obj, context, references)
+                is Sequence<*> -> appendJSONIterator(obj.iterator(), context, references)
+                is Enumeration<*> -> appendJSONIterator(obj.iterator(), context, references)
+                is BaseStream<*, *> -> appendJSONIterator(obj.iterator(), context, references)
+                is Map<*, *> -> appendJSONMap(obj, context, references)
+                is Opt<*> -> appendJSON(obj.orNull, context, references)
                 else -> {
+                    val config = context.config
                     append('{')
                     var continuation = false
                     val skipName = objClass.findSealedClass()?.let {
@@ -260,15 +246,15 @@ object JSONStringify {
                         for (parameter in constructor.parameters) {
                             val member = objClass.members.find { it.name == parameter.name }
                             if (member is KProperty<*>)
-                                continuation = appendUsingGetter(member, parameter.annotations, obj, config, references,
-                                        pointer, includeAll, skipName, continuation)
+                                continuation = appendUsingGetter(member, parameter.annotations, obj, context,
+                                        references, includeAll, skipName, continuation)
                         }
                         // now check whether there are any more properties not in constructor
                         for (member in objClass.members) {
                             if (member is KProperty<*> && !statics.contains(member) &&
                                     !constructor.parameters.any { it.name == member.name })
-                                continuation = appendUsingGetter(member, member.annotations, obj, config, references,
-                                        pointer, includeAll, skipName, continuation)
+                                continuation = appendUsingGetter(member, member.annotations, obj, context, references,
+                                        includeAll, skipName, continuation)
                         }
                     }
                     else {
@@ -278,8 +264,8 @@ object JSONStringify {
                                 objClass.constructors.firstOrNull()?.parameters?.find { it.name == member.name }?.let {
                                     combinedAnnotations.addAll(it.annotations)
                                 }
-                                continuation = appendUsingGetter(member, combinedAnnotations, obj, config, references,
-                                        pointer, includeAll, skipName, continuation)
+                                continuation = appendUsingGetter(member, combinedAnnotations, obj, context, references,
+                                        includeAll, skipName, continuation)
                             }
                         }
                     }
@@ -296,13 +282,13 @@ object JSONStringify {
         member: KProperty<*>,
         annotations: List<Annotation>?,
         obj: Any,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
         includeAll: Boolean,
         skipName: String?,
         continuation: Boolean,
     ): Boolean {
+        val config = context.config
         if (!config.hasIgnoreAnnotation(annotations)) {
             val name = config.findNameFromAnnotation(annotations) ?: member.name
             if (name != skipName) {
@@ -314,12 +300,12 @@ object JSONStringify {
                             includeAll) {
                         if (v is Opt<*>) {
                             if (v.isSet) {
-                                appendObjectValue(name, v.value, config, references, pointer, continuation)
+                                appendObjectValue(name, v.value, context, references, continuation)
                                 return true
                             }
                         }
                         else {
-                            appendObjectValue(name, v, config, references, pointer, continuation)
+                            appendObjectValue(name, v, context, references, continuation)
                             return true
                         }
                     }
@@ -328,8 +314,7 @@ object JSONStringify {
                     throw e
                 }
                 catch (e: Exception) {
-                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}",
-                            JSONPointer.from(pointer), e)
+                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}", context, e)
                 }
                 finally {
                     member.isAccessible = wasAccessible
@@ -342,32 +327,30 @@ object JSONStringify {
     private fun Appendable.appendObjectValue(
         name: String,
         value: Any?,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
         continuation: Boolean,
     ) {
         if (continuation)
             append(',')
-        JSONFunctions.appendString(this, name, config.stringifyNonASCII)
+        JSONFunctions.appendString(this, name, context.config.stringifyNonASCII)
         append(':')
-        appendJSONChild(value, config, references, pointer, name)
+        appendJSON(value, context.child(name), references)
     }
 
     private fun Appendable.appendJSONArray(
         array: Array<*>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         if (array.isArrayOf<Char>()) {
             appendQuoted {
                 for (ch in array)
-                    JSONFunctions.appendChar(this, ch as Char, config.stringifyNonASCII)
+                    JSONFunctions.appendChar(this, ch as Char, context.config.stringifyNonASCII)
             }
         }
         else
-            appendJSONTypedArray(array.size) { appendJSONChild(array[it], config, references, pointer, it.toString()) }
+            appendJSONTypedArray(array.size) { appendJSON(array[it], context.child(it), references) }
     }
 
     private fun Appendable.appendJSONTypedArray(
@@ -387,43 +370,40 @@ object JSONStringify {
 
     private fun Appendable.appendJSONPair(
         pair: Pair<*, *>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         append('[')
-        appendJSONChild(pair.first, config, references, pointer, "0")
+        appendJSON(pair.first, context.child(0), references)
         append(',')
-        appendJSONChild(pair.second, config, references, pointer, "1")
+        appendJSON(pair.second, context.child(1), references)
         append(']')
     }
 
     private fun Appendable.appendJSONTriple(
         pair: Triple<*, *, *>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         append('[')
-        appendJSONChild(pair.first, config, references, pointer, "0")
+        appendJSON(pair.first, context.child(0), references)
         append(',')
-        appendJSONChild(pair.second, config, references, pointer, "1")
+        appendJSON(pair.second, context.child(1), references)
         append(',')
-        appendJSONChild(pair.third, config, references, pointer, "2")
+        appendJSON(pair.third, context.child(2), references)
         append(']')
     }
 
     private fun Appendable.appendJSONIterator(
         iterator: Iterator<*>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         append('[')
         if (iterator.hasNext()) {
             var index = 0
             while (true) {
-                appendJSONChild(iterator.next(), config, references, pointer, (index++).toString())
+                appendJSON(iterator.next(), context.child(index++), references)
                 if (!iterator.hasNext())
                     break
                 append(',')
@@ -434,9 +414,8 @@ object JSONStringify {
 
     private fun Appendable.appendJSONMap(
         map: Map<*, *>,
-        config: JSONConfig,
+        context: JSONContext,
         references: MutableList<Any>,
-        pointer: MutableList<String>,
     ) {
         append('{')
         map.entries.iterator().let {
@@ -444,9 +423,9 @@ object JSONStringify {
                 while (true) {
                     val (key, value) = it.next()
                     val keyString = key.toString()
-                    JSONFunctions.appendString(this, keyString, config.stringifyNonASCII)
+                    JSONFunctions.appendString(this, keyString, context.config.stringifyNonASCII)
                     append(':')
-                    appendJSONChild(value, config, references, pointer, keyString)
+                    appendJSON(value, context.child(keyString), references)
                     if (!it.hasNext())
                         break
                     append(',')
