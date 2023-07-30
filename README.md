@@ -20,6 +20,9 @@ Version 5.0 introduced changes to the API for deserialization which may be break
 This document describes the API for version 6.0; see [`kjson` 6](KJSON6.md) for further details, including the reasons
 behind the changes.
 
+Also, version 7.0 introduced changes to custom serialization and deserialization; see the
+[Custom Serialization and Deserialization](CUSTOM.md) guide for more information.
+
 ## Background
 
 This library provides JSON serialization and deserialization functionality for Kotlin.
@@ -264,25 +267,25 @@ See the [Custom Serialization and Deserialization](CUSTOM.md) guide for more inf
 
 ## Dependency Specification
 
-The latest version of the library is 6.1, and it may be obtained from the Maven Central repository.
+The latest version of the library is 7.0, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>6.1</version>
+      <version>7.0</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:6.1'
+    implementation 'io.kjson:kjson:7.0'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:6.1")
+    implementation("io.kjson:kjson:7.0")
 ```
 
 Peter Wall
 
-2023-07-25
+2023-07-30

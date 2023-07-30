@@ -87,7 +87,6 @@ import io.kjson.JSONSerializerFunctions.isUncachedClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
 import io.kjson.optional.Opt
-import io.kjson.pointer.JSONPointer
 
 /**
  * Reflection-based JSON deserialization for Kotlin.
@@ -127,34 +126,6 @@ object JSONDeserializer {
     ): Any? = deserialize(resultType, json, JSONContext(config))
 
     /**
-     * Deserialize a parsed [JSONValue] to a specified [KType] (specifying [JSONPointer]).
-     *
-     * @param   resultType  the target type
-     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
-     * @param   pointer     the [JSONPointer]
-     * @param   config      an optional [JSONConfig]
-     * @return              the converted object, of [resultType] (will be `null` only if [resultType] is nullable)
-     */
-    fun deserialize(
-        resultType: KType,
-        json: JSONValue?,
-        pointer: JSONPointer,
-        config: JSONConfig = JSONConfig.defaultConfig,
-    ): Any? {
-        val context = JSONContext(config, pointer)
-        config.findFromJSONMapping(resultType)?.let { return config.applyFromJSON(it, json, pointer, resultType) }
-        val resultClass = resultType.classifierAsClass(resultType, context)
-        if (json == null) {
-            return when {
-                resultClass == Opt::class -> Opt.UNSET
-                resultType.isMarkedNullable -> null
-                else -> fatal("Can't deserialize null as ${resultType.displayName()}", pointer)
-            }
-        }
-        return deserialize(resultType, resultClass, resultType.arguments, json, context)
-    }
-
-    /**
      * Deserialize a parsed [JSONValue] to a specified [KType] (specifying [JSONContext]).
      *
      * @param   resultType  the target type
@@ -168,7 +139,7 @@ object JSONDeserializer {
         context: JSONContext,
     ): Any? {
         context.config.findFromJSONMapping(resultType)?.let {
-            return context.config.applyFromJSON(it, json, context.pointer, resultType)
+            return context.applyFromJSON(it, json, resultType)
         }
         val resultClass = resultType.classifierAsClass(resultType, context)
         if (json == null) {
@@ -197,11 +168,34 @@ object JSONDeserializer {
         config: JSONConfig = JSONConfig.defaultConfig,
     ): T? {
         config.findFromJSONMapping(resultClass)?.let {
-            return config.applyFromJSON(it, json, JSONPointer.root, resultClass) as T?
+            return JSONContext(config).applyFromJSON(it, json, resultClass) as T?
         }
         if (json == null)
             return if (resultClass == Opt::class) Opt.UNSET as T else null
         return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, JSONContext(config))
+    }
+
+    /**
+     * Deserialize a parsed [JSONValue] to a specified [KClass], using a [JSONContext].
+     *
+     * @param   resultClass the target class
+     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
+     * @param   context     a [JSONContext]
+     * @param   T           the target class
+     * @return              the converted object, of [resultClass] (may be `null`)
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> deserialize(
+        resultClass: KClass<T>,
+        json: JSONValue?,
+        context: JSONContext,
+    ): T? {
+        context.config.findFromJSONMapping(resultClass)?.let {
+            return context.applyFromJSON(it, json, resultClass) as T?
+        }
+        if (json == null)
+            return if (resultClass == Opt::class) Opt.UNSET as T else null
+        return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, context)
     }
 
     /**
@@ -249,7 +243,7 @@ object JSONDeserializer {
 
     /**
      * Deserialize a parsed [JSONValue] to a specified [KType], where the result may not be `null` (specifying
-     * [JSONPointer]).
+     * [JSONContext]).
      *
      * @param   json        the parsed JSON, as a [JSONValue]
      * @param   context     a [JSONContext]
@@ -263,7 +257,7 @@ object JSONDeserializer {
 
     /**
      * Deserialize a parsed [JSONValue] to a specified [KType], where the result may not be `null` (specifying
-     * [JSONPointer]).
+     * [JSONContext]).
      *
      * @param   resultType  the target type
      * @param   json        the parsed JSON, as a [JSONValue]
@@ -278,7 +272,7 @@ object JSONDeserializer {
         context: JSONContext,
     ): T {
         context.config.findFromJSONMapping(resultType)?.let {
-            return context.config.applyFromJSON(it, json, context.pointer, resultType) as T
+            return context.applyFromJSON(it, json, resultType) as T
         }
         if (json == null)
             fatal("Can't deserialize null as ${resultType.displayName()}", context)
@@ -286,15 +280,14 @@ object JSONDeserializer {
         return deserialize(resultType, resultClass, emptyList(), json, context) as T
     }
 
-    private fun JSONConfig.applyFromJSON(
+    private fun JSONContext.applyFromJSON(
         fromJSONMapping: FromJSONMapping,
         json: JSONValue?,
-        pointer: JSONPointer,
         resultTypeOrClass: Any,
     ): Any? = try {
         fromJSONMapping(json)
     } catch (e: Exception) {
-        fatal("Error in custom fromJSON mapping of $resultTypeOrClass", pointer, e)
+        fatal("Error in custom fromJSON mapping of $resultTypeOrClass", this, e)
     }
 
     /**
@@ -334,7 +327,7 @@ object JSONDeserializer {
                 resultClass.companionObject?.let { companionObject ->
                     try {
                         findFromJSONInvoker(resultClass, json::class, companionObject)?.let {
-                            return it.invoke(json, context.config) as T
+                            return it.invoke(json, context) as T
                         }
                     }
                     catch (e: InvocationTargetException) {

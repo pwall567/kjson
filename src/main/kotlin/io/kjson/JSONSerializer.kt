@@ -76,6 +76,15 @@ object JSONSerializer {
     fun serialize(obj: Any?, config: JSONConfig = JSONConfig.defaultConfig): JSONValue? =
             serialize(obj, JSONContext(config), mutableListOf())
 
+    /**
+     * Serialize the given object to a [JSONValue], using a [JSONContext].
+     *
+     * @param   obj         the object to be serialized
+     * @param   context     a [JSONContext]
+     * @return              the [JSONValue] (or `null` if the input is `null`)
+     */
+    fun serialize(obj: Any?, context: JSONContext): JSONValue? = serialize(obj, context, mutableListOf())
+
     private fun serialize(
         obj: Any?,
         context: JSONContext,
@@ -86,7 +95,7 @@ object JSONSerializer {
             return null
 
         context.config.findToJSONMapping(obj::class)?.let {
-            return serialize(context.config.it(obj), context, references)
+            return serialize(context.it(obj), context, references)
         }
 
         if (obj is Enum<*> || obj::class.isToStringClass())

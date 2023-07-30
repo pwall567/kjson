@@ -112,7 +112,7 @@ object JSONStringify {
 
         val config = context.config
         config.findToJSONMapping(obj::class)?.let {
-            appendJSON(config.it(obj), context, references)
+            appendJSON(context.it(obj), context, references)
             return
         }
 

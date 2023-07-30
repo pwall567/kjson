@@ -2,12 +2,15 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [Unreleased]
+## [7.0] - 2023-07-30
 ### Added
 - `JSONContext`: serialization / deserialization context
 ### Changed
 - `JSONDeserializer`: block attempt to use private constructor
 - `JSONDeserializer`: switch to use `JSONContext`
+- `JSONConfig`, `JSONSerializer`, `JSONStringify`, `JSONCoStringify`, `JSONDeserializer`, `JSONSerializerFunctions`,
+  `JSONFun`: changed `toJSON` and `fromJSON` functions to be extension functions on `JSONContext`, not `JSONConfig`
+  (breaking change for users of custom serialization and/or deserialization)
 
 ## [6.1] - 2023-07-25
 ### Changed

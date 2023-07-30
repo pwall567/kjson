@@ -32,6 +32,7 @@ import java.time.LocalDate
 import io.kjson.JSON.asObject
 import io.kjson.JSON.asString
 import io.kjson.JSONConfig
+import io.kjson.JSONContext
 import io.kjson.JSONException
 import io.kjson.JSONInt
 import io.kjson.JSONObject
@@ -81,14 +82,14 @@ data class DummyFromJSON(val int1: Int) {
 
 }
 
-data class DummyFromJSONWithConfig(val dummy1: Dummy1) {
+data class DummyFromJSONWithContext(val dummy1: Dummy1) {
 
     companion object {
         @Suppress("unused")
-        fun JSONConfig.fromJSON(json: JSONValue): DummyFromJSONWithConfig {
+        fun JSONContext.fromJSON(json: JSONValue): DummyFromJSONWithContext {
             val jsonObject = json as JSONObject
-            val dummy1: Dummy1 = jsonObject["aaa"].asObject.fromJSONValue(this)
-            return DummyFromJSONWithConfig(dummy1)
+            val dummy1: Dummy1 = deserialize(jsonObject["aaa"])
+            return DummyFromJSONWithContext(dummy1)
         }
     }
 
@@ -177,6 +178,7 @@ class DummyWithVal {
 
     val field8: String = "blert"
 
+    @Suppress("KotlinConstantConditions")
     override fun equals(other: Any?): Boolean {
         return other is DummyWithVal && other.field8 == field8
     }

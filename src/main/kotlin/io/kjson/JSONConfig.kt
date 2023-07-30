@@ -216,7 +216,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   type    the target type
      * @param   mapping the mapping function
      */
-    fun fromJSONObject(type: KType, mapping: JSONConfig.(JSONObject) -> Any) {
+    fun fromJSONObject(type: KType, mapping: JSONContext.(JSONObject) -> Any) {
         fromSpecific(type, mapping)
     }
 
@@ -226,7 +226,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   type    the target type
      * @param   mapping the mapping function
      */
-    fun fromJSONArray(type: KType, mapping: JSONConfig.(JSONArray) -> Any) {
+    fun fromJSONArray(type: KType, mapping: JSONContext.(JSONArray) -> Any) {
         fromSpecific(type, mapping)
     }
 
@@ -237,11 +237,11 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   type    the target type
      */
-    fun fromJSONString(type: KType, mapping: JSONConfig.(JSONString) -> Any = getDefaultStringMapping(type)) {
+    fun fromJSONString(type: KType, mapping: JSONContext.(JSONString) -> Any = getDefaultStringMapping(type)) {
         fromSpecific(type, mapping)
     }
 
-    private inline fun <reified T : JSONValue> fromSpecific(type: KType, crossinline mapping: JSONConfig.(T) -> Any) {
+    private inline fun <reified T : JSONValue> fromSpecific(type: KType, crossinline mapping: JSONContext.(T) -> Any) {
         fromJSON(type) { json ->
             when (json) {
                 null -> if (type.isMarkedNullable) null else fatal("Can't deserialize null as $type")
@@ -276,7 +276,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T : Any> fromJSON(noinline mapping: JSONConfig.(JSONValue?) -> T) {
+    inline fun <reified T : Any> fromJSON(noinline mapping: JSONContext.(JSONValue?) -> T) {
         fromJSON(typeOf<T>(), mapping as FromJSONMapping)
     }
 
@@ -286,7 +286,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T : Any> fromJSONObject(noinline mapping: JSONConfig.(JSONObject) -> T) {
+    inline fun <reified T : Any> fromJSONObject(noinline mapping: JSONContext.(JSONObject) -> T) {
         fromJSONObject(typeOf<T>(), mapping)
     }
 
@@ -296,7 +296,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T : Any> fromJSONArray(noinline mapping: JSONConfig.(JSONArray) -> T) {
+    inline fun <reified T : Any> fromJSONArray(noinline mapping: JSONContext.(JSONArray) -> T) {
         fromJSONArray(typeOf<T>(), mapping)
     }
 
@@ -307,8 +307,9 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T : Any> fromJSONString(noinline mapping: JSONConfig.(JSONString) -> Any =
-            getDefaultStringMapping(typeOf<T>())) {
+    inline fun <reified T : Any> fromJSONString(
+        noinline mapping: JSONContext.(JSONString) -> Any = getDefaultStringMapping(typeOf<T>()),
+    ) {
         fromJSONString(typeOf<T>(), mapping)
     }
 
@@ -318,7 +319,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      *
      * @param   type    the required type
      */
-    fun getDefaultStringMapping(type: KType): JSONConfig.(JSONString) -> Any = { json ->
+    fun getDefaultStringMapping(type: KType): JSONContext.(JSONString) -> Any = { json ->
         val resultClass = type.classifier as? KClass<*> ?: fatal("Can't deserialize $type")
         val constructor = resultClass.constructors.find {
             it.hasSingleParameter(String::class)
@@ -332,7 +333,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * @param   mapping the mapping function
      * @param   T       the type to be mapped
      */
-    inline fun <reified T : Any> toJSON(noinline mapping: JSONConfig.(T?) -> JSONValue?) {
+    inline fun <reified T : Any> toJSON(noinline mapping: JSONContext.(T?) -> JSONValue?) {
         toJSON(typeOf<T>()) { mapping(it as T?) }
     }
 
@@ -422,11 +423,11 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
         fromJSON(type) { jsonValue ->
             if (jsonValue !is JSONObject || !discriminator.existsIn(jsonValue))
                 fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
-            val discriminatorValue = JSONDeserializer.deserialize(mappingClass, discriminator.find(jsonValue), this)
+            val discriminatorValue = deserialize(mappingClass, discriminator.find(jsonValue))
             val mapping = mappings.find { it.first == discriminatorValue } ?:
                     fatal("Can't deserialize ${jsonValue.displayValue()} as $type, discriminator value was " +
-                            discriminatorValue)
-            JSONDeserializer.deserialize(mapping.second, jsonValue, this)
+                                discriminatorValue)
+            deserialize(mapping.second, jsonValue)
         }
     }
 

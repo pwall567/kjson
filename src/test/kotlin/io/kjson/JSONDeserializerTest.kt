@@ -47,7 +47,7 @@ import io.kjson.testclasses.CustomIgnore
 import io.kjson.testclasses.Dummy1
 import io.kjson.testclasses.Dummy5
 import io.kjson.testclasses.DummyFromJSON
-import io.kjson.testclasses.DummyFromJSONWithConfig
+import io.kjson.testclasses.DummyFromJSONWithContext
 import io.kjson.testclasses.DummyMultipleFromJSON
 import io.kjson.testclasses.DummyWithAllowExtra
 import io.kjson.testclasses.DummyWithCustomAllowExtra
@@ -90,7 +90,7 @@ class JSONDeserializerTest {
         expect(expected) { JSONDeserializer.deserialize(json) }
     }
 
-    @Test fun `should use companion object fromJSON with JSONConfig receiver`() {
+    @Test fun `should use companion object fromJSON with JSONContext receiver`() {
         val config = JSONConfig {
             fromJSONObject { json ->
                 val field1 = json["a"].asString
@@ -105,7 +105,7 @@ class JSONDeserializerTest {
         val json = JSONObject.build {
             add("aaa", inner)
         }
-        val expected = DummyFromJSONWithConfig(Dummy1("Complex", 6789))
+        val expected = DummyFromJSONWithContext(Dummy1("Complex", 6789))
         expect(expected) { JSONDeserializer.deserialize(json, config) }
     }
 

@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerFunctions.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,21 +45,21 @@ import net.pwall.util.IntOutput.append2Digits
 object JSONDeserializerFunctions {
 
     abstract class FromJSONInvoker(val instance: Any?) {
-        abstract fun invoke(json: JSONValue, config: JSONConfig): Any?
+        abstract fun invoke(json: JSONValue, context: JSONContext): Any?
     }
 
     class FromJSONInvokerBasic(instance: Any?, val function: KFunction<*>) : FromJSONInvoker(instance) {
 
-        override fun invoke(json: JSONValue, config: JSONConfig): Any? {
+        override fun invoke(json: JSONValue, context: JSONContext): Any? {
             return function.call(instance, json)
         }
 
     }
 
-    class FromJSONInvokerWithConfig(instance: Any?, val function: KFunction<*>) : FromJSONInvoker(instance) {
+    class FromJSONInvokerWithContext(instance: Any?, val function: KFunction<*>) : FromJSONInvoker(instance) {
 
-        override fun invoke(json: JSONValue, config: JSONConfig): Any? {
-            return function.call(instance, config, json)
+        override fun invoke(json: JSONValue, context: JSONContext): Any? {
+            return function.call(instance, context, json)
         }
 
     }
@@ -89,9 +89,9 @@ object JSONDeserializerFunctions {
                 }
                 if (function.parameters.size == 3 &&
                     function.parameters[0].isInstanceParameter(companionObjectClass) &&
-                    function.parameters[1].isExtensionReceiverParameter(JSONConfig::class) &&
+                    function.parameters[1].isExtensionReceiverParameter(JSONContext::class) &&
                     function.parameters[2].isValueParameter(parameterClass)) {
-                    return FromJSONInvokerWithConfig(companionObjectClass.objectInstance, function)
+                    return FromJSONInvokerWithContext(companionObjectClass.objectInstance, function)
                 }
             }
         }

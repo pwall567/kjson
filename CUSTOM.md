@@ -24,6 +24,13 @@ This allows the function full access to the configuration options, which is part
 standard serialization and deserialization functions recursively.
 The change should be transparent to most existing uses.
 
+**New in Version 7.0** &ndash; the `toJSON` and `fromJSON` functions are now invoked as extension functions on
+`JSONContext`, which provides access to both the `JSONConfig` and a `JSONPointer` describing the current location in a
+complex object.
+The `JSONContext` also provides `serialize()` and `deserialize()` functions that make use of the context.
+The change may be transparent to most many uses, but existing uses that make use of the `JSONConfig` may be improved by
+switching to the new functions.
+
 ## Serialization
 
 Custom serialization converts the object to a `JSONValue`; the library will convert the `JSONValue` to string form if
@@ -180,19 +187,17 @@ The function `fromJSONObject` specifies that the input must be a `JSONObject` an
     config.fromJSONObject { json ->
         val name = json["name"].asString
         val number = json["number"].asLong
-        val address: Address? = json["address"]?.fromJSONValue(this)
+        val address: Address? = deserialize(json["address"])
         Account.create(number, name, address)
     }
 ```
-This also illustrates the use of `fromJSONValue` &ndash; the example assumes that the `Address` class can be
-deserialized in the normal manner, and this function recursively invokes the main deserialization process (the
-`fromJSONValue` function, like many functions in the library, takes a `JSONConfig` as an optional last parameter; the
-lambda is executed with the current `JSONConfig` as receiver, so `this` in this case passes the config on to the nested
-deserialization).
+This also illustrates the use of `deserialize` &ndash; the example assumes that the nested `Address` class can be
+deserialized without custom code, and this function recursively invokes the main deserialization process with the
+current context (that is, the object on which the `fromJSONObject` lambda is invoked as an extension function).
 
 If it is necessary to add settings to the `JSONConfig` used in nested calls, the `copy` function may be used:
 ```kotlin
-        val nestedConfig = this.copy {
+        val nestedConfig = config.copy { // JSONContext exposes the current JSONConfig under the name config
             allowExtra = true
         }
         val address: Address? = json["address"]?.fromJSONValue(nestedConfig)
@@ -248,4 +253,4 @@ specified.
 Additional versions of the function take either a `KType` or a `KClass` as the first parameter, instead of using the
 type parameter.
 
-2023-07-03
+2023-07-30

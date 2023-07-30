@@ -475,14 +475,14 @@ class JSONConfigTest {
             toJSON<Dummy3> { obj ->
                 obj?.let {
                     JSONObject.build {
-                        add("dummy", JSONSerializer.serialize(it.dummy1, this@toJSON))
+                        add("dummy", serialize(it.dummy1))
                         add("text", it.text)
                     }
                 }
             }
             fromJSON { json ->
                 require(json is JSONObject) { "Must be JSONObject" }
-                Dummy3(JSONDeserializer.deserialize(json["dummy"].asObject, this), json["text"].asString)
+                Dummy3(deserialize(json["dummy"].asObject), json["text"].asString)
             }
         }
         val json1 = JSONObject.build {

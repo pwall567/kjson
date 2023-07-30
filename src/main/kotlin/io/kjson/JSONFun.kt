@@ -42,10 +42,10 @@ import io.kjson.parser.Parser
 import net.pwall.util.CoOutput
 
 /** Type alias to simplify the definition of `fromJSON` mapping functions. */
-typealias FromJSONMapping = JSONConfig.(JSONValue?) -> Any?
+typealias FromJSONMapping = JSONContext.(JSONValue?) -> Any?
 
 /** Type alias to simplify the definition of `toJSON` mapping functions. */
-typealias ToJSONMapping = JSONConfig.(Any?) -> Any?
+typealias ToJSONMapping = JSONContext.(Any?) -> Any?
 
 /**
  * Deserialize JSON from string ([CharSequence]) to a specified [KType].

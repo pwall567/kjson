@@ -136,7 +136,7 @@ object JSONCoStringify {
 
         val config = context.config
         config.findToJSONMapping(obj::class)?.let {
-            outputJSONInternal(config.it(obj), context, references)
+            outputJSONInternal(context.it(obj), context, references)
             return
         }
 
