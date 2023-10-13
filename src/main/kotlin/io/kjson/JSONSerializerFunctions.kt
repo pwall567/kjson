@@ -2,7 +2,7 @@
  * @(#) JSONSerializerFunctions.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 
 package io.kjson
 
+import kotlin.reflect.KCallable
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
@@ -70,6 +71,8 @@ object JSONSerializerFunctions {
         Instant::class, OffsetDateTime::class, OffsetTime::class, LocalDateTime::class,
         LocalDate::class, LocalTime::class, Year::class, YearMonth::class, MonthDay::class, UUID::class)
 
+    private val impossibleClasses = setOf(Unit::class, Nothing::class, Void::class)
+
     private val toJsonCache = HashMap<KClass<*>, KFunction<Any?>?>()
 
     /**
@@ -87,6 +90,14 @@ object JSONSerializerFunctions {
      * @return              `true` if the object is a member of a system class
      */
     fun KClass<*>.isUncachedClass() = this in uncachedClasses || this in toStringClasses
+
+    /**
+     * Is the class one that can't be deserialized?
+     *
+     * @receiver            the class of the object
+     * @return              `true` if the object is a member of a class that can't be deserialized
+     */
+    fun KClass<*>.isImpossible() = this in impossibleClasses
 
     fun KClass<*>.findToJSON(): KFunction<Any?>? {
         if (isUncachedClass())
@@ -110,7 +121,7 @@ object JSONSerializerFunctions {
     }
 
     private fun KType.isAcceptable(): Boolean {
-        classifier?.let { if (it is KClass<*>) return it != Unit::class && it != Nothing::class }
+        classifier?.let { if (it is KClass<*>) return !it.isImpossible() }
         return true
     }
 
@@ -124,6 +135,18 @@ object JSONSerializerFunctions {
             }
         }
         return null
+    }
+
+    internal fun KCallable<*>.getCombinedAnnotations(objClass: KClass<*>): List<Annotation> =
+        annotations.combinedWith(objClass.findConstructorParameter(name)?.annotations)
+
+    private fun KClass<*>.findConstructorParameter(name: String): KParameter? =
+        constructors.firstOrNull()?.parameters?.find { it.name == name }
+
+    private fun <T> List<T>.combinedWith(otherList: List<T>?): List<T> = when {
+        otherList.isNullOrEmpty() -> this
+        this.isEmpty() -> otherList
+        else -> this + otherList
     }
 
     fun Appendable.appendUUID(uuid: UUID) {

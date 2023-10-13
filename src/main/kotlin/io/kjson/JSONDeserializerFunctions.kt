@@ -29,6 +29,7 @@ import kotlin.reflect.KCallable
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
+import kotlin.reflect.KType
 import kotlin.reflect.full.functions
 import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.isSuperclassOf
@@ -64,6 +65,14 @@ object JSONDeserializerFunctions {
 
     }
 
+    class FromJSONInvokerWithConfig(instance: Any?, val function: KFunction<*>) : FromJSONInvoker(instance) {
+
+        override fun invoke(json: JSONValue, context: JSONContext): Any? {
+            return function.call(instance, context.config, json)
+        }
+
+    }
+
     private val fromJsonCache = HashMap<Pair<KClass<*>, KClass<*>>, FromJSONInvoker>()
 
     fun findFromJSONInvoker(resultClass: KClass<*>, parameterClass: KClass<*>, companionObject: KClass<*>):
@@ -82,16 +91,23 @@ object JSONDeserializerFunctions {
     ): FromJSONInvoker? {
         for (function in functions) {
             if (function.name == "fromJSON" && function.returnType.classifier == resultClass) {
-                if (function.parameters.size == 2 &&
-                    function.parameters[0].isInstanceParameter(companionObjectClass) &&
-                    function.parameters[1].isValueParameter(parameterClass)) {
+                val parameters = function.parameters
+                if (parameters.size == 2 &&
+                    parameters[0].isInstanceParameter(companionObjectClass) &&
+                    parameters[1].isValueParameter(parameterClass)) {
                     return FromJSONInvokerBasic(companionObjectClass.objectInstance, function)
                 }
-                if (function.parameters.size == 3 &&
-                    function.parameters[0].isInstanceParameter(companionObjectClass) &&
-                    function.parameters[1].isExtensionReceiverParameter(JSONContext::class) &&
-                    function.parameters[2].isValueParameter(parameterClass)) {
+                if (parameters.size == 3 &&
+                    parameters[0].isInstanceParameter(companionObjectClass) &&
+                    parameters[1].isExtensionReceiverParameter(JSONContext::class) &&
+                    parameters[2].isValueParameter(parameterClass)) {
                     return FromJSONInvokerWithContext(companionObjectClass.objectInstance, function)
+                }
+                if (parameters.size == 3 &&
+                    parameters[0].isInstanceParameter(companionObjectClass) &&
+                    parameters[1].isExtensionReceiverParameter(JSONConfig::class) &&
+                    parameters[2].isValueParameter(parameterClass)) {
+                    return FromJSONInvokerWithConfig(companionObjectClass.objectInstance, function)
                 }
             }
         }
@@ -107,7 +123,10 @@ object JSONDeserializerFunctions {
     private fun KParameter.isValueParameter(valueClass: KClass<*>) =
             kind == KParameter.Kind.VALUE && (type.classifier as KClass<*>).isSuperclassOf(valueClass)
 
-    fun KFunction<*>.hasSingleParameter(paramClass: KClass<*>): Boolean = parameters.isNotEmpty() &&
+    fun <R : Any> KClass<R>.findSingleParameterConstructor(paramClass: KClass<*>): KFunction<R>? =
+            constructors.singleOrNull { it.hasSingleParameter(paramClass) }
+
+    private fun KFunction<*>.hasSingleParameter(paramClass: KClass<*>): Boolean = parameters.isNotEmpty() &&
             ((parameters[0].type.classifier as? KClass<*>)?.isSuperclassOf(paramClass) ?: false) &&
             subsequentParametersOptional()
 
@@ -125,9 +144,19 @@ object JSONDeserializerFunctions {
     private fun KClass<*>.isNumberClass() = this.isSubclassOf(Number::class) || this == UInt::class ||
             this == ULong::class || this == UShort::class || this == UByte::class
 
-    fun <T> KCallable<T>.callWithSingle(parameters: List<KParameter>, arg: Any?): T {
-        return if (parameters.size == 1) call(arg) else callBy(mapOf(parameters[0] to arg))
+    fun <R> KCallable<R>.callWithSingle(arg: Any?): R = when (parameters.size) {
+        1 -> call(arg)
+        else -> callBy(mapOf(parameters[0] to arg))
     }
+
+    fun KType.classifierAsClass(target: KType, context: JSONContext): KClass<*> = classifier as? KClass<*> ?:
+            context.fatal("Can't create ${target.displayName()} - insufficient type information")
+
+    fun KClass<*>.displayName(): String = qualifiedName?.displayName() ?: "<unknown>"
+
+    fun KType.displayName(): String = toString().displayName()
+
+    fun String.displayName(): String = if (startsWith("kotlin.") && indexOf('.', 7) < 0) substring(7) else this
 
     fun JSONNumber.toBigInteger(): BigInteger = when (this) {
         is JSONDecimal -> value.toBigInteger()

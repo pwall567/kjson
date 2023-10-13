@@ -49,10 +49,10 @@ import java.util.Enumeration
 import java.util.UUID
 import java.util.stream.BaseStream
 
-import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.JSONSerializerFunctions.appendUUID
 import io.kjson.JSONSerializerFunctions.findSealedClass
 import io.kjson.JSONSerializerFunctions.findToJSON
+import io.kjson.JSONSerializerFunctions.getCombinedAnnotations
 import io.kjson.JSONSerializerFunctions.isToStringClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
@@ -74,7 +74,7 @@ object JSONSerializer {
      * @return              the [JSONValue] (or `null` if the input is `null`)
      */
     fun serialize(obj: Any?, config: JSONConfig = JSONConfig.defaultConfig): JSONValue? =
-            serialize(obj, JSONContext(config), mutableListOf())
+            if (obj == null) null else serialize(obj, JSONContext(config), mutableListOf())
 
     /**
      * Serialize the given object to a [JSONValue], using a [JSONContext].
@@ -83,7 +83,8 @@ object JSONSerializer {
      * @param   context     a [JSONContext]
      * @return              the [JSONValue] (or `null` if the input is `null`)
      */
-    fun serialize(obj: Any?, context: JSONContext): JSONValue? = serialize(obj, context, mutableListOf())
+    fun serialize(obj: Any?, context: JSONContext): JSONValue? =
+            if (obj == null) null else serialize(obj, context, mutableListOf())
 
     private fun serialize(
         obj: Any?,
@@ -94,6 +95,9 @@ object JSONSerializer {
         if (obj == null)
             return null
 
+        if (obj is JSONValue)
+            return obj
+
         context.config.findToJSONMapping(obj::class)?.let {
             return serialize(context.it(obj), context, references)
         }
@@ -102,7 +106,6 @@ object JSONSerializer {
             return JSONString.of(obj.toString())
 
         return when (obj) {
-            is JSONValue -> obj
             is CharSequence -> JSONString.of(obj)
             is CharArray -> JSONString.of(StringBuilder().append(obj))
             is Char -> JSONString.of(StringBuilder().append(obj))
@@ -161,7 +164,7 @@ object JSONSerializer {
         references: MutableList<Any>,
     ): JSONValue? {
         if (obj in references)
-            fatal("Circular reference to ${obj::class.simpleName}", context)
+            context.fatal("Circular reference to ${obj::class.simpleName}")
         references.add(obj)
         try {
             val objClass = obj::class
@@ -169,8 +172,11 @@ object JSONSerializer {
             try {
                 objClass.findToJSON()?.let { return serialize(it.call(obj), context, references) }
             }
+            catch (e: JSONException) {
+                throw e
+            }
             catch (e: Exception) {
-                fatal("Error in custom toJSON - ${objClass.simpleName}", context, e)
+                context.fatal("Error in custom toJSON - ${objClass.simpleName}", e)
             }
 
             return when (obj) {
@@ -193,36 +199,52 @@ object JSONSerializer {
                                 objClass.findAnnotation<JSONIdentifier>()?.id ?: objClass.simpleName ?: "null")
                         discriminator
                     }
-                    val includeAll = context.config.hasIncludeAllPropertiesAnnotation(objClass.annotations)
+                    val includeAll = context.config.includeNullFields(objClass)
                     if (objClass.isData && objClass.constructors.isNotEmpty()) {
                         // data classes will be a frequent use of serialization, so optimise for them
                         val constructor = objClass.constructors.first()
                         for (parameter in constructor.parameters) {
                             val member = objClass.members.find { it.name == parameter.name }
                             if (member is KProperty<*>)
-                                addUsingGetter(member, parameter.annotations, obj, context, references, includeAll,
-                                        skipName)
+                                addUsingGetter(
+                                    member = member,
+                                    annotations = parameter.annotations,
+                                    obj = obj,
+                                    context = context,
+                                    references = references,
+                                    includeAll = includeAll,
+                                    skipName = skipName,
+                                )
                         }
                         // now check whether there are any more properties not in constructor
                         val statics: Collection<KProperty<*>> = objClass.staticProperties
                         for (member in objClass.members) {
                             if (member is KProperty<*> && !statics.contains(member) &&
-                                !constructor.parameters.any { it.name == member.name })
-                                addUsingGetter(member, member.annotations, obj, context, references, includeAll,
-                                        skipName)
+                                    !constructor.parameters.any { it.name == member.name })
+                                addUsingGetter(
+                                    member = member,
+                                    annotations = member.annotations,
+                                    obj = obj,
+                                    context = context,
+                                    references = references,
+                                    includeAll = includeAll,
+                                    skipName = skipName,
+                                )
                         }
                     }
                     else {
                         val statics: Collection<KProperty<*>> = objClass.staticProperties
                         for (member in objClass.members) {
-                            if (member is KProperty<*> && !statics.contains(member)) {
-                                val combinedAnnotations = ArrayList(member.annotations)
-                                objClass.constructors.firstOrNull()?.parameters?.find { it.name == member.name }?.let {
-                                    combinedAnnotations.addAll(it.annotations)
-                                }
-                                addUsingGetter(member, combinedAnnotations, obj, context, references, includeAll,
-                                        skipName)
-                            }
+                            if (member is KProperty<*> && !statics.contains(member))
+                                addUsingGetter(
+                                    member = member,
+                                    annotations = member.getCombinedAnnotations(objClass),
+                                    obj = obj,
+                                    context = context,
+                                    references = references,
+                                    includeAll = includeAll,
+                                    skipName = skipName,
+                                )
                         }
                     }
                 }
@@ -251,8 +273,7 @@ object JSONSerializer {
                 member.isAccessible = true
                 try {
                     val v = member.getter.call(obj)
-                    if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls ||
-                            includeAll) {
+                    if (v != null || includeAll || config.hasIncludeIfNullAnnotation(annotations)) {
                         if (v is Opt<*>)
                             v.ifSet { add(name, serialize(it, context.child(name), references)) }
                         else
@@ -263,7 +284,7 @@ object JSONSerializer {
                     throw e
                 }
                 catch (e: Exception) {
-                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}", context, e)
+                    context.fatal("Error getting property ${member.name} from ${obj::class.simpleName}", e)
                 }
                 finally {
                     member.isAccessible = wasAccessible

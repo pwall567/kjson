@@ -38,7 +38,9 @@ import kotlin.reflect.full.staticFunctions
 import kotlin.reflect.typeOf
 
 import io.kjson.JSON.displayValue
-import io.kjson.JSONDeserializerFunctions.hasSingleParameter
+import io.kjson.JSONDeserializerFunctions.callWithSingle
+import io.kjson.JSONDeserializerFunctions.classifierAsClass
+import io.kjson.JSONDeserializerFunctions.findSingleParameterConstructor
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.annotation.JSONAllowExtra
 import io.kjson.annotation.JSONIgnore
@@ -201,6 +203,44 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
     }
 
     /**
+     * Add custom mapping from a specified type to JSON.
+     *
+     * @param   type    the source type
+     * @param   mapping the mapping function
+     */
+    fun toJSON(type: KType, mapping: ToJSONMapping) {
+        toJSONMap[type] = mapping
+    }
+
+    /**
+     * Add custom mapping from a specified type to JSON using the `toString()` function to create a JSON string.
+     *
+     * @param   type    the source type
+     */
+    fun toJSONString(type: KType) {
+        toJSONMap[type] = { obj -> obj?.let { JSONString(it.toString())} }
+    }
+
+    /**
+     * Add custom mapping from an inferred type to JSON.
+     *
+     * @param   mapping the mapping function
+     * @param   T       the type to be mapped
+     */
+    inline fun <reified T : Any> toJSON(noinline mapping: JSONContext.(T) -> JSONValue?) {
+        toJSON(typeOf<T>()) { mapping(it as T) }
+    }
+
+    /**
+     * Add custom mapping from an inferred type to JSON using the `toString()` function to create a JSON string.
+     *
+     * @param   T       the type to be mapped
+     */
+    inline fun <reified T : Any> toJSONString() {
+        toJSONString(typeOf<T>())
+    }
+
+    /**
      * Add custom mapping from JSON to the specified type.
      *
      * @param   type    the target type
@@ -252,25 +292,6 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
     }
 
     /**
-     * Add custom mapping from a specified type to JSON.
-     *
-     * @param   type    the source type
-     * @param   mapping the mapping function
-     */
-    fun toJSON(type: KType, mapping: ToJSONMapping) {
-        toJSONMap[type] = mapping
-    }
-
-    /**
-     * Add custom mapping from a specified type to JSON using the `toString()` function to create a JSON string.
-     *
-     * @param   type    the source type
-     */
-    fun toJSONString(type: KType) {
-        toJSONMap[type] = { obj -> obj?.let { JSONString(it.toString())} }
-    }
-
-    /**
      * Add custom mapping from JSON to the inferred type.
      *
      * @param   mapping the mapping function
@@ -317,38 +338,19 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * Get a default mapping from [JSONString] to the specified type.  The default mapping looks for a constructor that
      * takes a single [String] parameter, and invokes that constructor with the string value.
      *
+     * **NOTE:** This is public solely because it is used by a public inline function.
+     *
      * @param   type    the required type
      */
     fun getDefaultStringMapping(type: KType): JSONContext.(JSONString) -> Any = { json ->
-        val resultClass = type.classifier as? KClass<*> ?: fatal("Can't deserialize $type")
-        val constructor = resultClass.constructors.find {
-            it.hasSingleParameter(String::class)
-        }
-        constructor?.call(json.value) ?: fatal("Can't deserialize $type")
+        val resultClass = type.classifierAsClass(type, this)
+        resultClass.findSingleParameterConstructor(String::class)?.callWithSingle(json.value) ?:
+                fatal("Can't deserialize $type")
     }
 
     /**
-     * Add custom mapping from an inferred type to JSON.
-     *
-     * @param   mapping the mapping function
-     * @param   T       the type to be mapped
-     */
-    inline fun <reified T : Any> toJSON(noinline mapping: JSONContext.(T?) -> JSONValue?) {
-        toJSON(typeOf<T>()) { mapping(it as T?) }
-    }
-
-    /**
-     * Add custom mapping from an inferred type to JSON using the `toString()` function to create a JSON string.
-     *
-     * @param   T       the type to be mapped
-     */
-    inline fun <reified T : Any> toJSONString() {
-        toJSONString(typeOf<T>())
-    }
-
-    /**
-     * Add a polymorphic mapping to the specified target class, using the nominated property and a list of pairs of
-     * property value and target type.
+     * Add a polymorphic mapping, such that any request to deserialize the specified target base class will determine
+     * the derived class using a nominated property and a list of pairs of property value and target type.
      *
      * @param   targetClass     the target class
      * @param   property        the property name
@@ -613,6 +615,13 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
         }
         return false
     }
+
+    /**
+     * Test whether the nominated class has a `@JSONIncludeAllProperties` annotation, or if the `includeNulls` switch is
+     * set in this `JSONConfig`.
+     */
+    fun includeNullFields(objClass: KClass<*>): Boolean =
+            includeNulls || hasIncludeAllPropertiesAnnotation(objClass.annotations)
 
     /**
      * Combine another `JSONConfig` into this one.

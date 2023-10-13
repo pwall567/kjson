@@ -51,14 +51,6 @@ class JSONKotlinException(val text: String, val pointer: JSONPointer? = null) : 
 
     companion object {
 
-        internal fun fatal(text: String, context: JSONContext): Nothing {
-            throw JSONKotlinException(text, context.pointer)
-        }
-
-        internal fun fatal(text: String, context: JSONContext, nested: Throwable): Nothing {
-            throw JSONKotlinException(text, context.pointer, nested)
-        }
-
         internal fun fatal(text: String, pointer: JSONPointer? = null): Nothing {
             throw JSONKotlinException(text, pointer)
         }

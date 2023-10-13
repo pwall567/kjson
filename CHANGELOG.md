@@ -2,6 +2,21 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [Unreleased]
+### Changed
+- `JSONContext`: added `fatal()` to simplify error output
+- `JSONContext`: fixed inconsistency in `deserialize()` taking `KClass`
+- `JSONDeserializer`, `JSONSerializerFunctions`: added check for "impossible" classes (`Unit`, `Nothing` _etc._)
+- `JSONDeserializer`, `JSONDeserializerFunctions`, `JSONKotlinException`, `JSONContext`, `JSONSerializer`,
+  `JSONStringify`, `JSONCoStringify`: improved exception handling
+- `JSONDeserializer`, `JSONConfig`: improved constructor invocation
+- `JSONConfig`: fixed inconsistency in nullability and `toJSON()`
+- `JSONContext`: added `deserializeProperty()` and `deserializeItem()`
+- `JSONContext`: added `JSONObject.Builder.addChild()` and `JSONArray.Builder.addItem()`
+- `JSONContext`: added `modifyConfig()` and `replaceConfig()`
+- `JSONSerializer`, `JSONSerializerFunctions`, `JSONStringify`, `JSONCoStringify`: performance improvements
+- `pom.xml`: updated multiple dependency versions
+
 ## [7.0] - 2023-07-30
 ### Added
 - `JSONContext`: serialization / deserialization context

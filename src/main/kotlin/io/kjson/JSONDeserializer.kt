@@ -75,14 +75,16 @@ import java.util.stream.Stream
 
 import io.kjson.JSON.asStringOrNull
 import io.kjson.JSONDeserializerFunctions.callWithSingle
+import io.kjson.JSONDeserializerFunctions.classifierAsClass
 import io.kjson.JSONDeserializerFunctions.createUUID
+import io.kjson.JSONDeserializerFunctions.displayName
 import io.kjson.JSONDeserializerFunctions.findFromJSONInvoker
 import io.kjson.JSONDeserializerFunctions.findParameterName
+import io.kjson.JSONDeserializerFunctions.findSingleParameterConstructor
 import io.kjson.JSONDeserializerFunctions.hasNumberParameter
-import io.kjson.JSONDeserializerFunctions.hasSingleParameter
 import io.kjson.JSONDeserializerFunctions.parseCalendar
 import io.kjson.JSONDeserializerFunctions.toBigInteger
-import io.kjson.JSONKotlinException.Companion.fatal
+import io.kjson.JSONSerializerFunctions.isImpossible
 import io.kjson.JSONSerializerFunctions.isUncachedClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
@@ -146,7 +148,7 @@ object JSONDeserializer {
             return when {
                 resultClass == Opt::class -> Opt.UNSET
                 resultType.isMarkedNullable -> null
-                else -> fatal("Can't deserialize null as ${resultType.displayName()}", context)
+                else -> context.fatal("Can't deserialize null as ${resultType.displayName()}")
             }
         }
         return deserialize(resultType, resultClass, resultType.arguments, json, context)
@@ -275,7 +277,7 @@ object JSONDeserializer {
             return context.applyFromJSON(it, json, resultType) as T
         }
         if (json == null)
-            fatal("Can't deserialize null as ${resultType.displayName()}", context)
+            context.fatal("Can't deserialize null as ${resultType.displayName()}")
         val resultClass = resultType.classifierAsClass(resultType, context)
         return deserialize(resultType, resultClass, emptyList(), json, context) as T
     }
@@ -286,8 +288,10 @@ object JSONDeserializer {
         resultTypeOrClass: Any,
     ): Any? = try {
         fromJSONMapping(json)
+    } catch (e: JSONException) {
+        throw e
     } catch (e: Exception) {
-        fatal("Error in custom fromJSON mapping of $resultTypeOrClass", this, e)
+        fatal("Error in custom fromJSON mapping of $resultTypeOrClass", e)
     }
 
     /**
@@ -310,6 +314,9 @@ object JSONDeserializer {
         context: JSONContext,
     ): T {
 
+        if (resultClass.isImpossible())
+            context.fatal("Can't deserialize ${resultClass.simpleName}")
+
         // check for JSONValue
 
         if (resultClass.isSubclassOf(JSONValue::class) && resultClass.isSuperclassOf(json::class))
@@ -331,10 +338,13 @@ object JSONDeserializer {
                         }
                     }
                     catch (e: InvocationTargetException) {
-                        fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", context, e.cause ?: e)
+                        val cause = e.cause
+                        if (cause is JSONException)
+                            throw cause
+                        context.fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", e.cause ?: e)
                     }
                     catch (e: Exception) {
-                        fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", context, e)
+                        context.fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", e)
                     }
                 }
             }
@@ -349,7 +359,7 @@ object JSONDeserializer {
                 if (resultClass.isSuperclassOf(Boolean::class))
                     json.value as T
                 else
-                    fatal("Can't deserialize $json as ${resultClass.displayName()}", context)
+                    context.fatal("Can't deserialize $json as ${resultClass.displayName()}")
             }
             is JSONString -> deserializeString(resultClass, json.value, context)
             is JSONInt -> deserializeNumber(resultClass, json, context)
@@ -384,29 +394,28 @@ object JSONDeserializer {
                 Any::class -> return number.value as T
                 else -> resultClass.constructors.singleOrNull { it.hasNumberParameter() }?.apply {
                     when (parameters[0].type.classifier) {
-                        Int::class -> if (number.isInt()) return callWithSingle(parameters, number.toInt())
-                        Long::class -> if (number.isLong()) return callWithSingle(parameters, number.toLong())
-                        Short::class -> if (number.isShort()) return callWithSingle(parameters, number.toShort())
-                        Byte::class -> if (number.isByte()) return callWithSingle(parameters, number.toByte())
-                        UInt::class -> if (number.isUInt()) return callWithSingle(parameters, number.toUInt())
-                        ULong::class -> if (number.isULong()) return callWithSingle(parameters, number.toULong())
-                        UShort::class -> if (number.isUShort()) return callWithSingle(parameters, number.toUShort())
-                        UByte::class -> if (number.isUByte()) return callWithSingle(parameters, number.toUByte())
-                        Double::class -> return callWithSingle(parameters, number.toDouble())
-                        Float::class -> return callWithSingle(parameters, number.toFloat())
-                        BigInteger::class ->
-                                if (number.isIntegral()) return callWithSingle(parameters, number.toBigInteger())
-                        BigDecimal::class -> return callWithSingle(parameters, number.toDecimal())
+                        Int::class -> if (number.isInt()) return callWithSingle(number.toInt())
+                        Long::class -> if (number.isLong()) return callWithSingle(number.toLong())
+                        Short::class -> if (number.isShort()) return callWithSingle(number.toShort())
+                        Byte::class -> if (number.isByte()) return callWithSingle(number.toByte())
+                        UInt::class -> if (number.isUInt()) return callWithSingle(number.toUInt())
+                        ULong::class -> if (number.isULong()) return callWithSingle(number.toULong())
+                        UShort::class -> if (number.isUShort()) return callWithSingle(number.toUShort())
+                        UByte::class -> if (number.isUByte()) return callWithSingle(number.toUByte())
+                        Double::class -> return callWithSingle(number.toDouble())
+                        Float::class -> return callWithSingle(number.toFloat())
+                        BigInteger::class -> if (number.isIntegral()) return callWithSingle(number.toBigInteger())
+                        BigDecimal::class -> return callWithSingle(number.toDecimal())
                     }
                 }
             }
-            fatal("Can't deserialize $number as ${resultClass.displayName()}", context)
+            context.fatal("Can't deserialize $number as ${resultClass.displayName()}")
         }
         catch (e: JSONException) {
             throw e
         }
         catch (e: Exception) {
-            fatal("Error deserializing $number as ${resultClass.displayName()}", context, e)
+            context.fatal("Error deserializing $number as ${resultClass.displayName()}", e)
         }
     }
 
@@ -422,7 +431,7 @@ object JSONDeserializer {
             when (resultClass) {
                 Char::class -> {
                     if (str.length != 1)
-                        fatal("Character must be string of length 1", context)
+                        context.fatal("Character must be string of length 1")
                     return str[0] as T
                 }
                 CharArray::class -> return str.toCharArray() as T
@@ -455,8 +464,8 @@ object JSONDeserializer {
 
             // does the target class have a public constructor that takes String? (e.g. StringBuilder, URL, ... )
 
-            resultClass.constructors.singleOrNull { it.hasSingleParameter(String::class) }?.apply {
-                return callWithSingle(parameters, str)
+            resultClass.findSingleParameterConstructor(String::class)?.apply {
+                return callWithSingle(str)
             }
 
         }
@@ -464,10 +473,10 @@ object JSONDeserializer {
             throw e
         }
         catch (e: Exception) {
-            fatal("Error deserializing \"$str\" as ${resultClass.displayName()}", context, e)
+            context.fatal("Error deserializing \"$str\" as ${resultClass.displayName()}", e)
         }
 
-        fatal("Can't deserialize \"$str\" as ${resultClass.displayName()}", context)
+        context.fatal("Can't deserialize \"$str\" as ${resultClass.displayName()}")
     }
 
     @Suppress("UNCHECKED_CAST", "IMPLICIT_CAST_TO_ANY")
@@ -577,7 +586,7 @@ object JSONDeserializer {
                 BitSet().apply {
                     json.mapIndexed { i, value ->
                         if (value !is JSONInt)
-                            fatal("Can't deserialize BitSet; array member not int", context.child(i))
+                            context.child(i).fatal("Can't deserialize BitSet; array member not int")
                         set(value.value)
                     }
                 }
@@ -586,7 +595,7 @@ object JSONDeserializer {
             else -> {
                 if (resultClass.java.isArray) {
                     val type = getTypeParam(types)
-                    val itemClass = type.classifier as? KClass<Any> ?: fatal("Can't determine array type", context)
+                    val itemClass = type.classifier as? KClass<Any> ?: context.fatal("Can't determine array type")
                     newArray(itemClass, json.size).apply {
                         for (i in json.indices)
                             this[i] = deserializeNested(resultType, type, json[i], context.child(i))
@@ -598,17 +607,17 @@ object JSONDeserializer {
                     // List (Set) and invoke that constructor.  This should catch the less frequently used List (Set)
                     // classes.
 
-                    resultClass.constructors.find { it.hasSingleParameter(List::class) }?.run {
+                    resultClass.findSingleParameterConstructor(List::class)?.run {
                         val type = getTypeParam(parameters[0].type.arguments)
-                        callWithSingle(parameters, ArrayList<Any?>(json.size).apply {
+                        callWithSingle(ArrayList<Any?>(json.size).apply {
                             fillFromJSON(resultType, json, type, context)
                         })
-                    } ?: resultClass.constructors.find { it.hasSingleParameter(Set::class) }?.run {
+                    } ?: resultClass.findSingleParameterConstructor(Set::class)?.run {
                         val type = getTypeParam(parameters[0].type.arguments)
-                        callWithSingle(parameters, LinkedHashSet<Any?>(json.size).apply {
+                        callWithSingle(LinkedHashSet<Any?>(json.size).apply {
                             fillFromJSON(resultType, json, type, context)
                         })
-                    } ?: fatal("Can't deserialize array as ${resultClass.displayName()}", context)
+                    } ?: context.fatal("Can't deserialize array as ${resultClass.displayName()}")
                 }
             }
         } as T
@@ -633,7 +642,7 @@ object JSONDeserializer {
         // using for rather than map to avoid creation of intermediate List
         for (i in json.indices) {
             if (!add(deserializeNested(resultType, type, json[i], context.child(i))))
-                fatal("Duplicate not allowed", context.child(i))
+                context.child(i).fatal("Duplicate not allowed")
         }
     }
 
@@ -655,8 +664,8 @@ object JSONDeserializer {
             }
             // If the target class has a constructor that takes a single Map parameter, create a Map and invoke that
             // constructor.  This should catch the less frequently used Map classes.
-            resultClass.constructors.find { it.hasSingleParameter(Map::class) }?.apply {
-                return callWithSingle(parameters, deserializeMap(resultType, LinkedHashMap(json.size),
+            resultClass.findSingleParameterConstructor(Map::class)?.apply {
+                return callWithSingle(deserializeMap(resultType, LinkedHashMap(json.size),
                         parameters[0].type.arguments, json, context))
             }
         }
@@ -667,10 +676,10 @@ object JSONDeserializer {
         if (resultClass.isSealed) {
             val discriminator = resultClass.findAnnotation<JSONDiscriminator>()?.id ?: config.sealedClassDiscriminator
             val subClassName = jsonCopy[discriminator].asStringOrNull ?:
-                    fatal("No discriminator for sealed class ${resultClass.displayName()}", context)
+                    context.fatal("No discriminator for sealed class ${resultClass.displayName()}")
             val subClass = resultClass.sealedSubclasses.find {
                 (it.findAnnotation<JSONIdentifier>()?.id ?: it.simpleName) == subClassName
-            } ?: fatal("Can't find identifier $subClassName for sealed class ${resultClass.displayName()}", context)
+            } ?: context.fatal("Can't find identifier $subClassName for sealed class ${resultClass.displayName()}")
             if (findField(resultClass.members, discriminator, config) == null)
                 jsonCopy.remove(discriminator)
             return deserializeObject(subClass.createType(types, nullable = resultType.isMarkedNullable), subClass,
@@ -718,7 +727,7 @@ object JSONDeserializer {
                             argMap[parameter] = when {
                                 parameter.type.classifier == Opt::class -> Opt.UNSET
                                 parameter.type.isMarkedNullable -> null
-                                else -> fatal("Can't create $resultClass - missing property $paramName", context)
+                                else -> context.fatal("Can't create $resultClass - missing property $paramName")
                             }
                         }
                     }
@@ -736,13 +745,13 @@ object JSONDeserializer {
             }.filter {
                 !jsonCopy.containsKey(it)
             }
-            fatal("Can't create ${resultClass.qualifiedName}; missing: ${missing.displayList()}", context)
+            context.fatal("Can't create ${resultClass.qualifiedName}; missing: ${missing.displayList()}")
         }
         val propMessage = when {
             jsonCopy.isNotEmpty() -> jsonCopy.keys.displayList()
             else -> "none"
         }
-        fatal("Can't locate public constructor for ${resultClass.qualifiedName}; properties: $propMessage", context)
+        context.fatal("Can't locate public constructor for ${resultClass.qualifiedName}; properties: $propMessage")
     }
 
     private fun Collection<Any?>.displayList(): String = joinToString(", ")
@@ -774,7 +783,7 @@ object JSONDeserializer {
                 resultType = keyType,
                 json = JSONString(entry.key),
                 context = child,
-            ) ?: fatal("Key can not be determined for Map", context)
+            ) ?: context.fatal("Key can not be determined for Map")
             map[key] = deserializeNested(
                 enclosingType = resultType,
                 resultType = valueType,
@@ -810,7 +819,7 @@ object JSONDeserializer {
                             member.setter.call(instance, value)
                         }
                         catch (e: Exception) {
-                            fatal("Error setting property ${entry.key} in ${resultClass.qualifiedName}", context, e)
+                            context.fatal("Error setting property ${entry.key} in ${resultClass.qualifiedName}", e)
                         }
                         finally {
                             member.isAccessible = wasAccessible
@@ -818,13 +827,13 @@ object JSONDeserializer {
                     }
                     else {
                         if (member.getter.call(instance) != value)
-                            fatal("Can't set property ${entry.key} in ${resultClass.qualifiedName}", context)
+                            context.fatal("Can't set property ${entry.key} in ${resultClass.qualifiedName}")
                     }
                 }
             }
             else {
                 if (!(config.allowExtra || config.hasAllowExtraPropertiesAnnotation(resultClass.annotations)))
-                    fatal("Can't find property ${entry.key} in ${resultClass.qualifiedName}", context)
+                    context.fatal("Can't find property ${entry.key} in ${resultClass.qualifiedName}")
             }
         }
         return instance
@@ -883,7 +892,7 @@ object JSONDeserializer {
             val index = enclosingClass.typeParameters.indexOfFirst { it.name == typeParameter.name }
             return enclosingType.arguments.getOrNull(index)?.type ?:
             enclosingClass.typeParameters.getOrNull(index)?.upperBounds?.singleOrNull() ?:
-                    fatal("Can't create ${displayName()} - no type information for ${typeParameter.name}", context)
+                    context.fatal("Can't create ${displayName()} - no type information for ${typeParameter.name}")
         }
 
         if (arguments.isEmpty())
@@ -902,14 +911,5 @@ object JSONDeserializer {
                 }
         }, isMarkedNullable, annotations)
     }
-
-    private fun KType.classifierAsClass(target: KType, context: JSONContext): KClass<*> = classifier as? KClass<*> ?:
-            fatal("Can't create ${target.displayName()} - insufficient type information", context)
-
-    private fun KClass<*>.displayName(): String = qualifiedName?.displayName() ?: "<unknown>"
-
-    private fun KType.displayName(): String = toString().displayName()
-
-    private fun String.displayName(): String = if (startsWith("kotlin.") && indexOf('.', 7) < 0) substring(7) else this
 
 }

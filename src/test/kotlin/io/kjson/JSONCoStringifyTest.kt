@@ -104,12 +104,10 @@ class JSONCoStringifyTest {
 
     @Test fun `should use toJSON if specified in JSONConfig`() = runBlocking {
         val config = JSONConfig {
-            toJSON<Dummy1> { obj ->
-                obj?.let {
-                    JSONObject.build {
-                        add("a", it.field1)
-                        add("b", it.field2)
-                    }
+            toJSON<Dummy1> {
+                JSONObject.build {
+                    add("a", it.field1)
+                    add("b", it.field2)
                 }
             }
         }

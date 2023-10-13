@@ -31,7 +31,6 @@ import java.time.LocalDate
 
 import io.kjson.JSON.asObject
 import io.kjson.JSON.asString
-import io.kjson.JSONConfig
 import io.kjson.JSONContext
 import io.kjson.JSONException
 import io.kjson.JSONInt
@@ -43,7 +42,6 @@ import io.kjson.annotation.JSONIgnore
 import io.kjson.annotation.JSONIncludeAllProperties
 import io.kjson.annotation.JSONIncludeIfNull
 import io.kjson.annotation.JSONName
-import io.kjson.fromJSONValue
 import io.kjson.optional.Opt
 
 data class Dummy1(val field1: String, val field2: Int = 999)
@@ -88,7 +86,7 @@ data class DummyFromJSONWithContext(val dummy1: Dummy1) {
         @Suppress("unused")
         fun JSONContext.fromJSON(json: JSONValue): DummyFromJSONWithContext {
             val jsonObject = json as JSONObject
-            val dummy1: Dummy1 = deserialize(jsonObject["aaa"])
+            val dummy1: Dummy1 = deserializeProperty("aaa", jsonObject)
             return DummyFromJSONWithContext(dummy1)
         }
     }
@@ -329,4 +327,9 @@ data class OptData(
 
 data class OptComplexData(
     val aaa: Opt<List<String>>,
+)
+
+data class BigHolder(
+    val bi: BigInteger,
+    val bd: BigDecimal,
 )

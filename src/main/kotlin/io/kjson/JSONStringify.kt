@@ -49,10 +49,10 @@ import java.util.Enumeration
 import java.util.UUID
 import java.util.stream.BaseStream
 
-import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.JSONSerializerFunctions.appendUUID
 import io.kjson.JSONSerializerFunctions.findSealedClass
 import io.kjson.JSONSerializerFunctions.findToJSON
+import io.kjson.JSONSerializerFunctions.getCombinedAnnotations
 import io.kjson.JSONSerializerFunctions.isToStringClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
@@ -110,6 +110,11 @@ object JSONStringify {
             return
         }
 
+        if (obj is JSONValue) {
+            obj.appendTo(this)
+            return
+        }
+
         val config = context.config
         config.findToJSONMapping(obj::class)?.let {
             appendJSON(context.it(obj), context, references)
@@ -122,7 +127,6 @@ object JSONStringify {
         }
 
         when (obj) {
-            is JSONValue -> obj.appendTo(this)
             is CharSequence -> JSONFunctions.appendString(this, obj, config.stringifyNonASCII)
             is CharArray -> appendQuoted {
                 for (ch in obj)
@@ -193,7 +197,7 @@ object JSONStringify {
         references: MutableList<Any>,
     ) {
         if (obj in references)
-            fatal("Circular reference to ${obj::class.simpleName}", context)
+            context.fatal("Circular reference to ${obj::class.simpleName}")
         references.add(obj)
         try {
             val objClass = obj::class
@@ -202,8 +206,11 @@ object JSONStringify {
                     appendJSON(it.call(obj), context, references)
                     return
                 }
+                catch (e: JSONException) {
+                    throw e
+                }
                 catch (e: Exception) {
-                    fatal("Error in custom toJSON - ${objClass.simpleName}", context, e)
+                    context.fatal("Error in custom toJSON - ${objClass.simpleName}", e)
                 }
             }
             when (obj) {
@@ -238,7 +245,7 @@ object JSONStringify {
                         continuation = true
                         discriminatorName
                     }
-                    val includeAll = config.hasIncludeAllPropertiesAnnotation(objClass.annotations)
+                    val includeAll = config.includeNullFields(objClass)
                     val statics: Collection<KProperty<*>> = objClass.staticProperties
                     if (objClass.isData && objClass.constructors.isNotEmpty()) {
                         // data classes will be a frequent use of serialization, so optimise for them
@@ -246,27 +253,46 @@ object JSONStringify {
                         for (parameter in constructor.parameters) {
                             val member = objClass.members.find { it.name == parameter.name }
                             if (member is KProperty<*>)
-                                continuation = appendUsingGetter(member, parameter.annotations, obj, context,
-                                        references, includeAll, skipName, continuation)
+                                continuation = appendUsingGetter(
+                                    member = member,
+                                    annotations = parameter.annotations,
+                                    obj = obj,
+                                    context = context,
+                                    references = references,
+                                    includeAll = includeAll,
+                                    skipName = skipName,
+                                    continuation = continuation,
+                                )
                         }
                         // now check whether there are any more properties not in constructor
                         for (member in objClass.members) {
                             if (member is KProperty<*> && !statics.contains(member) &&
                                     !constructor.parameters.any { it.name == member.name })
-                                continuation = appendUsingGetter(member, member.annotations, obj, context, references,
-                                        includeAll, skipName, continuation)
+                                continuation = appendUsingGetter(
+                                    member = member,
+                                    annotations = member.annotations,
+                                    obj = obj,
+                                    context = context,
+                                    references = references,
+                                    includeAll = includeAll,
+                                    skipName = skipName,
+                                    continuation = continuation,
+                                )
                         }
                     }
                     else {
                         for (member in objClass.members) {
-                            if (member is KProperty<*> && !statics.contains(member)) {
-                                val combinedAnnotations = ArrayList(member.annotations)
-                                objClass.constructors.firstOrNull()?.parameters?.find { it.name == member.name }?.let {
-                                    combinedAnnotations.addAll(it.annotations)
-                                }
-                                continuation = appendUsingGetter(member, combinedAnnotations, obj, context, references,
-                                        includeAll, skipName, continuation)
-                            }
+                            if (member is KProperty<*> && !statics.contains(member))
+                                continuation = appendUsingGetter(
+                                    member = member,
+                                    annotations = member.getCombinedAnnotations(objClass),
+                                    obj = obj,
+                                    context = context,
+                                    references = references,
+                                    includeAll = includeAll,
+                                    skipName = skipName,
+                                    continuation = continuation,
+                                )
                         }
                     }
                     append('}')
@@ -296,8 +322,7 @@ object JSONStringify {
                 member.isAccessible = true
                 try {
                     val v = member.getter.call(obj)
-                    if (v != null || config.hasIncludeIfNullAnnotation(annotations) || config.includeNulls ||
-                            includeAll) {
+                    if (v != null || includeAll || config.hasIncludeIfNullAnnotation(annotations)) {
                         if (v is Opt<*>) {
                             if (v.isSet) {
                                 appendObjectValue(name, v.value, context, references, continuation)
@@ -314,7 +339,7 @@ object JSONStringify {
                     throw e
                 }
                 catch (e: Exception) {
-                    fatal("Error getting property ${member.name} from ${obj::class.simpleName}", context, e)
+                    context.fatal("Error getting property ${member.name} from ${obj::class.simpleName}", e)
                 }
                 finally {
                     member.isAccessible = wasAccessible

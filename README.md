@@ -193,7 +193,7 @@ To allow (and ignore) extra properties throughout the deserialization process, t
     val config = JSONConfig {
         allowExtra = true
     }
-    val json = example.stringifyJSON(config)
+    val example = jsonString.parseJSON<Example>(config)
 ```
 
 #### Using existing tags from other software
@@ -267,25 +267,25 @@ See the [Custom Serialization and Deserialization](CUSTOM.md) guide for more inf
 
 ## Dependency Specification
 
-The latest version of the library is 7.0, and it may be obtained from the Maven Central repository.
+The latest version of the library is 7.1, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>7.0</version>
+      <version>7.1</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:7.0'
+    implementation 'io.kjson:kjson:7.1'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:7.0")
+    implementation("io.kjson:kjson:7.1")
 ```
 
 Peter Wall
 
-2023-07-30
+2023-10-13

@@ -31,11 +31,46 @@ The `JSONContext` also provides `serialize()` and `deserialize()` functions that
 The change may be transparent to most many uses, but existing uses that make use of the `JSONConfig` may be improved by
 switching to the new functions.
 
+## `kjson-core` Library
+
+Custom serialization and deserialization converts user data structures into structures from the
+[`kjson-core`](https://github.com/pwall567/kjson-core) library.
+It will be helpful to have some understanding of that library when reading this document.
+
+## `JSONContext`
+
+Most of the custom serialization and deserialization functions are invoked as extension functions on the `JSONContext`
+class.
+That means that the following properties and functions of `JSONContext` are available to the custom serialization /
+deserialization code.
+
+### Properties
+
+The `JSONContext` class exposes two properties:
+
+- `config`: the `JSONConfig` in effect for the current serialization / deserialization process
+- `pointer`: a `JSONPointer` representing the current location in the JSON structure (useful for error reporting)
+
+### Functions
+
+It also provides function for creating exceptions that contain the pointer:
+
+- `fatal(message)`
+- `fatal(message, cause)`
+
+
+
 ## Serialization
 
-Custom serialization converts the object to a `JSONValue`; the library will convert the `JSONValue` to string form if
-that is required.
-There are two ways of specifying custom serialization.
+Serialization may convert directly to a string of JSON, or it may convert to the [`kjson-core`](#kjson-core-library)
+internal form.
+To simplify custom serialization, only a conversion to the internal form is required; the library will manage the
+conversion to a text form if required.
+And when the output is being streamed directly to an output stream (including non-blocking output), converting to the
+internal form means that the custom serialization doesn't need to allow for all these forms; the library will be
+responsible for the final output.
+
+The result of custom serialization is therefore a `JSONValue`, and there are two ways of specifying it.
 
 ### `toJSON` function in the class
 
@@ -70,7 +105,7 @@ For example, if the `Person` class above did not have a `toJSON` function:
     }
 ```
 
-The type may be specified as a type parameter (as above), or as type variable:
+The type may be specified as a type parameter (as above), or as [KType] value:
 ```kotlin
     val personType = Person::class.starProjectedType
     config.toJSON(personType) { p ->
@@ -81,7 +116,7 @@ The type may be specified as a type parameter (as above), or as type variable:
 
 The type may also be inferred from the parameter of the lambda:
 ```kotlin
-    config.toJSON { p: Person? ->
+    config.toJSON { person: Person? ->
         require(person != null)
         JSONString("${person.firstName}|${person.surname}")
     }
@@ -147,8 +182,8 @@ class Person(val firstName: String, val surname: String) {
 }
 ```
 
-The `fromJSON` in the companion object may optionally be specified as an extension function on `JSONConfig`.
-If this form is used, the config in effect at the time of deserialization is available as `this`, and it may be passed
+The `fromJSON` in the companion object may optionally be specified as an extension function on `JSONContext`.
+If this form is used, the context in effect at the time of deserialization is available as `this`, and it may be passed
 on to nested deserialization calls.
 
 ### `fromJSON` lambda in the `JSONConfig`
@@ -164,8 +199,18 @@ The above example may be specified as:
     }
 ```
 
-The result type in this example is implied by the return type of the lambda.
-As with `toJSON`, the type may be specified explicitly:
+The result type in this example is implied by the return type of the lambda, although for documentation purposes it may
+be helpful to specify it:
+```kotlin
+    config.fromJSON<Person> { json ->
+        require(json is JSONString) { "Can't deserialize ${json::class} as Person" }
+        val names = json.value.split('|')
+        require(names.length == 2) { "Person string has incorrect format" }
+        Person(names[0], names[1])
+    }
+```
+
+And as with `toJSON`, the type may be specified using a `KType`:
 ```kotlin
     val personType = Person::class.starProjectedType
     config.fromJSON(personType) { json ->
@@ -187,22 +232,24 @@ The function `fromJSONObject` specifies that the input must be a `JSONObject` an
     config.fromJSONObject { json ->
         val name = json["name"].asString
         val number = json["number"].asLong
-        val address: Address? = deserialize(json["address"])
+        val address: Address? = deserializeProperty("address", json)
         Account.create(number, name, address)
     }
 ```
-This also illustrates the use of `deserialize` &ndash; the example assumes that the nested `Address` class can be
-deserialized without custom code, and this function recursively invokes the main deserialization process with the
-current context (that is, the object on which the `fromJSONObject` lambda is invoked as an extension function).
+This also illustrates the use of `deserializeProperty` &ndash; the example assumes that the nested `Address` class can
+be deserialized without custom code, and this function recursively invokes the main deserialization process with the
+current context (that is, the object on which the `fromJSONObject` lambda is invoked as an extension function) adjusted
+to point to the `address` child property of the current object.
 
-If it is necessary to add settings to the `JSONConfig` used in nested calls, the `copy` function may be used:
+If it is necessary to add settings to the `JSONConfig` used in nested calls, the `modifyConfig` function may be used:
 ```kotlin
-        val nestedConfig = config.copy { // JSONContext exposes the current JSONConfig under the name config
+         val nestedContext = modifyConfig {
             allowExtra = true
         }
-        val address: Address? = json["address"]?.fromJSONValue(nestedConfig)
+        val address: Address? = nestedContext.deserializeProperty("address", json)
 ```
-The copy will have the same setting as the original, except for those explicitly modified.
+The `nestedContext` will have the same pointer as the original, along with a copy of the original `JSONConfig` with the
+same settings except for those explicitly modified.
 
 ### `fromJSONString`
 
@@ -253,4 +300,4 @@ specified.
 Additional versions of the function take either a `KType` or a `KClass` as the first parameter, instead of using the
 type parameter.
 
-2023-07-30
+2023-10-12

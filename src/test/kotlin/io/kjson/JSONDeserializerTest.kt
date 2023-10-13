@@ -37,8 +37,7 @@ import java.math.BigDecimal
 import java.lang.reflect.Type
 
 import io.kjson.Constants.stringType
-import io.kjson.JSON.asInt
-import io.kjson.JSON.asString
+import io.kjson.pointer.JSONPointer
 import io.kjson.testclasses.Const
 import io.kjson.testclasses.Const2
 import io.kjson.testclasses.Const3
@@ -93,8 +92,8 @@ class JSONDeserializerTest {
     @Test fun `should use companion object fromJSON with JSONContext receiver`() {
         val config = JSONConfig {
             fromJSONObject { json ->
-                val field1 = json["a"].asString
-                val field2 = json["b"].asInt
+                val field1: String = deserializeProperty("a", json)
+                val field2: Int = deserializeProperty("b", json)
                 Dummy1(field1, field2)
             }
         }
@@ -107,6 +106,19 @@ class JSONDeserializerTest {
         }
         val expected = DummyFromJSONWithContext(Dummy1("Complex", 6789))
         expect(expected) { JSONDeserializer.deserialize(json, config) }
+    }
+
+    @Test fun `should report errors correctly when using companion object fromJSON`() {
+        val json = JSONObject.build {
+            add("aaa", JSONObject.build {
+                add("field1", "abc")
+                add("field2", "xyz")
+            })
+        }
+        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<DummyFromJSONWithContext>(json) }.let {
+            expect("Can't deserialize \"xyz\" as Int at /aaa/field2") { it.message }
+            expect(JSONPointer("/aaa/field2")) { it.pointer }
+        }
     }
 
     @Test fun `should select correct companion object fromJSON function`() {
@@ -422,6 +434,13 @@ class JSONDeserializerTest {
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<TestPrivate>(json) }.let {
             val className = TestPrivate::class.qualifiedName
             expect("Can't locate public constructor for $className; properties: xxx") { it.message }
+        }
+    }
+
+    @Test fun `should fail on attempt to deserialize impossible class`() {
+        val json = JSON.parse("""{"xxx":123}""")
+        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<Unit>(json) }.let {
+            expect("Can't deserialize Unit") { it.message }
         }
     }
 

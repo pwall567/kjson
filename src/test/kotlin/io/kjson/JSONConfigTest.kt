@@ -42,7 +42,6 @@ import java.time.LocalTime
 import io.kjson.JSON.asInt
 import io.kjson.JSON.asObject
 import io.kjson.JSON.asString
-import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.JSONTypeRef.Companion.createRef
 import io.kjson.parser.ParseOptions
 import io.kjson.pointer.JSONPointer
@@ -55,6 +54,7 @@ import io.kjson.testclasses.DummyB
 import io.kjson.testclasses.DummyC
 import io.kjson.testclasses.DummyD
 import io.kjson.testclasses.DummyWithCustomNameAnnotation
+import io.kjson.testclasses.DummyWithIncludeAllProperties
 import io.kjson.testclasses.PolymorphicBase
 import io.kjson.testclasses.PolymorphicDerived1
 import io.kjson.testclasses.PolymorphicDerived2
@@ -171,8 +171,10 @@ class JSONConfigTest {
         }
         assertFailsWith<JSONKotlinException> { JSONString("data").fromJSONValue<Dummy1>(config) }.let {
             expect("Error in custom fromJSON mapping of ${Dummy1::class.qualifiedName}") { it.message }
-            assertTrue(it.cause is IllegalStateException)
-            expect("Wrong") { it.cause?.message }
+            with(it.cause) {
+                assertTrue(this is IllegalStateException)
+                expect("Wrong") { message }
+            }
         }
     }
 
@@ -180,7 +182,7 @@ class JSONConfigTest {
         val config = JSONConfig()
         assertNull(config.findToJSONMapping(stringType))
         assertNull(config.findToJSONMapping(String::class))
-        config.toJSON<String> { str -> JSONString(str ?: fatal("String expected")) }
+        config.toJSON<String> { str -> JSONString(str) }
         assertNotNull(config.findToJSONMapping(stringType))
         assertNotNull(config.findToJSONMapping(String::class))
     }
@@ -188,7 +190,7 @@ class JSONConfigTest {
     @Test fun `should map simple data class using toJSON mapping`() {
         val config = JSONConfig {
             toJSON<Dummy1> { obj ->
-                obj?.let {
+                obj.let {
                     JSONObject.build {
                         add("a", it.field1)
                         add("b", it.field2)
@@ -336,6 +338,13 @@ class JSONConfigTest {
         expect(Dummy9("fedcba")) { JSONDeserializer.deserialize(JSONString("abcdef"), config) }
     }
 
+    @Test fun `should use String constructor with extra parameters for fromJSON mapping`() {
+        val config = JSONConfig {
+            fromJSONString<Dummy1>()
+        }
+        expect(Dummy1("abcdef")) { JSONDeserializer.deserialize(JSONString("abcdef"), config) }
+    }
+
     @Test fun `should distinguish between polymorphic mappings`() {
         val config = JSONConfig {
             fromJSONPolymorphic(PolymorphicBase::class, "type",
@@ -460,24 +469,20 @@ class JSONConfigTest {
 
     @Test fun `should use multiple JSONConfig mappings`() {
         val config = JSONConfig {
-            toJSON<Dummy1> { obj ->
-                obj?.let {
-                    JSONObject.build {
-                        add("a", it.field1)
-                        add("b", it.field2)
-                    }
+            toJSON<Dummy1> {
+                JSONObject.build {
+                    add("a", it.field1)
+                    add("b", it.field2)
                 }
             }
             fromJSON { json ->
                 require(json is JSONObject) { "Must be JSONObject" }
                 Dummy1(json["a"].asString, json["b"].asInt)
             }
-            toJSON<Dummy3> { obj ->
-                obj?.let {
-                    JSONObject.build {
-                        add("dummy", serialize(it.dummy1))
-                        add("text", it.text)
-                    }
+            toJSON<Dummy3> {
+                JSONObject.build {
+                    add("dummy", serialize(it.dummy1))
+                    add("text", it.text)
                 }
             }
             fromJSON { json ->
@@ -503,12 +508,10 @@ class JSONConfigTest {
 
     @Test fun `should transfer toJSON mapping on combineMappings`() {
         val config = JSONConfig {
-            toJSON<Dummy1> { obj ->
-                obj?.let {
-                    JSONObject.build {
-                        add("a", it.field1)
-                        add("b", it.field2)
-                    }
+            toJSON<Dummy1> {
+                JSONObject.build {
+                    add("a", it.field1)
+                    add("b", it.field2)
                 }
             }
         }
@@ -524,12 +527,10 @@ class JSONConfigTest {
 
     @Test fun `should transfer toJSON mapping on combineAll`() {
         val config = JSONConfig {
-            toJSON<Dummy1> { obj ->
-                obj?.let {
-                    JSONObject.build {
-                        add("a", it.field1)
-                        add("b", it.field2)
-                    }
+            toJSON<Dummy1> {
+                JSONObject.build {
+                    add("a", it.field1)
+                    add("b", it.field2)
                 }
             }
         }
@@ -601,6 +602,13 @@ class JSONConfigTest {
         expect(128) { copyConfig.stringifyInitialSize }
         expect("?") { copyConfig.sealedClassDiscriminator }
         expect(256) { config.stringifyInitialSize }
+    }
+
+    @Test fun `should detect whether class has @JSONIncludeAllProperties`() {
+        val annotations1 = DummyWithIncludeAllProperties::class.annotations
+        assertTrue(JSONConfig.defaultConfig.hasIncludeAllPropertiesAnnotation(annotations1))
+        val annotations2 = Dummy1::class.annotations
+        assertFalse(JSONConfig.defaultConfig.hasIncludeAllPropertiesAnnotation(annotations2))
     }
 
 }

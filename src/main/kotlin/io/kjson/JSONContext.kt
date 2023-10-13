@@ -27,7 +27,6 @@ package io.kjson
 
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
-import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
 
 import io.kjson.pointer.JSONPointer
@@ -54,13 +53,19 @@ class JSONContext private constructor(
         get() = JSONPointer.from(pointerTokens)
 
     /**
+     * Create a new `JSONContext` with the [JSONConfig] modified by the application of a lambda.
+     */
+    fun modifyConfig(block: JSONConfig.() -> Unit): JSONContext = JSONContext(config.copy(block), pointerTokens)
+
+    /**
+     * Create a new `JSONContext`, replacing the [JSONConfig] with the one supplied.
+     */
+    fun replaceConfig(config: JSONConfig): JSONContext = JSONContext(config, pointerTokens)
+
+    /**
      * Create a `JSONContext` representing the nominated property child of an object.
      */
-    fun child(token: String): JSONContext {
-        val n = pointerTokens.size
-        val tokens = Array(n + 1) { if (it < n) pointerTokens[it] else token }
-        return JSONContext(config, tokens)
-    }
+    fun child(token: String): JSONContext = JSONContext(config, pointerTokens + token)
 
     /**
      * Create a `JSONContext` representing the nominated array item child of an array.
@@ -70,7 +75,41 @@ class JSONContext private constructor(
     /**
      * Serialize the given object to a [JSONValue], using this context (for use within a `toJSON` lambda).
      */
-    fun serialize(obj: Any?): JSONValue? = JSONSerializer.serialize(obj, this)
+    fun serialize(obj: Any?): JSONValue? = if (obj == null) null else JSONSerializer.serialize(obj, this)
+
+    /**
+     * Serialize the given property to a [JSONValue], using a child context including the specified property name.
+     */
+    fun serializeProperty(name: String, obj: Any?): JSONValue? =
+            if (obj == null) null else JSONSerializer.serialize(obj, child(name))
+
+    /**
+     * Serialize the given array item to a [JSONValue], using a child context including the specified array index.
+     */
+    fun serializeItem(index: Int, obj: Any?): JSONValue? =
+            if (obj == null) null else JSONSerializer.serialize(obj, child(index))
+
+    /**
+     * Serialize a property using a child context which includes the specified property name and add it to a
+     * [JSONObject.Builder] with that name.
+     */
+    fun JSONObject.Builder.addProperty(name: String, obj: Any?) {
+        when {
+            obj != null -> add(name, JSONSerializer.serialize(obj, child(name)))
+            config.includeNulls -> add(name, null)
+        }
+    }
+
+    /**
+     * Serialize a property using a child context which includes the specified array index and add it to a
+     * [JSONArray.Builder] (note that the index provided does not determine the index in the [JSONArray]).
+     */
+    fun JSONArray.Builder.addItem(index: Int, obj: Any?) {
+        when {
+            obj != null -> add(JSONSerializer.serialize(obj, child(index)))
+            config.includeNulls -> add(null)
+        }
+    }
 
     /**
      * Deserialize a [JSONValue] to the inferred type using this context.
@@ -85,8 +124,75 @@ class JSONContext private constructor(
     /**
      * Deserialize a [JSONValue] to the specified [KClass] using this context.
      */
-    @Suppress("UNCHECKED_CAST")
-    fun <T : Any> deserialize(resultClass: KClass<T>, json: JSONValue?): T =
-            JSONDeserializer.deserialize(resultClass.starProjectedType, json, this) as T
+    fun <T : Any> deserialize(resultClass: KClass<T>, json: JSONValue?): T? =
+            JSONDeserializer.deserialize(resultClass, json, this)
+
+    /**
+     * Deserialize a child property of a [JSONObject] to the inferred type using a child context including this property
+     * name.
+     */
+    inline fun <reified T> deserializeProperty(name: String, json: JSONObject): T =
+            JSONDeserializer.deserialize(typeOf<T>(), json[name], child(name)) as T
+
+    /**
+     * Deserialize a child property of a [JSONObject] to the specified [KType] using a child context including this
+     * property name.
+     */
+    fun deserializeProperty(type: KType, name: String, json: JSONObject): Any? =
+            JSONDeserializer.deserialize(type, json[name], child(name))
+
+    /**
+     * Deserialize a child property of a [JSONObject] to the specified [KType] using a child context including this
+     * property name.
+     */
+    fun <T : Any> deserializeProperty(resultClass: KClass<T>, name: String, json: JSONObject): T? =
+            JSONDeserializer.deserialize(resultClass, json[name], child(name))
+
+    /**
+     * Deserialize a child item of a [JSONArray] to the inferred type using a child context including the index.
+     */
+    inline fun <reified T> deserializeItem(index: Int, json: JSONArray): T =
+            JSONDeserializer.deserialize(typeOf<T>(), json[index], child(index)) as T
+
+    /**
+     * Deserialize a child item of a [JSONArray] to the specified [KType] using a child context including the index.
+     */
+    fun deserializeItem(type: KType, index: Int, json: JSONArray): Any? =
+            JSONDeserializer.deserialize(type, json[index], child(index))
+
+    /**
+     * Deserialize a child item of a [JSONArray] to the specified [KType] using a child context including the index.
+     */
+    fun <T : Any> deserializeItem(resultClass: KClass<T>, index: Int, json: JSONArray): T? =
+            JSONDeserializer.deserialize(resultClass, json[index], child(index))
+
+    /**
+     * Throw an exception with a message including the current pointer.
+     */
+    fun fatal(message: String): Nothing {
+        JSONKotlinException.fatal(message, pointer)
+    }
+
+    /**
+     * Throw an exception with a message including the current pointer, specifying a nested cause [Throwable].
+     */
+    fun fatal(message: String, nested: Throwable): Nothing {
+        JSONKotlinException.fatal(message, pointer, nested)
+    }
+
+    /**
+     * Throw an exception with a dynamically-generated message including the current pointer.
+     */
+    fun fatal(messageFunction: () -> String): Nothing {
+        JSONKotlinException.fatal(messageFunction(), pointer)
+    }
+
+    /**
+     * Throw an exception with a dynamically-generated message including the current pointer, specifying a nested cause
+     * [Throwable].
+     */
+    fun fatal(nested: Throwable, messageFunction: () -> String): Nothing {
+        JSONKotlinException.fatal(messageFunction(), pointer, nested)
+    }
 
 }
