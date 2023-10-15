@@ -26,7 +26,6 @@
 package io.kjson
 
 import kotlin.reflect.KProperty
-import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.staticProperties
 import kotlin.reflect.jvm.isAccessible
 import kotlin.time.Duration
@@ -52,12 +51,13 @@ import java.util.Enumeration
 import java.util.UUID
 import java.util.stream.BaseStream
 
+import io.kjson.JSONSerializerFunctions.discriminatorName
+import io.kjson.JSONSerializerFunctions.discriminatorValue
 import io.kjson.JSONSerializerFunctions.findSealedClass
 import io.kjson.JSONSerializerFunctions.findToJSON
 import io.kjson.JSONSerializerFunctions.getCombinedAnnotations
+import io.kjson.JSONSerializerFunctions.isFinalClass
 import io.kjson.JSONSerializerFunctions.isToStringClass
-import io.kjson.annotation.JSONDiscriminator
-import io.kjson.annotation.JSONIdentifier
 import io.kjson.optional.Opt
 
 import net.pwall.json.JSONCoFunctions.outputChar
@@ -141,43 +141,44 @@ object JSONCoStringify {
         }
 
         val config = context.config
+        val objClass = obj::class
         config.findToJSONMapping(obj::class)?.let {
             outputJSONInternal(context.it(obj), context, references)
             return
         }
 
-        if (obj is Enum<*> || obj::class.isToStringClass()) {
-            outputString(obj.toString(), config.stringifyNonASCII)
-            return
+        when {
+            obj is CharSequence -> outputString(obj, config.stringifyNonASCII)
+            obj is Number -> outputNumber(obj, context, references)
+            objClass.isFinalClass() -> outputFinalClass(obj, config)
+            obj is Enum<*> || obj::class.isToStringClass() -> outputString(obj.toString(), config.stringifyNonASCII)
+            obj is BitSet -> outputBitSet(obj)
+            obj is Calendar -> outputQuoted { outputCalendar(obj) }
+            obj is Date -> outputQuoted { outputDate(obj) }
+            else -> outputObject(obj, context, references)
         }
 
+    }
+
+    private suspend fun CoOutput.outputFinalClass(obj: Any, config: JSONConfig) {
         when (obj) {
-            is CharSequence -> outputString(obj, config.stringifyNonASCII)
-            is CharArray -> outputQuoted {
-                for (i in obj.indices)
-                    outputChar(obj[i], config.stringifyNonASCII)
-            }
-            is Char -> outputQuoted { outputChar(obj, config.stringifyNonASCII) }
-            is Number -> outputNumber(obj, context, references)
             is Boolean -> output(obj.toString())
-            is UInt -> outputUnsignedInt(obj.toInt())
-            is UShort -> outputInt(obj.toInt())
-            is UByte -> outputInt(obj.toInt())
-            is ULong -> outputUnsignedLong(obj.toLong())
-            is BitSet -> outputBitSet(obj)
-            is Calendar -> outputQuoted { outputCalendar(obj) }
-            is Date -> outputQuoted { outputDate(obj) }
-            is Duration -> outputQuoted { output(obj.toIsoString()) }
-            is Instant -> outputQuoted { outputInstant(obj) }
+            is UUID -> outputQuoted { outputUUID(obj) }
             is OffsetDateTime -> outputQuoted { outputOffsetDateTime(obj) }
+            is LocalDate -> outputQuoted { outputLocalDate(obj) }
+            is Instant -> outputQuoted { outputInstant(obj) }
             is OffsetTime -> outputQuoted { outputOffsetTime(obj) }
             is LocalDateTime -> outputQuoted { outputLocalDateTime(obj) }
-            is LocalDate -> outputQuoted { outputLocalDate(obj) }
             is LocalTime -> outputQuoted { outputLocalTime(obj) }
             is Year -> outputQuoted { outputYear(obj) }
             is YearMonth -> outputQuoted { outputYearMonth(obj) }
             is MonthDay -> outputQuoted { outputMonthDay(obj) }
-            is UUID -> outputQuoted { outputUUID(obj) }
+            is Duration -> outputQuoted { output(obj.toIsoString()) }
+            is Char -> outputQuoted { outputChar(obj, config.stringifyNonASCII) }
+            is CharArray -> outputQuoted {
+                for (i in obj.indices)
+                    outputChar(obj[i], config.stringifyNonASCII)
+            }
             is IntArray -> outputTypedArray(obj.size) { outputInt(obj[it]) }
             is LongArray -> outputTypedArray(obj.size) { outputLong(obj[it]) }
             is ByteArray -> outputTypedArray(obj.size) { outputInt(obj[it].toInt()) }
@@ -185,9 +186,11 @@ object JSONCoStringify {
             is FloatArray -> outputTypedArray(obj.size) { output(obj[it].toString()) }
             is DoubleArray -> outputTypedArray(obj.size) { output(obj[it].toString()) }
             is BooleanArray -> outputTypedArray(obj.size) { output(obj[it].toString()) }
-            else -> outputObject(obj, context, references)
+            is UInt -> outputUnsignedInt(obj.toInt())
+            is UShort -> outputInt(obj.toInt())
+            is UByte -> outputInt(obj.toInt())
+            is ULong -> outputUnsignedLong(obj.toLong())
         }
-
     }
 
     private suspend fun CoOutput.outputNumber(
@@ -239,10 +242,8 @@ object JSONCoStringify {
                 }
             }
             when (obj) {
-                is Array<*> -> outputArray(obj, context, references)
-                is Pair<*, *> -> outputPair(obj, context, references)
-                is Triple<*, *, *> -> outputTriple(obj, context, references)
                 is Iterable<*> -> outputIterator(obj.iterator(), context, references)
+                is Array<*> -> outputArray(obj, context, references)
                 is Iterator<*> -> outputIterator(obj, context, references)
                 is Sequence<*> -> outputIterator(obj.iterator(), context, references)
                 is Channel<*> -> outputChannel(obj.iterator(), context, references)
@@ -250,20 +251,20 @@ object JSONCoStringify {
                 is Enumeration<*> -> outputIterator(obj.iterator(), context, references)
                 is BaseStream<*, *> -> outputIterator(obj.iterator(), context, references)
                 is Map<*, *> -> outputMap(obj, context, references)
+                is Pair<*, *> -> outputPair(obj, context, references)
+                is Triple<*, *, *> -> outputTriple(obj, context, references)
                 is Opt<*> -> outputJSONInternal(obj.orNull, context, references)
                 else -> {
                     val config = context.config
                     output('{')
                     var continuation = false
                     val skipName = objClass.findSealedClass()?.let {
-                        val discriminatorName = it.findAnnotation<JSONDiscriminator>()?.id ?:
-                                config.sealedClassDiscriminator
-                        outputString(discriminatorName, config.stringifyNonASCII)
-                        output(':')
-                        outputString(objClass.findAnnotation<JSONIdentifier>()?.id ?: objClass.simpleName ?: "null",
-                                config.stringifyNonASCII)
-                        continuation = true
-                        discriminatorName
+                        it.discriminatorName(context).also { name ->
+                            outputString(name, config.stringifyNonASCII)
+                            output(':')
+                            outputString(objClass.discriminatorValue(), config.stringifyNonASCII)
+                            continuation = true
+                        }
                     }
                     val includeAll = config.includeNullFields(objClass)
                     val statics: Collection<KProperty<*>> = objClass.staticProperties

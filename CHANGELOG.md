@@ -2,7 +2,7 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [Unreleased]
+## [7.1] - 2023-10-15
 ### Changed
 - `JSONContext`: added `fatal()` to simplify error output
 - `JSONContext`: fixed inconsistency in `deserialize()` taking `KClass`

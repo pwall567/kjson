@@ -30,6 +30,8 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.KType
+import kotlin.reflect.full.findAnnotation
+import kotlin.time.Duration
 
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -50,6 +52,8 @@ import java.time.ZonedDateTime
 import java.util.LinkedList
 import java.util.UUID
 
+import io.kjson.annotation.JSONDiscriminator
+import io.kjson.annotation.JSONIdentifier
 import net.pwall.util.IntOutput.append4HexLC
 import net.pwall.util.IntOutput.append8HexLC
 
@@ -64,12 +68,14 @@ object JSONSerializerFunctions {
     private val toStringClasses = setOf(java.sql.Date::class, java.sql.Time::class, java.sql.Timestamp::class,
         ZonedDateTime::class, JavaDuration::class, Period::class, URI::class, URL::class)
 
-    private val uncachedClasses = setOf(Any::class, String::class, Boolean::class,
-        Int::class, Long::class, Byte::class, Short::class, BigDecimal::class, BigInteger::class,
-        UInt::class, ULong::class, UShort::class, UByte::class, Double::class, Float::class,
-        ArrayList::class, LinkedList::class, HashMap::class, LinkedHashMap::class, HashSet::class,
+    private val uncachedClasses = setOf(Any::class, BigDecimal::class, BigInteger::class,
+        ArrayList::class, LinkedList::class, HashMap::class, LinkedHashMap::class, HashSet::class)
+
+    private val finalClasses = setOf(Boolean::class, UInt::class, ULong::class, UShort::class, UByte::class,
         Instant::class, OffsetDateTime::class, OffsetTime::class, LocalDateTime::class,
-        LocalDate::class, LocalTime::class, Year::class, YearMonth::class, MonthDay::class, UUID::class)
+        LocalDate::class, LocalTime::class, Year::class, YearMonth::class, MonthDay::class, UUID::class, Char::class,
+        CharArray::class, Duration::class, IntArray::class, LongArray::class, ByteArray::class, ShortArray::class,
+        FloatArray::class, DoubleArray::class, BooleanArray::class)
 
     private val impossibleClasses = setOf(Unit::class, Nothing::class, Void::class)
 
@@ -84,12 +90,19 @@ object JSONSerializerFunctions {
     fun KClass<*>.isToStringClass() = this in toStringClasses
 
     /**
+     * Is the class in the set of classes that can be determined by an equality comparison on the [KClass] object (as
+     * opposed to `is`, which allows derived classes).  Does not include classes derived from [Number]; these are
+     * handled separately.
+     */
+    fun KClass<*>.isFinalClass() = this in finalClasses
+
+    /**
      * Is the class a system class that will not have a `toJSON` or `fromJSON` function?
      *
      * @receiver            the class of the object
      * @return              `true` if the object is a member of a system class
      */
-    fun KClass<*>.isUncachedClass() = this in uncachedClasses || this in toStringClasses
+    fun KClass<*>.isUncachedClass() = this in finalClasses || this in uncachedClasses || this in toStringClasses
 
     /**
      * Is the class one that can't be deserialized?
@@ -148,6 +161,11 @@ object JSONSerializerFunctions {
         this.isEmpty() -> otherList
         else -> this + otherList
     }
+
+    internal fun KClass<*>.discriminatorName(context: JSONContext): String =
+            findAnnotation<JSONDiscriminator>()?.id ?: context.config.sealedClassDiscriminator
+
+    internal fun KClass<*>.discriminatorValue(): String = findAnnotation<JSONIdentifier>()?.id ?: simpleName ?: "null"
 
     fun Appendable.appendUUID(uuid: UUID) {
         val highBits = uuid.mostSignificantBits

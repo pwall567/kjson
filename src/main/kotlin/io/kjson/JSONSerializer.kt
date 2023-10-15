@@ -26,7 +26,6 @@
 package io.kjson
 
 import kotlin.reflect.KProperty
-import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.staticProperties
 import kotlin.reflect.jvm.isAccessible
 import kotlin.time.Duration
@@ -50,12 +49,13 @@ import java.util.UUID
 import java.util.stream.BaseStream
 
 import io.kjson.JSONSerializerFunctions.appendUUID
+import io.kjson.JSONSerializerFunctions.discriminatorName
+import io.kjson.JSONSerializerFunctions.discriminatorValue
 import io.kjson.JSONSerializerFunctions.findSealedClass
 import io.kjson.JSONSerializerFunctions.findToJSON
 import io.kjson.JSONSerializerFunctions.getCombinedAnnotations
+import io.kjson.JSONSerializerFunctions.isFinalClass
 import io.kjson.JSONSerializerFunctions.isToStringClass
-import io.kjson.annotation.JSONDiscriminator
-import io.kjson.annotation.JSONIdentifier
 import io.kjson.optional.Opt
 import net.pwall.util.DateOutput
 
@@ -98,47 +98,51 @@ object JSONSerializer {
         if (obj is JSONValue)
             return obj
 
-        context.config.findToJSONMapping(obj::class)?.let {
+        val objClass = obj::class
+        context.config.findToJSONMapping(objClass)?.let {
             return serialize(context.it(obj), context, references)
         }
 
-        if (obj is Enum<*> || obj::class.isToStringClass())
-            return JSONString.of(obj.toString())
-
-        return when (obj) {
-            is CharSequence -> JSONString.of(obj)
-            is CharArray -> JSONString.of(StringBuilder().append(obj))
-            is Char -> JSONString.of(StringBuilder().append(obj))
-            is Number -> serializeNumber(obj, context, references)
-            is Boolean -> JSONBoolean.of(obj)
-            is UInt -> if (obj.toInt() >= 0) JSONInt(obj.toInt()) else JSONLong(obj.toLong())
-            is UShort -> JSONInt(obj.toInt())
-            is UByte -> JSONInt(obj.toInt())
-            is ULong -> if (obj.toLong() >= 0) JSONLong(obj.toLong()) else JSONDecimal(obj.toString())
-            is BitSet -> serializeBitSet(obj)
-            is Calendar -> serializeSystemClass(29, obj) { DateOutput.appendCalendar(this, it) }
-            is Date -> serializeSystemClass(24, obj) { DateOutput.appendDate(this, it) }
-            is Duration -> JSONString(obj.toIsoString())
-            is Instant -> serializeSystemClass(30, obj) { DateOutput.appendInstant(this, it) }
-            is OffsetDateTime -> serializeSystemClass(35, obj) { DateOutput.appendOffsetDateTime(this, it) }
-            is OffsetTime -> serializeSystemClass(24, obj) { DateOutput.appendOffsetTime(this, it) }
-            is LocalDateTime -> serializeSystemClass(29, obj) { DateOutput.appendLocalDateTime(this, it) }
-            is LocalDate -> serializeSystemClass(10, obj) { DateOutput.appendLocalDate(this, it) }
-            is LocalTime -> serializeSystemClass(18, obj) { DateOutput.appendLocalTime(this, it) }
-            is Year -> serializeSystemClass(4, obj) { DateOutput.appendYear(this, it) }
-            is YearMonth -> serializeSystemClass(7, obj) { DateOutput.appendYearMonth(this, it) }
-            is MonthDay -> serializeSystemClass(7, obj) { DateOutput.appendMonthDay(this, it) }
-            is UUID -> serializeSystemClass(36, obj) { appendUUID(it) }
-            is IntArray -> serializeTypedArray(obj.size) { JSONInt.of(obj[it]) }
-            is LongArray -> serializeTypedArray(obj.size) { JSONLong.of(obj[it]) }
-            is ByteArray -> serializeTypedArray(obj.size) { JSONInt.of(obj[it].toInt()) }
-            is ShortArray -> serializeTypedArray(obj.size) { JSONInt.of(obj[it].toInt()) }
-            is FloatArray -> serializeTypedArray(obj.size) { JSONDecimal.of(BigDecimal(obj[it].toDouble())) }
-            is DoubleArray -> serializeTypedArray(obj.size) { JSONDecimal.of(BigDecimal(obj[it])) }
-            is BooleanArray -> serializeTypedArray(obj.size) { JSONBoolean.of(obj[it]) }
+        return when {
+            obj is CharSequence -> JSONString.of(obj)
+            obj is Number -> serializeNumber(obj, context, references)
+            objClass.isFinalClass() -> serializeFinalClass(obj)
+            obj is Enum<*> || objClass.isToStringClass() -> JSONString.of(obj.toString())
+            obj is BitSet -> serializeBitSet(obj)
+            obj is Calendar -> serializeSystemClass(29, obj) { DateOutput.appendCalendar(this, it) }
+            obj is Date -> serializeSystemClass(24, obj) { DateOutput.appendDate(this, it) }
             else -> serializeObject(obj, context, references)
         }
 
+    }
+
+    private fun serializeFinalClass(obj: Any): JSONValue = when (obj) {
+        is Boolean -> JSONBoolean.of(obj)
+        is UUID -> serializeSystemClass(36, obj) { appendUUID(it) }
+        is OffsetDateTime -> serializeSystemClass(35, obj) { DateOutput.appendOffsetDateTime(this, it) }
+        is LocalDate -> serializeSystemClass(10, obj) { DateOutput.appendLocalDate(this, it) }
+        is Instant -> serializeSystemClass(30, obj) { DateOutput.appendInstant(this, it) }
+        is OffsetTime -> serializeSystemClass(24, obj) { DateOutput.appendOffsetTime(this, it) }
+        is LocalDateTime -> serializeSystemClass(29, obj) { DateOutput.appendLocalDateTime(this, it) }
+        is LocalTime -> serializeSystemClass(18, obj) { DateOutput.appendLocalTime(this, it) }
+        is Year -> serializeSystemClass(4, obj) { DateOutput.appendYear(this, it) }
+        is YearMonth -> serializeSystemClass(7, obj) { DateOutput.appendYearMonth(this, it) }
+        is MonthDay -> serializeSystemClass(7, obj) { DateOutput.appendMonthDay(this, it) }
+        is Duration -> JSONString(obj.toIsoString())
+        is Char -> JSONString.of(StringBuilder(1).append(obj))
+        is CharArray -> JSONString.of(StringBuilder(obj.size).append(obj))
+        is IntArray -> serializeTypedArray(obj.size) { JSONInt.of(obj[it]) }
+        is LongArray -> serializeTypedArray(obj.size) { JSONLong.of(obj[it]) }
+        is ByteArray -> serializeTypedArray(obj.size) { JSONInt.of(obj[it].toInt()) }
+        is ShortArray -> serializeTypedArray(obj.size) { JSONInt.of(obj[it].toInt()) }
+        is FloatArray -> serializeTypedArray(obj.size) { JSONDecimal.of(BigDecimal(obj[it].toDouble())) }
+        is DoubleArray -> serializeTypedArray(obj.size) { JSONDecimal.of(BigDecimal(obj[it])) }
+        is BooleanArray -> serializeTypedArray(obj.size) { JSONBoolean.of(obj[it]) }
+        is UInt -> if (obj.toInt() >= 0) JSONInt(obj.toInt()) else JSONLong(obj.toLong())
+        is UShort -> JSONInt(obj.toInt())
+        is UByte -> JSONInt(obj.toInt())
+        is ULong -> if (obj.toLong() >= 0) JSONLong(obj.toLong()) else JSONDecimal(obj.toString())
+        else -> throw JSONException("Internal error serializing ${obj::class}")
     }
 
     private fun serializeNumber(
@@ -180,24 +184,22 @@ object JSONSerializer {
             }
 
             return when (obj) {
-                is Array<*> -> serializeArray(obj, context, references)
-                is Pair<*, *> -> serializePair(obj, context, references)
-                is Triple<*, *, *> -> serializeTriple(obj, context, references)
                 is List<*> -> serializeIterator(obj.iterator(), obj.size, context, references)
                 is Iterable<*> -> serializeIterator(obj.iterator(), 8, context, references)
+                is Array<*> -> serializeArray(obj, context, references)
                 is Sequence<*> -> serializeIterator(obj.iterator(), 8, context, references)
                 is BaseStream<*, *> -> serializeIterator(obj.iterator(), 8, context, references)
                 is Iterator<*> -> serializeIterator(obj, 8, context, references)
                 is Enumeration<*> -> serializeEnumeration(obj, context, references)
                 is Map<*, *> -> serializeMap(obj, context, references)
+                is Pair<*, *> -> serializePair(obj, context, references)
+                is Triple<*, *, *> -> serializeTriple(obj, context, references)
                 is Opt<*> -> serialize(obj.orNull, context, references)
                 else -> JSONObject.build {
                     val skipName = objClass.findSealedClass()?.let {
-                        val discriminator = it.findAnnotation<JSONDiscriminator>()?.id ?:
-                                context.config.sealedClassDiscriminator
-                        add(discriminator,
-                                objClass.findAnnotation<JSONIdentifier>()?.id ?: objClass.simpleName ?: "null")
-                        discriminator
+                        it.discriminatorName(context).also {
+                            name -> add(name, objClass.discriminatorValue())
+                        }
                     }
                     val includeAll = context.config.includeNullFields(objClass)
                     if (objClass.isData && objClass.constructors.isNotEmpty()) {
