@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>kjson</artifactId>
-  <version>7.1</version>
+  <version>7.2</version>
   <name>Reflection-based JSON serialization and deserialization for Kotlin</name>
   <description>Reflection-based JSON serialization and deserialization for Kotlin</description>
   <packaging>jar</packaging>
@@ -63,12 +63,12 @@
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson-core</artifactId>
-      <version>5.10</version>
+      <version>6.2</version>
     </dependency>
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson-stream</artifactId>
-      <version>1.6</version>
+      <version>1.9</version>
     </dependency>
     <dependency>
       <groupId>io.kjson</groupId>
@@ -83,17 +83,17 @@
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson-pointer</artifactId>
-      <version>5.1</version>
+      <version>7.1</version>
     </dependency>
     <dependency>
       <groupId>net.pwall.json</groupId>
       <artifactId>json-functions</artifactId>
-      <version>1.7.2</version>
+      <version>1.9</version>
     </dependency>
     <dependency>
       <groupId>net.pwall.json</groupId>
       <artifactId>json-co-functions</artifactId>
-      <version>1.3</version>
+      <version>1.4</version>
     </dependency>
     <dependency>
       <groupId>net.pwall.json</groupId>
@@ -103,27 +103,32 @@
     <dependency>
       <groupId>net.pwall.text</groupId>
       <artifactId>textmatcher</artifactId>
-      <version>2.3</version>
+      <version>2.4</version>
     </dependency>
     <dependency>
       <groupId>net.pwall.util</groupId>
       <artifactId>date-output</artifactId>
-      <version>1.1</version>
-    </dependency>
-    <dependency>
-      <groupId>net.pwall.util</groupId>
-      <artifactId>co-date-output</artifactId>
-      <version>1.2</version>
-    </dependency>
-    <dependency>
-      <groupId>net.pwall.util</groupId>
-      <artifactId>int-output</artifactId>
       <version>1.3</version>
     </dependency>
     <dependency>
       <groupId>net.pwall.util</groupId>
+      <artifactId>co-date-output</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <dependency>
+      <groupId>net.pwall.util</groupId>
+      <artifactId>int-output</artifactId>
+      <version>2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>net.pwall.util</groupId>
       <artifactId>co-int-output</artifactId>
-      <version>2.3</version>
+      <version>2.5</version>
+    </dependency>
+    <dependency>
+      <groupId>net.pwall.util</groupId>
+      <artifactId>immutables</artifactId>
+      <version>2.4</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
@@ -142,13 +147,7 @@
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson-test</artifactId>
-      <version>3.10</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>net.pwall.util</groupId>
-      <artifactId>immutables</artifactId>
-      <version>2.4</version>
+      <version>3.11</version>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -53,7 +53,7 @@ The `JSONContext` class exposes two properties:
 
 ### Functions
 
-It also provides function for creating exceptions that contain the pointer:
+It also provides functions for creating exceptions that contain the pointer:
 
 - `fatal(message)`
 - `fatal(message, cause)`
@@ -70,12 +70,13 @@ And when the output is being streamed directly to an output stream (including no
 internal form means that the custom serialization doesn't need to allow for all these forms; the library will be
 responsible for the final output.
 
-The result of custom serialization is therefore a `JSONValue`, and there are two ways of specifying it.
+The result of custom serialization is therefore a `JSONValue` (that is, an instance of a class implementing the
+`JSONValue` interface, including `JSONObject`, `JSONString` _etc._), and there are two ways of specifying it.
 
 ### `toJSON` function in the class
 
-If the class of an object to be serialized has a public member function named `toJSON`, taking no parameters and
-returning a `JSONValue`, that function will be used for serialization.
+If the class of an object to be serialized has a public member function named `toJSON` taking no parameters, that
+function will be used for serialization.
 For example:
 ```kotlin
 class Person(val firstName: String, val surname: String) {
@@ -100,7 +101,6 @@ In such cases, a `toJSON` lambda may be specified in the [`JSONConfig`](USERGUID
 For example, if the `Person` class above did not have a `toJSON` function:
 ```kotlin
     config.toJSON<Person> { person ->
-        require(person != null)
         JSONString("${person.firstName}|${person.surname}")
     }
 ```
@@ -299,5 +299,13 @@ specified.
 
 Additional versions of the function take either a `KType` or a `KClass` as the first parameter, instead of using the
 type parameter.
+
+All of the target types (the second item of each of the mapping `Pair`s) **MUST** be derived types of the base type (in
+our example, `Person` and `Organization` are both derived types of `Party`).
+This can cause difficulties when using generic types &ndash; the type `Pair<Person, Int>` is considered a derived type
+of `Pair<Party, Int>` only because the `Pair` generic type declares its parameter with a "variance" of `out`, meaning
+that the parameter types themselves may be derived types of the upper bound type.
+When using `fromJSONPolymorphic` to distinguish between generic types, the type parameter must be declared with an `out`
+variance.
 
 2023-10-12

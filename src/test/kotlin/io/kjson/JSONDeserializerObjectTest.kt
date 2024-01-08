@@ -51,6 +51,7 @@ import io.kjson.testclasses.DummyWithCustomNameAnnotation
 import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.Super
+import io.kjson.testclasses.TestMapClass
 import io.kjson.testclasses.TypeAliasData
 import io.kjson.testclasses.ValueClassHolder
 import net.pwall.util.ImmutableMap
@@ -309,6 +310,18 @@ class JSONDeserializerObjectTest {
     class ObscureCase(val value: Int) {
         override fun equals(other: Any?): Boolean = other is ObscureCase && value == other.value
         override fun hashCode(): Int = value.hashCode()
+    }
+
+    @Test fun `should deserialize into map using delegation`() {
+        val json = JSONObject.build {
+            add("field1", "Hello")
+            add("field2", "a20449ac-ade3-11ee-bdf5-139f8439485a")
+            add("field3", 12345)
+        }
+        val mapClass: TestMapClass = json.deserialize()
+        expect("Hello") { mapClass.field1 }
+        expect(UUID.fromString("a20449ac-ade3-11ee-bdf5-139f8439485a")) { mapClass.field2 }
+        expect(12345) { mapClass["field3"] }
     }
 
 }

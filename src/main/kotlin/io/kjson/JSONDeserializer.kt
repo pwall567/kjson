@@ -2,7 +2,7 @@
  * @(#) JSONDeserializer.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -89,6 +89,9 @@ import io.kjson.JSONSerializerFunctions.isUncachedClass
 import io.kjson.annotation.JSONDiscriminator
 import io.kjson.annotation.JSONIdentifier
 import io.kjson.optional.Opt
+import net.pwall.util.ImmutableMap
+import net.pwall.util.ImmutableMapEntry
+import net.pwall.util.ImmutableSet
 
 /**
  * Reflection-based JSON deserialization for Kotlin.
@@ -656,8 +659,9 @@ object JSONDeserializer {
     ): T {
         if (resultClass.isSubclassOf(Map::class)) {
             when (resultClass) {
+                Map::class -> return deserializeImmutableMap(resultType, getTypeParam(types, 0), getTypeParam(types, 1),
+                        json, context) as T
                 HashMap::class -> return deserializeMap(resultType, HashMap(json.size), types, json, context) as T
-                Map::class,
                 MutableMap::class,
                 LinkedHashMap::class -> return deserializeMap(resultType, LinkedHashMap(json.size), types, json,
                         context) as T
@@ -665,8 +669,29 @@ object JSONDeserializer {
             // If the target class has a constructor that takes a single Map parameter, create a Map and invoke that
             // constructor.  This should catch the less frequently used Map classes.
             resultClass.findSingleParameterConstructor(Map::class)?.apply {
-                return callWithSingle(deserializeMap(resultType, LinkedHashMap(json.size),
-                        parameters[0].type.arguments, json, context))
+                val mapArgumentTypes = parameters[0].type.applyTypeParameters(resultType, context).arguments
+                val keyType = getTypeParam(mapArgumentTypes, 0)
+                val valueType = getTypeParam(mapArgumentTypes, 1)
+                val argMap = if (keyType == stringType) {
+                    // looks like a class delegating to a Map
+                    val array: Array<ImmutableMapEntry<Any, Any?>> = ImmutableMap.createArray(json.size)
+                    val entries = json.entries as ImmutableSet
+                    for (index in 0 until entries.size) {
+                        val entry = entries[index]
+                        val key = entry.key
+                        val memberType = findField(resultClass.members, key, context.config)?.returnType ?: valueType
+                        val value = deserializeNested(resultType, memberType, entry.value, context.child(key))
+                        array[index] = ImmutableMap.entry(key, value)
+                    }
+                    ImmutableMap(array)
+                } else deserializeImmutableMap(
+                    resultType = resultType,
+                    keyType = keyType,
+                    valueType = valueType,
+                    json = json,
+                    context = context,
+                )
+                return callWithSingle(argMap)
             }
         }
 
@@ -692,9 +717,6 @@ object JSONDeserializer {
 
         if (resultClass == Any::class)
             return deserializeMap(resultType, LinkedHashMap(json.size), stringType, anyQType, json, context) as T
-
-        if (resultClass.isSuperclassOf(Map::class))
-            return deserializeMap(resultType, LinkedHashMap(json.size), types, json, context) as T
 
         val publicConstructors = resultClass.constructors.filter { it.visibility == KVisibility.PUBLIC }
         findBestConstructor(publicConstructors, json, config)?.apply {
@@ -778,21 +800,45 @@ object JSONDeserializer {
     ): MutableMap<Any, Any?> {
         for (entry in json.entries) {
             val child = context.child(entry.key)
-            val key = deserializeNested(
-                enclosingType = resultType,
-                resultType = keyType,
-                json = JSONString(entry.key),
-                context = child,
-            ) ?: context.fatal("Key can not be determined for Map")
-            map[key] = deserializeNested(
-                enclosingType = resultType,
-                resultType = valueType,
-                json = entry.value,
-                context = child,
-            )
+            val key = deserializeKey(entry.key, keyType, resultType, child)
+            map[key] = deserializeNested(resultType, valueType, entry.value, child)
         }
         return map
     }
+
+    private fun deserializeImmutableMap(
+        resultType: KType,
+        keyType: KType,
+        valueType: KType,
+        json: JSONObject,
+        context: JSONContext,
+    ): Map<Any, Any?> {
+        val array: Array<ImmutableMapEntry<Any, Any?>> = ImmutableMap.createArray(json.size)
+        val entries = json.entries as ImmutableSet
+        for (index in 0 until entries.size) {
+            val entry = entries[index]
+            val child = context.child(entry.key)
+            val key = deserializeKey(entry.key, keyType, resultType, child)
+            val value = deserializeNested(resultType, valueType, entry.value, child)
+            array[index] = ImmutableMap.entry(key, value)
+        }
+        return ImmutableMap(array)
+    }
+
+    private fun deserializeKey(
+        key: String,
+        keyType: KType,
+        resultType: KType,
+        childContext: JSONContext
+    ): Any = if (keyType == stringType)
+        key
+    else
+        deserializeNested(
+            enclosingType = resultType,
+            resultType = keyType,
+            json = JSONString(key),
+            context = childContext,
+        ) ?: childContext.fatal("Key can not be determined for Map")
 
     private fun <T : Any> setRemainingFields(
         resultType: KType,

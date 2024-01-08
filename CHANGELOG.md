@@ -2,6 +2,11 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [7.2] - 2024-01-08
+### Changed
+- `JSONDeserializer`: improved handling of `Map` (including classes that delegate to `Map`)
+- `pom.xml`: updated multiple dependency versions
+
 ## [7.1] - 2023-10-15
 ### Changed
 - `JSONContext`: added `fatal()` to simplify error output
