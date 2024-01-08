@@ -290,6 +290,11 @@ data class PolymorphicDerived1(val type: String, val extra1: Int) : PolymorphicB
 
 data class PolymorphicDerived2(val type: String, val extra2: String) : PolymorphicBase()
 
+data class PolymorphicGeneric<out T : PolymorphicBase>(
+    val code: String,
+    val data: T,
+)
+
 data class ConstructLong(val v: Long)
 
 data class ConstructInt(val v: Int)

@@ -2,7 +2,7 @@
  * @(#) JSONConfigTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@
 package io.kjson
 
 import kotlin.reflect.full.createType
+import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
 import kotlin.test.Test
@@ -58,6 +59,7 @@ import io.kjson.testclasses.DummyWithIncludeAllProperties
 import io.kjson.testclasses.PolymorphicBase
 import io.kjson.testclasses.PolymorphicDerived1
 import io.kjson.testclasses.PolymorphicDerived2
+import io.kjson.testclasses.PolymorphicGeneric
 
 class JSONConfigTest {
 
@@ -464,6 +466,26 @@ class JSONConfigTest {
         }
         expect(PolymorphicDerived2("TYPE2", "bye")) {
             """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config)
+        }
+    }
+
+    @Test fun `should distinguish between polymorphic mappings of generic types`() {
+        val type1 = typeOf<Pair<Int, PolymorphicBase>>()
+        val type2 = typeOf<Pair<Int, PolymorphicDerived1>>()
+        assertTrue(type2.isSubtypeOf(type1))
+        val config = JSONConfig {
+            fromJSONPolymorphic<PolymorphicGeneric<PolymorphicBase>>("code",
+                "CODE1" to typeOf<PolymorphicGeneric<PolymorphicDerived1>>(),
+                "CODE2" to typeOf<PolymorphicGeneric<PolymorphicDerived2>>()
+            )
+        }
+        expect(PolymorphicGeneric<PolymorphicBase>("CODE1", PolymorphicDerived1("TYPE1", 987))) {
+            val json = """{"code":"CODE1","data":{"type":"TYPE1","extra1":987}}"""
+            json.parseJSON<PolymorphicGeneric<PolymorphicBase>>(config)
+        }
+        expect(PolymorphicGeneric<PolymorphicBase>("CODE2", PolymorphicDerived2("TYPE2", "bye"))) {
+            val json = """{"code":"CODE2","data":{"type":"TYPE2","extra2":"bye"}}"""
+            json.parseJSON<PolymorphicGeneric<PolymorphicBase>>(config)
         }
     }
 
