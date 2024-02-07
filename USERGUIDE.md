@@ -131,6 +131,55 @@ The library also has built-in support for the following standard Java types:
 | `java.util.stream.LongStream`   | array                                                 |
 | `java.util.stream.DoubleStream` | array                                                 |
 
+#### `kjson` Internal Types
+
+If you have a property of an object that may be one of a number of different types, you can specify the type of the
+property as `JSONValue` (or possibly `JSONValue?`), in which case the deserialization process will simply copy the
+internal reference (as described in the [introduction](#introduction)), avoiding unnecessary processing until the type
+of the property is known.
+
+For example, a property containing an interest rate may be represented as a number (the rate) or a keyword such as
+"MARKET" to indicate the use of the current market rate.  The `Customer` class might be:
+```kotlin
+data class Customer(
+    val id: UUID,
+    val name: String,
+    val interestRate: JSONValue,
+)
+```
+
+Then, when reading the data:
+```kotlin
+    val customer = json.parseJSON<Customer>()
+    val rate = if (customer.interestRate is JSONString && customer.interestRate.asString == "MARKET")
+        getMarketRate()
+    else
+        customer.interestRate.asDecimal
+```
+
+This technique can be useful when an object may be one of a number of types, and the actual type is determined by
+examination of other properties, either within the object itself or elsewhere.
+For example:
+```kotlin
+data class Person(
+    val id: UUID,
+    val name: String,
+    val address: JSONObject,
+)
+```
+
+Then, when reading:
+```kotlin
+    val person = json.parseJSON<Person>()
+    val address = when (person.address["type"].asString) {
+        "postal" -> person.address.fromJSONValue<PostalAddress>()
+        "street" -> person.address.fromJSONValue<StreetAddress>()
+        else -> throw IllegalArgumentException("Unknown address type - ${person.address["type"]}")
+    }
+```
+An alternative way of handling this requirement may be found in the
+[Custom Serialization and Deserialization](CUSTOM.md#fromjsonpolymorphic) Guide.
+
 ### Other Types
 
 #### Serialization
@@ -698,4 +747,4 @@ the [Spring and `kjson`](SPRING.md) guide.
 **UPDATE:** the [`kjson-spring`](https://github.com/pwall567/kjson-spring) library now provides a simple way to
 integrate with Spring.
 
-2023-07-09
+2024-02-05

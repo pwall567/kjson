@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ package io.kjson
 import kotlin.reflect.full.createType
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -48,6 +49,7 @@ import io.kjson.testclasses.Dummy5
 import io.kjson.testclasses.DummyFromJSON
 import io.kjson.testclasses.DummyFromJSONWithContext
 import io.kjson.testclasses.DummyMultipleFromJSON
+import io.kjson.testclasses.DummyValidated
 import io.kjson.testclasses.DummyWithAllowExtra
 import io.kjson.testclasses.DummyWithCustomAllowExtra
 import io.kjson.testclasses.DummyWithCustomIgnore
@@ -441,6 +443,18 @@ class JSONDeserializerTest {
         val json = JSON.parse("""{"xxx":123}""")
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<Unit>(json) }.let {
             expect("Can't deserialize Unit") { it.message }
+        }
+    }
+
+    @Test fun `should give helpful error message on deserialization error`() {
+        val json = JSON.parse("""[{"field1":""}]""")
+        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<DummyValidated>>(json) }.let {
+            expect("Error deserializing io.kjson.testclasses.DummyValidated - field1 must not be empty at /0") {
+                it.message
+            }
+            expect(JSONPointer("/0")) { it.pointer }
+            assertIs<IllegalArgumentException>(it.cause)
+            expect("field1 must not be empty") { it.cause?.message }
         }
     }
 

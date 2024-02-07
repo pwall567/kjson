@@ -357,19 +357,31 @@ object JSONDeserializer {
             catch (_: Exception) {} // some classes don't allow getting companion object (Kotlin bug?)
         }
 
-        return when (json) {
-            is JSONBoolean -> {
-                if (resultClass.isSuperclassOf(Boolean::class))
-                    json.value as T
-                else
-                    context.fatal("Can't deserialize $json as ${resultClass.displayName()}")
+        try {
+            return when (json) {
+                is JSONBoolean -> {
+                    if (resultClass.isSuperclassOf(Boolean::class))
+                        json.value as T
+                    else
+                        context.fatal("Can't deserialize $json as ${resultClass.displayName()}")
+                }
+                is JSONString -> deserializeString(resultClass, json.value, context)
+                is JSONInt -> deserializeNumber(resultClass, json, context)
+                is JSONLong -> deserializeNumber(resultClass, json, context)
+                is JSONDecimal -> deserializeNumber(resultClass, json, context)
+                is JSONArray -> deserializeArray(resultType, resultClass, types, json, context)
+                is JSONObject -> deserializeObject(resultType, resultClass, types, json, context)
             }
-            is JSONString -> deserializeString(resultClass, json.value, context)
-            is JSONInt -> deserializeNumber(resultClass, json, context)
-            is JSONLong -> deserializeNumber(resultClass, json, context)
-            is JSONDecimal -> deserializeNumber(resultClass, json, context)
-            is JSONArray -> deserializeArray(resultType, resultClass, types, json, context)
-            is JSONObject -> deserializeObject(resultType, resultClass, types, json, context)
+        }
+        catch (e: JSONException) {
+            throw e
+        }
+        catch (ite: InvocationTargetException) {
+            context.fatal("Error deserializing $resultType - ${ite.cause?.message ?: "InvocationTargetException"}",
+                    ite.cause ?: ite)
+        }
+        catch (e: Exception) {
+            context.fatal("Error deserializing $resultType - ${e.message ?: e::class.simpleName}", e)
         }
     }
 

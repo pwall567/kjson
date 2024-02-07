@@ -2,7 +2,7 @@
  * @(#) TestClasses.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -183,6 +183,16 @@ class DummyWithVal {
 
     override fun hashCode(): Int {
         return field8.hashCode()
+    }
+
+}
+
+data class DummyValidated(
+    val field1: String,
+) {
+
+    init {
+        require(field1.isNotEmpty()) { "field1 must not be empty" }
     }
 
 }

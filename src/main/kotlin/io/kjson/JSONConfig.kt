@@ -2,7 +2,7 @@
  * @(#) JSONConfig.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,8 @@ import kotlin.reflect.full.isSupertypeOf
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.full.staticFunctions
 import kotlin.reflect.typeOf
+
+import java.lang.reflect.InvocationTargetException
 
 import io.kjson.JSON.displayValue
 import io.kjson.JSONDeserializerFunctions.callWithSingle
@@ -344,8 +346,23 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      */
     fun getDefaultStringMapping(type: KType): JSONContext.(JSONString) -> Any = { json ->
         val resultClass = type.classifierAsClass(type, this)
-        resultClass.findSingleParameterConstructor(String::class)?.callWithSingle(json.value) ?:
-                fatal("Can't deserialize $type")
+        try {
+            resultClass.findSingleParameterConstructor(String::class)?.callWithSingle(json.value)
+                    ?: fatal("Can't deserialize string as $type")
+        }
+        catch (je: JSONException) {
+            throw je
+        }
+        catch (ite: InvocationTargetException) {
+            val cause = ite.cause
+            if (cause is JSONException)
+                throw cause
+            fatal("Error deserializing string as $type - ${cause?.message ?: "InvocationTargetException"}",
+                    cause ?: ite)
+        }
+        catch (e: Exception) {
+            fatal("Error deserializing string as $type - ${e.message ?: e::class.simpleName}", e)
+        }
     }
 
     /**

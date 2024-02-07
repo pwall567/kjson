@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [7.3] - 2024-02-05
+### Changed
+- `JSONDeserializer`, `JSONConfig`: improved handling of errors in invoked constructors
+
 ## [7.2] - 2024-01-08
 ### Changed
 - `JSONDeserializer`: improved handling of `Map` (including classes that delegate to `Map`)
