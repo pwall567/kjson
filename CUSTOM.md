@@ -210,7 +210,7 @@ be helpful to specify it:
     }
 ```
 
-And as with `toJSON`, the type may be specified using a `KType`:
+And as with `toJSON`, the type may be specified using a `KType` (although this is seldom necessary):
 ```kotlin
     val personType = Person::class.starProjectedType
     config.fromJSON(personType) { json ->
@@ -220,6 +220,14 @@ And as with `toJSON`, the type may be specified using a `KType`:
         Person(names[0], names[1])
     }
 ```
+
+One common use of custom deserialisation occurs when the target is declared as an interface, but the data is known to be
+of a specific implementing class:
+```kotlin
+    config.fromJSON<Person> { deserialize<PersonImplementation>(it) }
+```
+For cases where the implementing class may be one of a number of types, see [`fromJSONPolymorphic](#fromjsonpolymorphic)
+below.
 
 ### `fromJSONObject`
 

@@ -707,24 +707,28 @@ object JSONDeserializer {
             }
         }
 
-        val jsonCopy = LinkedHashMap(json)
-
         val config = context.config
         if (resultClass.isSealed) {
             val discriminator = resultClass.findAnnotation<JSONDiscriminator>()?.id ?: config.sealedClassDiscriminator
-            val subClassName = jsonCopy[discriminator].asStringOrNull ?:
+            val subClassName = json[discriminator].asStringOrNull ?:
                     context.fatal("No discriminator for sealed class ${resultClass.displayName()}")
             val subClass = resultClass.sealedSubclasses.find {
                 (it.findAnnotation<JSONIdentifier>()?.id ?: it.simpleName) == subClassName
             } ?: context.fatal("Can't find identifier $subClassName for sealed class ${resultClass.displayName()}")
-            if (findField(resultClass.members, discriminator, config) == null)
-                jsonCopy.remove(discriminator)
+            val nestedObject = if (findField(resultClass.members, discriminator, config) == null) {
+                JSONObject.build {
+                    for (property in json)
+                        if (property.key != discriminator)
+                            add(property)
+                }
+            } else
+                json
             return deserializeObject(subClass.createType(types, nullable = resultType.isMarkedNullable), subClass,
-                    types, JSONObject.from(jsonCopy), context)
+                    types, nestedObject, context)
         }
 
-        resultClass.objectInstance?.let {
-            return setRemainingFields(resultType, resultClass, it, json, context)
+        resultClass.objectInstance?.let { objectInstance ->
+            return objectInstance.also { setRemainingFields(resultType, resultClass, it, json, context) }
         }
 
         if (resultClass == Any::class)
@@ -732,17 +736,19 @@ object JSONDeserializer {
 
         val publicConstructors = resultClass.constructors.filter { it.visibility == KVisibility.PUBLIC }
         findBestConstructor(publicConstructors, json, config)?.apply {
-            val argMap = HashMap<KParameter, Any?>()
+            val args = mutableListOf<ImmutableMapEntry<KParameter, Any?>>()
+            val properties = json.toMutableList()
             for (i in parameters.indices) {
                 val parameter = parameters[i]
                 val paramName = findParameterName(parameter, config) ?: "param$i"
+                val propertyIndex = properties.indexOfFirst { it.key == paramName }
                 if (!config.hasIgnoreAnnotation(parameter.annotations)) {
-                    if (jsonCopy.containsKey(paramName)) {
-                        argMap[parameter] = if (parameter.type.classifier == Opt::class) {
+                    if (propertyIndex >= 0) {
+                        val parameterValue = if (parameter.type.classifier == Opt::class) {
                             val value = deserializeNested(
                                 enclosingType = resultType,
                                 resultType = getTypeParam(parameter.type.arguments),
-                                json = jsonCopy[paramName],
+                                json = properties[propertyIndex].value,
                                 context = context.child(paramName),
                             )
                             Opt.of(value)
@@ -751,24 +757,30 @@ object JSONDeserializer {
                             deserializeNested(
                                 enclosingType = resultType,
                                 resultType = parameter.type,
-                                json = jsonCopy[paramName],
+                                json = properties[propertyIndex].value,
                                 context = context.child(paramName),
                             )
                         }
+                        args.add(ImmutableMap.entry(parameter, parameterValue))
                     }
                     else {
                         if (!parameter.isOptional) {
-                            argMap[parameter] = when {
+                            val parameterValue = when {
                                 parameter.type.classifier == Opt::class -> Opt.UNSET
                                 parameter.type.isMarkedNullable -> null
                                 else -> context.fatal("Can't create $resultClass - missing property $paramName")
                             }
+                            args.add(ImmutableMap.entry(parameter, parameterValue))
                         }
                     }
                 }
-                jsonCopy.remove(paramName)
+                if (propertyIndex >= 0)
+                    properties.removeAt(propertyIndex)
             }
-            return setRemainingFields(resultType, resultClass, callBy(argMap), jsonCopy, context)
+            return callBy(ImmutableMap.from(args)).also {
+                if (properties.isNotEmpty())
+                    setRemainingFields(resultType, resultClass, it, properties, context)
+            }
         }
         // there is no matching constructor
         if (publicConstructors.size == 1) {
@@ -777,12 +789,12 @@ object JSONDeserializer {
             }.map {
                 findParameterName(it, config)
             }.filter {
-                !jsonCopy.containsKey(it)
+                !json.containsKey(it)
             }
             context.fatal("Can't create ${resultClass.qualifiedName}; missing: ${missing.displayList()}")
         }
         val propMessage = when {
-            jsonCopy.isNotEmpty() -> jsonCopy.keys.displayList()
+            json.isNotEmpty() -> json.keys.displayList()
             else -> "none"
         }
         context.fatal("Can't locate public constructor for ${resultClass.qualifiedName}; properties: $propMessage")
@@ -810,10 +822,10 @@ object JSONDeserializer {
         json: JSONObject,
         context: JSONContext,
     ): MutableMap<Any, Any?> {
-        for (entry in json.entries) {
-            val child = context.child(entry.key)
-            val key = deserializeKey(entry.key, keyType, resultType, child)
-            map[key] = deserializeNested(resultType, valueType, entry.value, child)
+        for (property in json) {
+            val child = context.child(property.key)
+            val key = deserializeKey(property.key, keyType, resultType, child)
+            map[key] = deserializeNested(resultType, valueType, property.value, child)
         }
         return map
     }
@@ -826,12 +838,11 @@ object JSONDeserializer {
         context: JSONContext,
     ): Map<Any, Any?> {
         val array: Array<ImmutableMapEntry<Any, Any?>> = ImmutableMap.createArray(json.size)
-        val entries = json.entries as ImmutableSet
-        for (index in 0 until entries.size) {
-            val entry = entries[index]
-            val child = context.child(entry.key)
-            val key = deserializeKey(entry.key, keyType, resultType, child)
-            val value = deserializeNested(resultType, valueType, entry.value, child)
+        for (index in json.indices) {
+            val property = json[index]
+            val child = context.child(property.key)
+            val key = deserializeKey(property.key, keyType, resultType, child)
+            val value = deserializeNested(resultType, valueType, property.value, child)
             array[index] = ImmutableMap.entry(key, value)
         }
         return ImmutableMap(array)
@@ -856,19 +867,19 @@ object JSONDeserializer {
         resultType: KType,
         resultClass: KClass<T>,
         instance: T,
-        json: Map<String, JSONValue?>,
+        properties: List<JSONProperty>,
         context: JSONContext,
-    ): T {
+    ) {
         val config = context.config
-        for (entry in json) { // JSONObject fields not used in constructor
-            val member = findField(resultClass.members, entry.key, config)
+        for (property in properties) { // JSONObject fields not used in constructor
+            val member = findField(resultClass.members, property.key, config)
             if (member != null) {
                 if (!config.hasIgnoreAnnotation(member.annotations)) {
                     val value = deserializeNested(
                         enclosingType = resultType,
                         resultType = member.returnType,
-                        json = entry.value,
-                        context = context.child(entry.key),
+                        json = property.value,
+                        context = context.child(property.key),
                     )
                     if (member is KMutableProperty<*>) {
                         val wasAccessible = member.isAccessible
@@ -877,7 +888,7 @@ object JSONDeserializer {
                             member.setter.call(instance, value)
                         }
                         catch (e: Exception) {
-                            context.fatal("Error setting property ${entry.key} in ${resultClass.qualifiedName}", e)
+                            context.fatal("Error setting property ${property.key} in ${resultClass.qualifiedName}", e)
                         }
                         finally {
                             member.isAccessible = wasAccessible
@@ -885,16 +896,15 @@ object JSONDeserializer {
                     }
                     else {
                         if (member.getter.call(instance) != value)
-                            context.fatal("Can't set property ${entry.key} in ${resultClass.qualifiedName}")
+                            context.fatal("Can't set property ${property.key} in ${resultClass.qualifiedName}")
                     }
                 }
             }
             else {
                 if (!(config.allowExtra || config.hasAllowExtraPropertiesAnnotation(resultClass.annotations)))
-                    context.fatal("Can't find property ${entry.key} in ${resultClass.qualifiedName}")
+                    context.fatal("Can't find property ${property.key} in ${resultClass.qualifiedName}")
             }
         }
-        return instance
     }
 
     private fun findField(members: Collection<KCallable<*>>, name: String, config: JSONConfig): KProperty<*>? {

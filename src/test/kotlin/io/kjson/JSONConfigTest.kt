@@ -32,6 +32,7 @@ import kotlin.reflect.typeOf
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -632,5 +633,28 @@ class JSONConfigTest {
         val annotations2 = Dummy1::class.annotations
         assertFalse(JSONConfig.defaultConfig.hasIncludeAllPropertiesAnnotation(annotations2))
     }
+
+    @Test fun `should deserialise interface with the right config`() {
+        val config = JSONConfig {
+            fromJSON<DummyInterface> { deserialize<DummyImplementation>(it) }
+        }
+        val json = JSONObject.build {
+            add("name", "Fred")
+            add("number", 123)
+        }
+        val result: DummyInterface = JSONDeserializer.deserialize(json, config)
+        assertIs<DummyImplementation>(result)
+        expect("Fred") { result.name }
+        expect(123) { result.number }
+    }
+
+    interface DummyInterface {
+        val name: String
+    }
+
+    data class DummyImplementation(
+        override val name: String,
+        val number: Int,
+    ) : DummyInterface
 
 }

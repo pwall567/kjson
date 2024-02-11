@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [7.4] - 2024-02-11
+### Changed
+- `JSONDeserializer`: optimisations (take advantage of new functionality in `JSONObject`)
+
 ## [7.3] - 2024-02-05
 ### Changed
 - `JSONDeserializer`, `JSONConfig`: improved handling of errors in invoked constructors
