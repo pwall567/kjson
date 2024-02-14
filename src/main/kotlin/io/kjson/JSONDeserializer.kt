@@ -867,7 +867,7 @@ object JSONDeserializer {
         resultType: KType,
         resultClass: KClass<T>,
         instance: T,
-        properties: List<JSONProperty>,
+        properties: List<JSONObject.Property>,
         context: JSONContext,
     ) {
         val config = context.config
