@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>kjson</artifactId>
-  <version>7.5</version>
+  <version>7.6</version>
   <name>Reflection-based JSON serialization and deserialization for Kotlin</name>
   <description>Reflection-based JSON serialization and deserialization for Kotlin</description>
   <packaging>jar</packaging>
@@ -63,12 +63,12 @@
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson-core</artifactId>
-      <version>7.1</version>
+      <version>7.2</version>
     </dependency>
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson-stream</artifactId>
-      <version>1.11</version>
+      <version>1.12</version>
     </dependency>
     <dependency>
       <groupId>io.kjson</groupId>
@@ -83,7 +83,7 @@
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson-pointer</artifactId>
-      <version>7.3</version>
+      <version>7.4</version>
     </dependency>
     <dependency>
       <groupId>net.pwall.json</groupId>
@@ -128,7 +128,7 @@
     <dependency>
       <groupId>net.pwall.util</groupId>
       <artifactId>immutables</artifactId>
-      <version>2.4</version>
+      <version>2.5</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
@@ -147,7 +147,7 @@
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson-test</artifactId>
-      <version>3.11</version>
+      <version>3.12</version>
       <scope>test</scope>
     </dependency>
     <dependency>
