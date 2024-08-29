@@ -28,7 +28,7 @@ The change should be transparent to most existing uses.
 `JSONContext`, which provides access to both the `JSONConfig` and a `JSONPointer` describing the current location in a
 complex object.
 The `JSONContext` also provides `serialize()` and `deserialize()` functions that make use of the context.
-The change may be transparent to most many uses, but existing uses that make use of the `JSONConfig` may be improved by
+The change may be transparent to most uses, but existing uses that make use of the `JSONConfig` may be improved by
 switching to the new functions.
 
 ## `kjson-core` Library
