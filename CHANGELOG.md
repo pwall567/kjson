@@ -2,6 +2,24 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [8.0] - 2024-08-30
+### Added
+- individual deserializer classes/objects in `io.kjson.deserialize`
+- individual serializer classes/objects in `io.kjson.serialize`
+- `NameValuePair`
+- `SizedSequence`
+- `TypeMap`
+- `reflectionUtils.kt`
+- `build.yml`, `deploy.yml`: converted project to GitHub Actions
+### Changed
+- `JSONConfig`, `JSONCoStringify`, `JSONDeserializer`, `JSONDeserializerFunctions`, `JSONfun`, `JSONKotlinException`,
+  `JSONSerializer`, `JSONSerializerFunctions`, `JSONStringify`: major restructure
+- `JSONContext`: deprecated
+- `pom.xml`: updated multiple dependency versions
+- `pom.xml`: updated Kotlin version to 1.9.24
+### Removed
+- `.travis.yml`
+
 ## [7.6] - 2024-02-18
 ### Changed
 - `pom.xml`: updated multiple dependency versions

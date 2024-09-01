@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerArrayTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,10 @@ package io.kjson
 import kotlin.reflect.KTypeProjection
 import kotlin.reflect.full.createType
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.expect
 
@@ -54,7 +57,10 @@ import io.kjson.Constants.setStringType
 import io.kjson.Constants.stringTypeProjection
 import io.kjson.Constants.tripleStringIntStringType
 import io.kjson.Constants.tripleStringStringStringType
+import io.kjson.util.SizedSequence
 import io.kjson.testclasses.DummyList
+import io.kjson.testclasses.DummyList2
+import io.kjson.testclasses.DummyList3
 import net.pwall.util.ImmutableCollection
 import net.pwall.util.ImmutableList
 import net.pwall.util.ImmutableSet
@@ -89,7 +95,7 @@ class JSONDeserializerArrayTest {
             add(false)
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(BooleanArray::class, json) }.let {
-            expect("Can't deserialize 123 as Boolean at /0") { it.message }
+            expect("Incorrect type, expected Boolean but was 123, at /0") { it.message }
         }
     }
 
@@ -150,7 +156,7 @@ class JSONDeserializerArrayTest {
             add(321321)
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(IntArray::class, json) }.let {
-            expect("Can't deserialize \"12345\" as Int at /0") { it.message }
+            expect("Incorrect type, expected Int but was \"12345\", at /0") { it.message }
         }
     }
 
@@ -161,7 +167,7 @@ class JSONDeserializerArrayTest {
             add(321321)
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(IntArray::class, json) }.let {
-            expect("Can't deserialize 0.125 as Int at /1") { it.message }
+            expect("Incorrect type, expected Int but was 0.125, at /1") { it.message }
         }
     }
 
@@ -208,7 +214,7 @@ class JSONDeserializerArrayTest {
             add("abc")
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(setStringType, jsonArrayDuplicate) }.let {
-            expect("Duplicate not allowed at /2") { it.message }
+            expect("Duplicate not allowed, at /2") { it.message }
         }
     }
 
@@ -236,6 +242,18 @@ class JSONDeserializerArrayTest {
         expect("abc" to 88) { JSONDeserializer.deserialize(pairStringIntType, json) }
     }
 
+    @Test fun `should fail deserializing null into non-nullable Pair item`() {
+        val json = JSONArray.build {
+            add("abc")
+            add(null)
+        }
+        assertFailsWith<JSONKotlinException> {
+            JSONDeserializer.deserialize<Pair<String, Int>>(json)
+        }.let {
+            expect("Pair item may not be null, at /1") { it.message }
+        }
+    }
+
     @Test fun `should return Triple from JSONArray`() {
         val json = JSONArray.build {
             add("abc")
@@ -254,6 +272,35 @@ class JSONDeserializerArrayTest {
         expect(Triple("abc", 66, "xyz")) { JSONDeserializer.deserialize(tripleStringIntStringType, json) }
     }
 
+    @Test fun `should fail deserializing null into non-nullable Triple item`() {
+        val json = JSONArray.build {
+            add("abc")
+            add(null)
+            add(1)
+        }
+        assertFailsWith<JSONKotlinException> {
+            JSONDeserializer.deserialize<Triple<String, Int, Int>>(json)
+        }.let {
+            expect("Triple item may not be null, at /1") { it.message }
+        }
+    }
+
+    @Test fun `should fail deserializing null into nested non-nullable Triple item`() {
+        val json = JSONArray.build {
+            add(JSONArray.build {
+                add("abc")
+                add(null)
+                add(1)
+            })
+            add("a")
+        }
+        assertFailsWith<JSONKotlinException> {
+            JSONDeserializer.deserialize<Pair<Triple<String, Int, Int>, String>>(json)
+        }.let {
+            expect("Triple item may not be null, at /0/1") { it.message }
+        }
+    }
+
     @Test fun `should deserialize JSONArray into List derived type`() {
         val json = JSONArray.build {
             add("2019-10-06")
@@ -264,15 +311,61 @@ class JSONDeserializerArrayTest {
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     @Test fun `should deserialize JSONArray into Sequence`() {
         val json = JSONArray.build {
             add("abcde")
             add("fghij")
         }
-        val expected = sequenceOf("abcde", "fghij").toList()
-        val stringSequenceType = Sequence::class.createType(listOf(stringTypeProjection))
-        expect(expected) { (JSONDeserializer.deserialize(stringSequenceType, json) as Sequence<String>).toList() }
+        val sequence = JSONDeserializer.deserialize<Sequence<String>>(json)
+        assertIs<SizedSequence<*>>(sequence)
+        expect(2) { sequence.size }
+        with(sequence.iterator()) {
+            assertTrue(hasNext())
+            expect("abcde") { next() }
+            assertTrue(hasNext())
+            expect("fghij") { next() }
+            assertFalse(hasNext())
+        }
+    }
+
+    @Test fun `should fail deserializing null into non-nullable Sequence item`() {
+        val json = JSONArray.build {
+            add("abcde")
+            add("fghij")
+            add(null)
+        }
+        val sequence = JSONDeserializer.deserialize<Sequence<String>>(json)
+        assertIs<SizedSequence<*>>(sequence)
+        expect(3) { sequence.size }
+        with(sequence.iterator()) {
+            assertTrue(hasNext())
+            expect("abcde") { next() }
+            assertTrue(hasNext())
+            expect("fghij") { next() }
+            assertFailsWith<JSONKotlinException> { hasNext() }.let {
+                expect("Sequence item may not be null, at /2") { it.message }
+            }
+        }
+    }
+
+    @Test fun `should fail deserializing incorrect type into Sequence item`() {
+        val json = JSONArray.build {
+            add("abcde")
+            add("fghij")
+            add(12345)
+        }
+        val sequence = JSONDeserializer.deserialize<Sequence<String>>(json)
+        assertIs<SizedSequence<*>>(sequence)
+        expect(3) { sequence.size }
+        with(sequence.iterator()) {
+            assertTrue(hasNext())
+            expect("abcde") { next() }
+            assertTrue(hasNext())
+            expect("fghij") { next() }
+            assertFailsWith<JSONKotlinException> { hasNext() }.let {
+                expect("Incorrect type, expected string but was 12345, at /2") { it.message }
+            }
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -308,6 +401,30 @@ class JSONDeserializerArrayTest {
         val stringArrayArrayType = Array<String>::class.createType(listOf(KTypeProjection.invariant(stringArrayType)))
         val actual = JSONDeserializer.deserialize(stringArrayArrayType, json) as Array<Array<String>>
         assertTrue(expected.contentDeepEquals(actual))
+    }
+
+    @Test fun `should report error correctly deserializing JSONArray into nested Array`() {
+        val list1 = JSONArray.build {
+            add("qwerty")
+            add("asdfgh")
+            add("zxcvbn")
+        }
+        val list2 = JSONArray.build {
+            add("abcde")
+            add("ghijk")
+            add(123)
+        }
+        val json = JSONArray.build {
+            add(list1)
+            add(list2)
+        }
+        val stringArrayType = Array<String>::class.createType(listOf(stringTypeProjection))
+        val stringArrayArrayType = Array<String>::class.createType(listOf(KTypeProjection.invariant(stringArrayType)))
+        assertFailsWith<JSONKotlinException> {
+            JSONDeserializer.deserialize(stringArrayArrayType, json)
+        }.let {
+            expect("Incorrect type, expected string but was 123, at /1/2") { it.message }
+        }
     }
 
     @Test fun `should deserialize Java Stream`() {
@@ -362,7 +479,29 @@ class JSONDeserializerArrayTest {
         expect(listOf("abcde", "fghij")) { JSONDeserializer.deserializeAny(json) }
     }
 
+    @Test fun `should deserialize List taking Array constructor parameter`() {
+        val json = JSONArray.build {
+            add("aaa")
+            add("ccc")
+            add("bbb")
+            add("abc")
+        }
+        val immutableList = DummyList2(arrayOf("aaa", "ccc", "bbb", "abc"))
+        expect(immutableList) { json.deserialize<DummyList2>() }
+    }
+
     @Test fun `should deserialize List taking List constructor parameter`() {
+        val json = JSONArray.build {
+            add("aaa")
+            add("ccc")
+            add("bbb")
+            add("abc")
+        }
+        val immutableList = DummyList3(listOf("aaa", "ccc", "bbb", "abc"))
+        expect(immutableList) { json.deserialize<DummyList3>() }
+    }
+
+    @Test fun `should deserialize ImmutableList`() {
         val json = JSONArray.build {
             add("aaa")
             add("ccc")
@@ -394,10 +533,10 @@ class JSONDeserializerArrayTest {
         // there's no equals defined for Collection, so we have to do this the hard way...
         val immutableCollection: ImmutableCollection<String> = json.deserialize()
         expect(4) { immutableCollection.size }
-        assertTrue(immutableCollection.contains("aaa"))
-        assertTrue(immutableCollection.contains("ccc"))
-        assertTrue(immutableCollection.contains("bbb"))
-        assertTrue(immutableCollection.contains("abc"))
+        assertContains(immutableCollection, "aaa")
+        assertContains(immutableCollection, "bbb")
+        assertContains(immutableCollection, "ccc")
+        assertContains(immutableCollection, "abc")
     }
 
 }

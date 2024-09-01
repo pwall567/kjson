@@ -2,7 +2,7 @@
  * @(#) JSONSerializerFunctions.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,12 +25,10 @@
 
 package io.kjson
 
-import kotlin.reflect.KCallable
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.KType
-import kotlin.reflect.full.findAnnotation
 import kotlin.time.Duration
 
 import java.math.BigDecimal
@@ -52,10 +50,13 @@ import java.time.ZonedDateTime
 import java.util.LinkedList
 import java.util.UUID
 
-import io.kjson.annotation.JSONDiscriminator
-import io.kjson.annotation.JSONIdentifier
+import net.pwall.util.CoIntOutput.output4HexLC
+import net.pwall.util.CoIntOutput.output8HexLC
+import net.pwall.util.CoOutput
 import net.pwall.util.IntOutput.append4HexLC
 import net.pwall.util.IntOutput.append8HexLC
+import net.pwall.util.MiniSet
+import net.pwall.util.output
 
 /**
  * Utility functions for JSON Serialization.  These functions are not expected to be of use outside the `kjson` family
@@ -77,40 +78,24 @@ object JSONSerializerFunctions {
         CharArray::class, Duration::class, IntArray::class, LongArray::class, ByteArray::class, ShortArray::class,
         FloatArray::class, DoubleArray::class, BooleanArray::class)
 
-    private val impossibleClasses = setOf(Unit::class, Nothing::class, Void::class)
+    private val impossibleClasses = MiniSet.of(Unit::class, Nothing::class, Void::class)
 
     private val toJsonCache = HashMap<KClass<*>, KFunction<Any?>?>()
 
     /**
      * Is the class best represented by a string of the `toString()` result?
-     *
-     * @receiver            the class of the object
-     * @return              `true` if the object should be output as a string
      */
     fun KClass<*>.isToStringClass() = this in toStringClasses
 
     /**
-     * Is the class in the set of classes that can be determined by an equality comparison on the [KClass] object (as
-     * opposed to `is`, which allows derived classes).  Does not include classes derived from [Number]; these are
-     * handled separately.
-     */
-    fun KClass<*>.isFinalClass() = this in finalClasses
-
-    /**
      * Is the class a system class that will not have a `toJSON` or `fromJSON` function?
-     *
-     * @receiver            the class of the object
-     * @return              `true` if the object is a member of a system class
      */
-    fun KClass<*>.isUncachedClass() = this in finalClasses || this in uncachedClasses || this in toStringClasses
+    private fun KClass<*>.isUncachedClass() = this in finalClasses || this in uncachedClasses || this in toStringClasses
 
     /**
      * Is the class one that can't be deserialized?
-     *
-     * @receiver            the class of the object
-     * @return              `true` if the object is a member of a class that can't be deserialized
      */
-    fun KClass<*>.isImpossible() = this in impossibleClasses
+    private fun KClass<*>.isImpossible() = this in impossibleClasses
 
     fun KClass<*>.findToJSON(): KFunction<Any?>? {
         if (isUncachedClass())
@@ -138,35 +123,6 @@ object JSONSerializerFunctions {
         return true
     }
 
-    fun KClass<*>.findSealedClass(): KClass<*>? {
-        for (supertype in supertypes) {
-            (supertype.classifier as? KClass<*>)?.let {
-                if (it.isSealed)
-                    return it
-                if (it != Any::class)
-                    it.findSealedClass()?.let { c -> return c }
-            }
-        }
-        return null
-    }
-
-    internal fun KCallable<*>.getCombinedAnnotations(objClass: KClass<*>): List<Annotation> =
-        annotations.combinedWith(objClass.findConstructorParameter(name)?.annotations)
-
-    private fun KClass<*>.findConstructorParameter(name: String): KParameter? =
-        constructors.firstOrNull()?.parameters?.find { it.name == name }
-
-    private fun <T> List<T>.combinedWith(otherList: List<T>?): List<T> = when {
-        otherList.isNullOrEmpty() -> this
-        this.isEmpty() -> otherList
-        else -> this + otherList
-    }
-
-    internal fun KClass<*>.discriminatorName(context: JSONContext): String =
-            findAnnotation<JSONDiscriminator>()?.id ?: context.config.sealedClassDiscriminator
-
-    internal fun KClass<*>.discriminatorValue(): String = findAnnotation<JSONIdentifier>()?.id ?: simpleName ?: "null"
-
     fun Appendable.appendUUID(uuid: UUID) {
         val highBits = uuid.mostSignificantBits
         append8HexLC(this, (highBits shr 32).toInt())
@@ -180,6 +136,21 @@ object JSONSerializerFunctions {
         append('-')
         append4HexLC(this, (lowBits shr 32).toInt())
         append8HexLC(this, lowBits.toInt())
+    }
+
+    suspend fun CoOutput.outputUUID(uuid: UUID) {
+        val highBits = uuid.mostSignificantBits
+        output8HexLC((highBits shr 32).toInt())
+        output('-')
+        output4HexLC((highBits shr 16).toInt())
+        output('-')
+        output4HexLC(highBits.toInt())
+        output('-')
+        val lowBits = uuid.leastSignificantBits
+        output4HexLC((lowBits shr 48).toInt())
+        output('-')
+        output4HexLC((lowBits shr 32).toInt())
+        output8HexLC(lowBits.toInt())
     }
 
 }

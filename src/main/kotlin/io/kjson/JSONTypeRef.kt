@@ -26,13 +26,13 @@
 package io.kjson
 
 import kotlin.reflect.KType
+
 import java.lang.reflect.ParameterizedType
 
 /**
  * Implementation of the [TypeReference](https://gafter.blogspot.com/2006/12/super-type-tokens.html) pattern.
  *
  * @author  Peter Wall (with acknowledgements to the author of the above-referenced article)
- * @param   T       the target type
  */
 open class JSONTypeRef<T>(nullable: Boolean = false) {
 
@@ -43,9 +43,6 @@ open class JSONTypeRef<T>(nullable: Boolean = false) {
 
         /**
          * Create a [JSONTypeRef] for the target type.
-         *
-         * @param   T       the target type
-         * @return          the [JSONTypeRef]
          */
         inline fun <reified T> create(nullable: Boolean = false): JSONTypeRef<T> = object : JSONTypeRef<T>(nullable) {}
 
@@ -53,9 +50,6 @@ open class JSONTypeRef<T>(nullable: Boolean = false) {
          * Create a [KType] for the target type.
          *
          * (Note - this is largely redundant now that the `typeOf` function is a stable part of the Kotlin library.)
-         *
-         * @param   T       the target type
-         * @return          the [KType]
          */
         inline fun <reified T> createRef(nullable: Boolean = false): KType = create<T>(nullable).refType
 

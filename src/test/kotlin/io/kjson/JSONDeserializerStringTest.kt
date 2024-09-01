@@ -213,7 +213,9 @@ class JSONDeserializerStringTest {
     @Test fun `should fail on invalid UUID`() {
         val json = JSONString("b082b046-ac9b-11eb-8ea7-5fc81989f1") // 2 bytes too short
         assertFailsWith<JSONException> { JSONDeserializer.deserialize<UUID>(json) }.let {
-            expect("Error deserializing \"b082b046-ac9b-11eb-8ea7-5fc81989f1\" as java.util.UUID") { it.message }
+            expect("Error deserializing java.util.UUID - Not a valid UUID - b082b046-ac9b-11eb-8ea7-5fc81989f1") {
+                it.message
+            }
         }
     }
 

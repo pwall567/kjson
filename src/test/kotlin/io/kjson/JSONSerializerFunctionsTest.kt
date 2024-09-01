@@ -36,12 +36,12 @@ import java.net.URL
 import java.util.UUID
 
 import io.kjson.JSONSerializerFunctions.appendUUID
-import io.kjson.JSONSerializerFunctions.findSealedClass
 import io.kjson.JSONSerializerFunctions.findToJSON
 import io.kjson.JSONSerializerFunctions.isToStringClass
 import io.kjson.testclasses.Dummy1
 import io.kjson.testclasses.DummyFromJSON
 import io.kjson.testclasses.NotANumber
+import io.kjson.util.findSealedClass
 
 class JSONSerializerFunctionsTest {
 

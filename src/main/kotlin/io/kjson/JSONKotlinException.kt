@@ -2,7 +2,7 @@
  * @(#) JSONKotlinException.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,35 +32,51 @@ import io.kjson.pointer.JSONPointer
  *
  * @author  Peter Wall
  */
-class JSONKotlinException(val text: String, val pointer: JSONPointer? = null) : JSONException(text) {
+class JSONKotlinException(
+    text: String,
+    val pointer: JSONPointer? = null,
+    cause: Throwable? = null,
+) : JSONException(text, pointer) {
 
-    constructor(text: String, pointer: JSONPointer, nested: Throwable) : this(text, pointer) {
-        initCause(nested)
+    constructor(
+        text: String,
+        property: String,
+        cause: Throwable? = null
+    ) : this(text, JSONPointer.root.child(property), cause)
+
+    constructor(
+        text: String,
+        item: Int,
+        cause: Throwable? = null
+    ) : this(text, JSONPointer.root.child(item), cause)
+
+    init {
+        if (cause != null)
+            initCause(cause)
     }
 
-    constructor(text: String, nested: Throwable) : this(text) {
-        initCause(nested)
-    }
+    /**
+     * Create a copy of this [JSONKotlinException] with the pointer prefixed with the specified pointer.
+     */
+    fun nested(pointer: JSONPointer) = JSONKotlinException(text, this.pointer?.withParent(pointer) ?: pointer, cause)
 
-    override val message: String
-        get() = when (pointer) {
-            null,
-            JSONPointer.root -> text
-            else -> "$text at $pointer"
-        }
+    /**
+     * Create a copy of this [JSONKotlinException] with the pointer prefixed with the specified pointer element.
+     */
+    fun nested(name: String) = JSONKotlinException(text, (pointer ?: JSONPointer.root).withParent(name), cause)
+
+    /**
+     * Create a copy of this [JSONKotlinException] with the pointer prefixed with the specified pointer element.
+     */
+    fun nested(index: Int) = JSONKotlinException(text, (pointer ?: JSONPointer.root).withParent(index), cause)
 
     companion object {
 
-        internal fun fatal(text: String, pointer: JSONPointer? = null): Nothing {
-            throw JSONKotlinException(text, pointer)
-        }
-
-        internal fun fatal(text: String, pointer: JSONPointer, nested: Throwable): Nothing {
-            throw JSONKotlinException(text, pointer, nested)
-        }
-
-        internal fun fatal(text: String, nested: Throwable): Nothing {
-            throw JSONKotlinException(text, nested)
+        /**
+         * Throw a [JSONKotlinException] with the specified parameters.
+         */
+        fun fatal(text: String, pointer: JSONPointer? = null, cause: Throwable? = null): Nothing {
+            throw JSONKotlinException(text, pointer, cause)
         }
 
     }

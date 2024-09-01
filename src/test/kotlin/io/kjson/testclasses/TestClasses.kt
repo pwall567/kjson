@@ -165,6 +165,16 @@ object DummyObject : DummyInterface {
 
 }
 
+object DummyObject2 {
+
+    @Suppress("unused")
+    val field1: String = "abc"
+
+    @Suppress("unused")
+    var field2: Int = 123
+
+}
+
 class NestedDummy {
 
     @Suppress("unused")
@@ -198,6 +208,16 @@ data class DummyValidated(
 }
 
 class DummyList(content: List<LocalDate>) : ArrayList<LocalDate>(content)
+
+class DummyList2(array: Array<String>) : List<String> by array.toList() {
+    override fun equals(other: Any?): Boolean = other is DummyList2 && indices.any { this[it] == other[it] }
+    override fun hashCode(): Int = sumOf { hashCode() }
+}
+
+class DummyList3(list: List<String>) : List<String> by list {
+    override fun equals(other: Any?): Boolean = other is DummyList3 && indices.any { this[it] == other[it] }
+    override fun hashCode(): Int = sumOf { hashCode() }
+}
 
 class DummyMap(content: Map<String, LocalDate>) : HashMap<String, LocalDate>(content)
 

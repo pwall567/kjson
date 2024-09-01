@@ -69,21 +69,21 @@ class JSONContextTest {
         expect(pointer) { context.pointer }
     }
 
-    @Test fun `should create child JSONContext with property name`() {
-        val config = JSONConfig()
-        val context = JSONContext(config, JSONPointer("/abc/def"))
-        val child = context.child("xyz")
-        assertSame(config, child.config)
-        expect(JSONPointer("/abc/def/xyz")) { child.pointer }
-    }
+//    @Test fun `should create child JSONContext with property name`() {
+//        val config = JSONConfig()
+//        val context = JSONContext(config, JSONPointer("/abc/def"))
+//        val child = context.child("xyz")
+//        assertSame(config, child.config)
+//        expect(JSONPointer("/abc/def/xyz")) { child.pointer }
+//    }
 
-    @Test fun `should create child JSONContext with array index`() {
-        val config = JSONConfig()
-        val context = JSONContext(config, JSONPointer("/abc/def"))
-        val child = context.child(1)
-        assertSame(config, child.config)
-        expect(JSONPointer("/abc/def/1")) { child.pointer }
-    }
+//    @Test fun `should create child JSONContext with array index`() {
+//        val config = JSONConfig()
+//        val context = JSONContext(config, JSONPointer("/abc/def"))
+//        val child = context.child(1)
+//        assertSame(config, child.config)
+//        expect(JSONPointer("/abc/def/1")) { child.pointer }
+//    }
 
     @Test fun `should serialise properties using JSONContext`() {
         val config = JSONConfig {
@@ -197,7 +197,7 @@ class JSONContextTest {
         }
     }
 
-    @Test fun `should report error with pointer when deserializing using JSONContext`() {
+    @Test fun `should report error with pointer when using JSONContext`() {
         val config = JSONConfig {
             fromJSONObject<Super> { json ->
                 deserialize<Derived>(json)
@@ -209,7 +209,7 @@ class JSONContextTest {
             add("field3", 10)
         }
         assertFailsWith<JSONKotlinException> { json.fromJSONValue<Super>(config) }.let {
-            expect("Can't deserialize \"wrong\" as Int at /field2") { it.message }
+            expect("Incorrect type, expected Int but was \"wrong\", at /field2") { it.message }
             expect(JSONPointer("/field2")) { it.pointer }
         }
     }
@@ -273,7 +273,7 @@ class JSONContextTest {
         }
     }
 
-    @Test fun `should report error with pointer when deserializing child property using JSONContext`() {
+    @Test fun `should report error with pointer for child property using JSONContext`() {
         val config = JSONConfig {
             fromJSONObject<Super> { json ->
                 deserializeProperty<Derived>("inner", json)
@@ -287,7 +287,7 @@ class JSONContextTest {
             })
         }
         assertFailsWith<JSONKotlinException> { json.fromJSONValue<Super>(config) }.let {
-            expect("Can't deserialize \"bad\" as Int at /inner/field2") { it.message }
+            expect("Incorrect type, expected Int but was \"bad\", at /inner/field2") { it.message }
             expect(JSONPointer("/inner/field2")) { it.pointer }
         }
     }
@@ -366,7 +366,7 @@ class JSONContextTest {
         }
     }
 
-    @Test fun `should report error with pointer when deserializing child array item using JSONContext`() {
+    @Test fun `should report error with pointer child array item using JSONContext`() {
         val config = JSONConfig {
             fromJSONArray { array ->
                 Dummy4(List(array.size) { deserializeItem(it, array) }, "default")
@@ -379,7 +379,7 @@ class JSONContextTest {
             })
         }
         assertFailsWith<JSONKotlinException> { json.fromJSONValue<Dummy4>(config) }.let {
-            expect("Can't deserialize \"111\" as Int at /0/field2") { it.message }
+            expect("Incorrect type, expected Int but was \"111\", at /0/field2") { it.message }
             expect(JSONPointer("/0/field2")) { it.pointer }
         }
     }
@@ -451,7 +451,7 @@ class JSONContextTest {
     @Test fun `should throw exception including pointer`() {
         val context = JSONContext(JSONPointer("/abc/def"))
         assertFailsWith<JSONKotlinException> { context.fatal("Dummy message") }.let {
-            expect("Dummy message at /abc/def") { it.message }
+            expect("Dummy message, at /abc/def") { it.message }
         }
     }
 
@@ -459,7 +459,7 @@ class JSONContextTest {
         val context = JSONContext(JSONPointer("/abc/def"))
         val nested = NullPointerException("dummy")
         assertFailsWith<JSONKotlinException> { context.fatal("Dummy message", nested) }.let {
-            expect("Dummy message at /abc/def") { it.message }
+            expect("Dummy message, at /abc/def") { it.message }
             assertSame(nested, it.cause)
         }
     }
@@ -469,7 +469,7 @@ class JSONContextTest {
             bigDecimalString = false
             bigIntegerString = true
             toJSON<BigHolder> {
-                with(modifyConfig { bigDecimalString = true }) {
+                with(copy { bigDecimalString = true }) {
                     JSONObject.build {
                         addProperty("bi", it.bi)
                         addProperty("bd", it.bd)
@@ -490,7 +490,7 @@ class JSONContextTest {
             bigDecimalString = false
             bigIntegerString = true
             toJSON<BigHolder> {
-                with(replaceConfig(JSONConfig { bigDecimalString = true })) {
+                with(JSONConfig { bigDecimalString = true }) {
                     JSONObject.build {
                         addProperty("bi", it.bi)
                         addProperty("bd", it.bd)

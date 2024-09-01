@@ -57,6 +57,7 @@ import java.util.Calendar
 import java.util.TimeZone
 import java.util.UUID
 import java.util.stream.IntStream
+import java.util.stream.LongStream
 import java.util.stream.Stream
 
 import io.kjson.optional.Opt
@@ -101,7 +102,7 @@ import io.kjson.testclasses.ValueClassHolder
 class JSONSerializerTest {
 
     @Test fun `should return null for null input`() {
-        assertNull(JSONSerializer.serialize(null))
+        assertNull(JSONSerializer.serialize(null as String?))
     }
 
     @Test
@@ -657,11 +658,11 @@ class JSONSerializerTest {
         val obj = Derived()
         obj.field1 = "qwerty"
         obj.field2 = 98765
-        obj.field3 = 0.012
+        obj.field3 = 0.5
         val expected = JSONObject.build {
             add("field1", "qwerty")
             add("field2", 98765)
-            add("field3", BigDecimal(0.012))
+            add("field3", BigDecimal(0.5))
         }
         expect(expected) { JSONSerializer.serialize(obj) }
     }
@@ -911,7 +912,7 @@ class JSONSerializerTest {
         circular1.ref2 = circular2
         circular2.ref1 = circular1
         assertFailsWith<JSONKotlinException> { JSONSerializer.serialize(circular1) }.let {
-            expect("Circular reference to Circular1 at /ref2/ref1") { it.message }
+            expect("Circular reference to Circular1, at /ref2/ref1") { it.message }
         }
     }
 
@@ -919,7 +920,7 @@ class JSONSerializerTest {
         val circularList = mutableListOf<Any>()
         circularList.add(circularList)
         assertFailsWith<JSONKotlinException> { JSONSerializer.serialize(circularList) }.let {
-            expect("Circular reference to ArrayList at /0") { it.message }
+            expect("Circular reference to ArrayList, at /0") { it.message }
         }
     }
 
@@ -927,7 +928,7 @@ class JSONSerializerTest {
         val circularMap = mutableMapOf<String, Any>()
         circularMap["test1"] = circularMap
         assertFailsWith<JSONKotlinException> { JSONSerializer.serialize(circularMap) }.let {
-            expect("Circular reference to LinkedHashMap at /test1") { it.message }
+            expect("Circular reference to LinkedHashMap, at /test1") { it.message }
         }
     }
 
@@ -958,6 +959,18 @@ class JSONSerializerTest {
             expect(JSONInt(987)) { get(0) }
             expect(JSONInt(654)) { get(1) }
             expect(JSONInt(321)) { get(2) }
+        }
+    }
+
+    @Test fun `should serialize Java LongStream`() {
+        val stream = LongStream.of(987_000_000_000, 654_000_000_000, 321_000_000_000)
+        val serialized = JSONSerializer.serialize(stream)
+        assertTrue(serialized is JSONArray)
+        with(serialized) {
+            expect(3) { size }
+            expect(JSONLong(987_000_000_000)) { get(0) }
+            expect(JSONLong(654_000_000_000)) { get(1) }
+            expect(JSONLong(321_000_000_000)) { get(2) }
         }
     }
 

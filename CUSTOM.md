@@ -24,12 +24,17 @@ This allows the function full access to the configuration options, which is part
 standard serialization and deserialization functions recursively.
 The change should be transparent to most existing uses.
 
-**New in Version 7.0** &ndash; the `toJSON` and `fromJSON` functions are now invoked as extension functions on
+**New in Version 7.0** &ndash; ~~the `toJSON` and `fromJSON` functions are now invoked as extension functions on
 `JSONContext`, which provides access to both the `JSONConfig` and a `JSONPointer` describing the current location in a
 complex object.
 The `JSONContext` also provides `serialize()` and `deserialize()` functions that make use of the context.
 The change may be transparent to most uses, but existing uses that make use of the `JSONConfig` may be improved by
-switching to the new functions.
+switching to the new functions.~~
+
+**New in Version 8.0** &ndash; major performance improvements have led to the deprecation of the `JSONContext` class.
+The custom serialization and deserialization functions are now invoked as extension functions on the `JSONConfig`
+class (as they were previously).
+It is still possible to use `JSONContext`, but the class may be removed in future versions.
 
 ## `kjson-core` Library
 
@@ -105,7 +110,7 @@ For example, if the `Person` class above did not have a `toJSON` function:
     }
 ```
 
-The type may be specified as a type parameter (as above), or as [KType] value:
+The type may be specified as a type parameter (as above), or as a `KType` value:
 ```kotlin
     val personType = Person::class.starProjectedType
     config.toJSON(personType) { p ->

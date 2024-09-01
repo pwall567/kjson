@@ -118,7 +118,7 @@ class JSONFunTest {
     }
 
     @Test fun `should stringify null`() {
-        val dummy1 = null
+        val dummy1: Dummy1? = null
         expect("null") { dummy1.stringifyJSON() }
     }
 
@@ -302,7 +302,7 @@ class JSONFunTest {
 
     @Test fun `should use lenient parsing options if provided`() {
         val config = JSONConfig {
-            parseOptions = ParseOptions(ParseOptions.DuplicateKeyOption.CHECK_IDENTICAL)
+            parseOptions = ParseOptions(JSONObject.DuplicateKeyOption.CHECK_IDENTICAL)
         }
         val expected = Dummy1("abc", 987)
         expect(expected) { """{"field1":"abc","field2":987,"field1":"abc"}""".parseJSON(config) }

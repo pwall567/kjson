@@ -27,9 +27,6 @@ package io.kjson
 
 import kotlin.reflect.KCallable
 import kotlin.reflect.KClass
-import kotlin.reflect.KFunction
-import kotlin.reflect.KMutableProperty
-import kotlin.reflect.KParameter
 import kotlin.reflect.KProperty
 import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
@@ -39,59 +36,67 @@ import kotlin.reflect.KVisibility
 import kotlin.reflect.typeOf
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.createType
-import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.isSubclassOf
-import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.full.staticFunctions
-import kotlin.reflect.jvm.isAccessible
-import kotlin.time.Duration
 
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Type
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.time.Duration as JavaDuration
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.MonthDay
-import java.time.OffsetDateTime
-import java.time.OffsetTime
-import java.time.Period
-import java.time.Year
-import java.time.YearMonth
-import java.time.ZonedDateTime
-import java.util.BitSet
-import java.util.Calendar
-import java.util.Date
+import java.util.HashMap
 import java.util.LinkedList
-import java.util.UUID
-import java.util.stream.DoubleStream
-import java.util.stream.IntStream
-import java.util.stream.LongStream
 import java.util.stream.Stream
 
-import io.kjson.JSON.asStringOrNull
-import io.kjson.JSONDeserializerFunctions.callWithSingle
-import io.kjson.JSONDeserializerFunctions.classifierAsClass
-import io.kjson.JSONDeserializerFunctions.createUUID
+import io.kjson.JSON.displayValue
 import io.kjson.JSONDeserializerFunctions.displayName
-import io.kjson.JSONDeserializerFunctions.findFromJSONInvoker
-import io.kjson.JSONDeserializerFunctions.findParameterName
+import io.kjson.JSONDeserializerFunctions.findAllInClassFromJSON
 import io.kjson.JSONDeserializerFunctions.findSingleParameterConstructor
+import io.kjson.JSONDeserializerFunctions.hasArrayParameter
 import io.kjson.JSONDeserializerFunctions.hasNumberParameter
-import io.kjson.JSONDeserializerFunctions.parseCalendar
-import io.kjson.JSONDeserializerFunctions.toBigInteger
-import io.kjson.JSONSerializerFunctions.isImpossible
-import io.kjson.JSONSerializerFunctions.isUncachedClass
-import io.kjson.annotation.JSONDiscriminator
-import io.kjson.annotation.JSONIdentifier
+import io.kjson.JSONKotlinException.Companion.fatal
+import io.kjson.deserialize.AnyDeserializer
+import io.kjson.deserialize.ArrayConstructorDeserializer
+import io.kjson.deserialize.ArrayDeserializer
+import io.kjson.deserialize.BigDecimalConstructorDeserializer
+import io.kjson.deserialize.BigIntegerConstructorDeserializer
+import io.kjson.deserialize.ByteConstructorDeserializer
+import io.kjson.deserialize.ClassMultiConstructorDeserializer
+import io.kjson.deserialize.ClassSingleConstructorDeserializer
+import io.kjson.deserialize.ConfigFromJSONDeserializer
+import io.kjson.deserialize.Deserializer
+import io.kjson.deserialize.DoubleConstructorDeserializer
+import io.kjson.deserialize.EnumDeserializer
+import io.kjson.deserialize.FieldDescriptor
+import io.kjson.deserialize.FloatConstructorDeserializer
+import io.kjson.deserialize.InClassMultiFromJSONDeserializer
+import io.kjson.deserialize.IntConstructorDeserializer
+import io.kjson.deserialize.KotlinFieldDescriptor
+import io.kjson.deserialize.ListConstructorDeserializer
+import io.kjson.deserialize.ConstructorDescriptor.Companion.createConstructorDescriptor
+import io.kjson.deserialize.DeferredDeserializer
+import io.kjson.deserialize.DelegatingMapConstructorDeserializer
+import io.kjson.deserialize.DeserializationException
+import io.kjson.deserialize.JavaClassDeserializer.Companion.createJavaClassDeserializer
+import io.kjson.deserialize.LongConstructorDeserializer
+import io.kjson.deserialize.MapConstructorDeserializer
+import io.kjson.deserialize.ObjectDeserializer
+import io.kjson.deserialize.OptDeserializer
+import io.kjson.deserialize.PairDeserializer.Companion.createPairDeserializer
+import io.kjson.deserialize.SealedClassDeserializer.Companion.createSealedClassDeserializer
+import io.kjson.deserialize.ShortConstructorDeserializer
+import io.kjson.deserialize.StringConstructorDeserializer
+import io.kjson.deserialize.TripleDeserializer.Companion.createTripleDeserializer
+import io.kjson.deserialize.UByteConstructorDeserializer
+import io.kjson.deserialize.UIntConstructorDeserializer
+import io.kjson.deserialize.ULongConstructorDeserializer
+import io.kjson.deserialize.UShortConstructorDeserializer
+import io.kjson.deserialize.createCollectionDeserializer
+import io.kjson.deserialize.createMapDeserializer
+import io.kjson.deserialize.createSequenceDeserializer
+import io.kjson.deserialize.createStreamDeserializer
 import io.kjson.optional.Opt
-import net.pwall.util.ImmutableMap
-import net.pwall.util.ImmutableMapEntry
-import net.pwall.util.ImmutableSet
+import io.kjson.util.isKotlinClass
 
 /**
  * Reflection-based JSON deserialization for Kotlin.
@@ -100,16 +105,10 @@ import net.pwall.util.ImmutableSet
  */
 object JSONDeserializer {
 
-    private val anyQType = Any::class.createType(emptyList(), true)
-    private val stringType = String::class.createType(emptyList(), false)
+    internal val anyQType = Any::class.createType(emptyList(), true)
 
     /**
      * Deserialize a parsed [JSONValue] to the inferred [KType].
-     *
-     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
-     * @param   config      an optional [JSONConfig]
-     * @param   T           the target class
-     * @return              the converted object
      */
     inline fun <reified T> deserialize(
         json: JSONValue?,
@@ -118,53 +117,38 @@ object JSONDeserializer {
 
     /**
      * Deserialize a parsed [JSONValue] to a specified [KType].
-     *
-     * @param   resultType  the target type
-     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
-     * @param   config      an optional [JSONConfig]
-     * @return              the converted object, of [resultType] (will be `null` only if [resultType] is nullable)
      */
     fun deserialize(
         resultType: KType,
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
-    ): Any? = deserialize(resultType, json, JSONContext(config))
-
-    /**
-     * Deserialize a parsed [JSONValue] to a specified [KType] (specifying [JSONContext]).
-     *
-     * @param   resultType  the target type
-     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
-     * @param   context     the [JSONContext]
-     * @return              the converted object, of [resultType] (will be `null` only if [resultType] is nullable)
-     */
-    fun deserialize(
-        resultType: KType,
-        json: JSONValue?,
-        context: JSONContext,
     ): Any? {
-        context.config.findFromJSONMapping(resultType)?.let {
-            return context.applyFromJSON(it, json, resultType)
-        }
-        val resultClass = resultType.classifierAsClass(resultType, context)
+        val resultClass = resultType.classifier as? KClass<*> ?: fatal("Can't deserialize $resultType")
         if (json == null) {
             return when {
                 resultClass == Opt::class -> Opt.UNSET
                 resultType.isMarkedNullable -> null
-                else -> context.fatal("Can't deserialize null as ${resultType.displayName()}")
+                else -> fatal("Can't deserialize null as ${resultType.displayName()}")
             }
         }
-        return deserialize(resultType, resultClass, resultType.arguments, json, context)
+        return deserialize(resultType, resultClass, json, config)
     }
 
     /**
+     * Deserialize a parsed [JSONValue] to a specified [KType] (specifying [JSONContext]).
+     */
+    @Deprecated(
+        message = "JSONContext is deprecated; use functions taking JSONConfig",
+        replaceWith = ReplaceWith("deserialize(resultType, json, context.config"),
+    )
+    fun deserialize(
+        resultType: KType,
+        json: JSONValue?,
+        context: JSONContext,
+    ): Any? = deserialize(resultType, json, context.config)
+
+    /**
      * Deserialize a parsed [JSONValue] to a specified [KClass].
-     *
-     * @param   resultClass the target class
-     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
-     * @param   config      an optional [JSONConfig]
-     * @param   T           the target class
-     * @return              the converted object, of [resultClass] (may be `null`)
      */
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> deserialize(
@@ -172,44 +156,26 @@ object JSONDeserializer {
         json: JSONValue?,
         config: JSONConfig = JSONConfig.defaultConfig,
     ): T? {
-        config.findFromJSONMapping(resultClass)?.let {
-            return JSONContext(config).applyFromJSON(it, json, resultClass) as T?
-        }
         if (json == null)
             return if (resultClass == Opt::class) Opt.UNSET as T else null
-        return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, JSONContext(config))
+        return deserialize(resultClass.starProjectedType, resultClass, json, config)
     }
 
     /**
      * Deserialize a parsed [JSONValue] to a specified [KClass], using a [JSONContext].
-     *
-     * @param   resultClass the target class
-     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
-     * @param   context     a [JSONContext]
-     * @param   T           the target class
-     * @return              the converted object, of [resultClass] (may be `null`)
      */
-    @Suppress("UNCHECKED_CAST")
+    @Deprecated(
+        message = "JSONContext is deprecated; use functions taking JSONConfig",
+        replaceWith = ReplaceWith("deserialize(resultClass, json, context.config"),
+    )
     fun <T : Any> deserialize(
         resultClass: KClass<T>,
         json: JSONValue?,
         context: JSONContext,
-    ): T? {
-        context.config.findFromJSONMapping(resultClass)?.let {
-            return context.applyFromJSON(it, json, resultClass) as T?
-        }
-        if (json == null)
-            return if (resultClass == Opt::class) Opt.UNSET as T else null
-        return deserialize(resultClass.starProjectedType, resultClass, emptyList(), json, context)
-    }
+    ): T? = deserialize(resultClass, json, context.config)
 
     /**
      * Deserialize a parsed [JSONValue] to a specified Java [Class].
-     *
-     * @param   javaClass   the target class
-     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
-     * @param   config      an optional [JSONConfig]
-     * @return              the converted object
      */
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> deserialize(
@@ -220,11 +186,6 @@ object JSONDeserializer {
 
     /**
      * Deserialize a parsed [JSONValue] to a specified Java [Type].
-     *
-     * @param   javaType    the target type
-     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
-     * @param   config      an optional [JSONConfig]
-     * @return              the converted object
      */
     fun deserialize(
         javaType: Type,
@@ -236,748 +197,517 @@ object JSONDeserializer {
      * Deserialize a parsed [JSONValue] to an unspecified([Any]) type.  Strings will be converted to `String`, numbers
      * to `Int`, `Long` or `BigDecimal`, booleans to `Boolean`, arrays to `ArrayList<Any?>` and objects to
      * `LinkedHashMap<String, Any?>` (an implementation of `Map` that preserves order).
-     *
-     * @param   json        the parsed JSON, as a [JSONValue] (or `null`)
-     * @param   config      an optional [JSONConfig]
-     * @return              the converted object
      */
-    fun deserializeAny(
-        json: JSONValue?,
-        config: JSONConfig = JSONConfig.defaultConfig,
-    ): Any? = deserialize(anyQType, json, config)
+    fun deserializeAny(json: JSONValue?): Any? = AnyDeserializer.deserialize(json)
 
     /**
-     * Deserialize a parsed [JSONValue] to a specified [KType], where the result may not be `null` (specifying
-     * [JSONContext]).
-     *
-     * @param   json        the parsed JSON, as a [JSONValue]
-     * @param   context     a [JSONContext]
-     * @param   T           the target type
-     * @return              the converted object, of type [T] (will be `null` only if [T] is nullable)
+     * Deserialize a parsed [JSONValue] to a result [KType] and [KClass].
      */
-    private inline fun <reified T : Any> deserializeNonNull(
-        json: JSONValue?,
-        context: JSONContext,
-    ): T = deserializeNonNull(typeOf<T>(), json, context)
-
-    /**
-     * Deserialize a parsed [JSONValue] to a specified [KType], where the result may not be `null` (specifying
-     * [JSONContext]).
-     *
-     * @param   resultType  the target type
-     * @param   json        the parsed JSON, as a [JSONValue]
-     * @param   context     a [JSONContext]
-     * @param   T           the target type
-     * @return              the converted object, of type [T]
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun <T : Any> deserializeNonNull(
-        resultType: KType,
-        json: JSONValue?,
-        context: JSONContext,
-    ): T {
-        context.config.findFromJSONMapping(resultType)?.let {
-            return context.applyFromJSON(it, json, resultType) as T
-        }
-        if (json == null)
-            context.fatal("Can't deserialize null as ${resultType.displayName()}")
-        val resultClass = resultType.classifierAsClass(resultType, context)
-        return deserialize(resultType, resultClass, emptyList(), json, context) as T
-    }
-
-    private fun JSONContext.applyFromJSON(
-        fromJSONMapping: FromJSONMapping,
-        json: JSONValue?,
-        resultTypeOrClass: Any,
-    ): Any? = try {
-        fromJSONMapping(json)
-    } catch (e: JSONException) {
-        throw e
-    } catch (e: Exception) {
-        fatal("Error in custom fromJSON mapping of $resultTypeOrClass", e)
-    }
-
-    /**
-     * Deserialize a parsed [JSONValue] to a parameterized [KClass], with the specified [KTypeProjection]s.
-     *
-     * @param   resultType  the target [KType]
-     * @param   resultClass the target class
-     * @param   types       the [KTypeProjection]s
-     * @param   json        the parsed JSON, as a [JSONValue]
-     * @param   context     a [JSONContext]
-     * @param   T           the target class
-     * @return              the converted object
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun <T : Any> deserialize(
+    internal fun <T : Any> deserialize(
         resultType: KType,
         resultClass: KClass<T>,
-        types: List<KTypeProjection>,
         json: JSONValue,
-        context: JSONContext,
-    ): T {
+        config: JSONConfig,
+    ): T? {
 
-        if (resultClass.isImpossible())
-            context.fatal("Can't deserialize ${resultClass.simpleName}")
+        val deserializer = config.findDeserializer(resultClass) ?:
+        determineDeserializer(resultType, config, references = mutableListOf(), json = json)
 
-        // check for JSONValue
-
-        if (resultClass.isSubclassOf(JSONValue::class) && resultClass.isSuperclassOf(json::class))
-            return json as T
-
-        // is it Opt?
-
-        if (resultClass == Opt::class)
-            return Opt.ofNullable(deserializeNested(resultType, getTypeParam(types), json, context)) as T
-
-        // does the target class companion object have a "fromJSON()" method?
-
-        if (!resultClass.isUncachedClass()) {
+        if (deserializer != null) {
             try {
-                resultClass.companionObject?.let { companionObject ->
-                    try {
-                        findFromJSONInvoker(resultClass, json::class, companionObject)?.let {
-                            return it.invoke(json, context) as T
+                val result = deserializer.deserialize(json)
+                if (result == null && !resultType.isMarkedNullable)
+                    fatal("Can't deserialize null as ${resultClass.qualifiedName}")
+                return result
+            }
+            catch (de: DeserializationException) {
+                fatal(de.messageFunction(resultType, json), de.pointer, de.underlying)
+            }
+            catch (je: JSONException) {
+                throw je
+            }
+            catch (ite: InvocationTargetException) {
+                fatal(
+                    text = "Error deserializing $resultType - " + (ite.cause?.message ?: "InvocationTargetException"),
+                    cause = ite.cause ?: ite,
+                )
+            }
+            catch (e: Exception) {
+                fatal("Error deserializing $resultType - ${e.message ?: e::class.simpleName}", cause = e)
+            }
+        }
+        fatal("Can't deserialize ${json.displayValue()} as ${resultClass.qualifiedName}")
+    }
+
+    @Suppress("unchecked_cast")
+    internal fun <T : Any> findDeserializer(
+        resultType: KType,
+        config: JSONConfig,
+        references: MutableList<KType>,
+        json: JSONValue? = null,
+    ): Deserializer<T>? {
+        config.findDeserializer(resultType)?.let { return it as Deserializer<T> }
+        return determineDeserializer(resultType, config, references, json)
+    }
+
+    internal fun <T : Any> determineDeserializer(
+        resultType: KType,
+        config: JSONConfig,
+        references: MutableList<KType>,
+        json: JSONValue? = null,
+    ): Deserializer<T>? {
+
+        if (resultType in references)
+            return DeferredDeserializer(resultType, config)
+        references.add(resultType)
+
+        try {
+
+            // common cacheable types - custom deserialization, enum, List, Map etc.
+
+            determineDeserializerForCacheableTypes<T>(resultType, config, references)?.let {
+                return it.andStore(resultType, config)
+            }
+
+            // deserializers dependent on input JSON type? (not cacheable)
+
+            if (json != null) {
+                determineDeserializerForSpecificJSON<T>(resultType, config, references, json)?.let { return it }
+            }
+
+            // user classes
+
+            return determineDeserializerForUserTypes<T>(resultType, config, references)?.andStore(resultType, config)
+
+        }
+        finally {
+            references.removeLast()
+        }
+    }
+
+    @Suppress("unchecked_cast")
+    private fun <T : Any> determineDeserializerForCacheableTypes(
+        resultType: KType,
+        config: JSONConfig,
+        references: MutableList<KType>,
+    ): Deserializer<T>? {
+
+        val resultClass = resultType.classifier
+        if (resultClass !is KClass<*>)
+            return null
+        resultClass as KClass<T>
+
+        // find JSONConfig custom deserializer
+
+        val fromJSONMapping = config.findFromJSONMapping(resultType)
+        if (fromJSONMapping != null)
+            return ConfigFromJSONDeserializer(resultType, config, fromJSONMapping)
+
+        // find in-class custom deserializer
+
+        try {
+            resultClass.companionObject?.let { companionObject ->
+                val invokers = findAllInClassFromJSON(resultClass, companionObject)
+                if (invokers.isNotEmpty())
+                    return InClassMultiFromJSONDeserializer(resultClass, config, invokers)
+            }
+        }
+        catch (_: Exception) {} // some classes don't allow getting companion object (Kotlin bug?)
+
+        // is it an enum?
+
+        if (resultClass.isSubclassOf(Enum::class))
+            resultClass.staticFunctions.find { it.name == "valueOf" }?.let { valueOfFunction ->
+                return (EnumDeserializer(valueOfFunction) as Deserializer<T>)
+            }
+
+        // is it an Array?
+
+        if (resultClass.java.isArray) {
+            val itemType = getTypeParam(resultType).applyTypeParameters(resultType)
+            val itemDeserializer = findDeserializer<Any>(itemType, config, references) ?:
+            throw DeserializationException("Can't deserialize array of $itemType")
+            val itemClass = itemType.classifier as? KClass<Any> ?:
+            throw DeserializationException("Can't determine array item type")
+            return ArrayDeserializer(itemClass, itemDeserializer, itemType.isMarkedNullable) as Deserializer<T>
+        }
+
+        // is it a List?
+
+        if (resultClass == List::class || resultClass == Collection::class || resultClass == ArrayList::class ||
+            resultClass == MutableList::class || resultClass == MutableCollection::class ||
+            resultClass == Iterable::class)
+            return createCollectionDeserializer(resultType, config, references) { size ->
+                ArrayList(size)
+            } as Deserializer<T>?
+
+        if (resultClass == LinkedList::class)
+            return createCollectionDeserializer(resultType, config, references) { LinkedList() } as Deserializer<T>?
+
+        // is it a Sequence?
+
+        if (resultClass == Sequence::class)
+            return createSequenceDeserializer<Any>(resultType, config, references) as Deserializer<T>?
+
+        // is it a Set?
+
+        if (resultClass == Set::class || resultClass == MutableSet::class || resultClass == LinkedHashSet::class)
+            return createCollectionDeserializer(resultType, config, references) { size ->
+                LinkedHashSet(size)
+            } as Deserializer<T>?
+
+        if (resultClass == HashSet::class)
+            return createCollectionDeserializer(resultType, config, references) { size ->
+                HashSet(size)
+            } as Deserializer<T>?
+
+        // is it a LinkedHashMap?
+
+        if (resultClass == Map::class || resultClass == LinkedHashMap::class || resultClass == MutableMap::class)
+            return createMapDeserializer(resultType, config, references) { size ->
+                LinkedHashMap(size)
+            } as Deserializer<T>?
+
+        // is it a HashMap?
+
+        if (resultClass == HashMap::class)
+            return createMapDeserializer(resultType, config, references) { size ->
+                HashMap(size)
+            } as Deserializer<T>?
+
+        // is it a Pair?
+
+        if (resultClass == Pair::class)
+            return createPairDeserializer<Any, Any>(resultType, config, references) as Deserializer<T>?
+
+        // is it a Triple?
+
+        if (resultClass == Triple::class)
+            return createTripleDeserializer<Any, Any, Any>(resultType, config, references) as Deserializer<T>?
+
+        // is it an Opt?
+
+        if (resultClass == Opt::class) {
+            val optType = getTypeParam(resultType.arguments).applyTypeParameters(resultType)
+            val optDeserializer = findDeserializer<Any>(optType, config, references) ?: return null
+            return OptDeserializer(optDeserializer) as Deserializer<T>
+        }
+
+        // is it a sealed class
+
+        if (resultClass.isSealed)
+            return createSealedClassDeserializer(resultClass, config, references)
+
+        // is it a java.util.stream.Stream?
+
+        if (resultClass == Stream::class)
+            return createStreamDeserializer<Any>(resultType, config, references) as Deserializer<T>
+
+        return null
+    }
+
+    @Suppress("unchecked_cast")
+    private fun <T : Any> determineDeserializerForSpecificJSON(
+        resultType: KType,
+        config: JSONConfig,
+        references: MutableList<KType>,
+        json: JSONValue,
+    ): Deserializer<T>? {
+
+        val resultClass = resultType.classifier
+        if (resultClass !is KClass<*>)
+            return null
+        resultClass as KClass<T>
+
+        // is the JSON a string, and does the class have a single parameter constructor taking String?
+
+        if (json is JSONString) {
+            resultClass.findSingleParameterConstructor(String::class)?.let { constructor ->
+                return StringConstructorDeserializer(constructor)
+            }
+        }
+
+        // is the JSON a number, with a single parameter constructor taking a Number?
+
+        if (json is JSONNumber) {
+            resultClass.constructors.singleOrNull { it.hasNumberParameter() }?.let {
+                when (it.parameters[0].type.classifier) {
+                    Int::class -> if (json.isInt()) return IntConstructorDeserializer(it)
+                    Long::class -> if (json.isLong()) return LongConstructorDeserializer(it)
+                    Short::class -> if (json.isShort()) return ShortConstructorDeserializer(it)
+                    Byte::class -> if (json.isByte()) return ByteConstructorDeserializer(it)
+                    UInt::class -> if (json.isUInt()) return UIntConstructorDeserializer(it)
+                    ULong::class -> if (json.isULong()) return ULongConstructorDeserializer(it)
+                    UShort::class -> if (json.isUShort()) return UShortConstructorDeserializer(it)
+                    UByte::class -> if (json.isUByte()) return UByteConstructorDeserializer(it)
+                    Double::class -> return DoubleConstructorDeserializer(it)
+                    Float::class -> return FloatConstructorDeserializer(it)
+                    BigInteger::class -> if (json.isIntegral()) return BigIntegerConstructorDeserializer(it)
+                    BigDecimal::class -> return BigDecimalConstructorDeserializer(it)
+                }
+            }
+        }
+
+        // likewise for JSON array
+
+        if (json is JSONArray) {
+            resultClass.constructors.singleOrNull { it.hasArrayParameter() }?.let { constructor ->
+                val arrayType = constructor.parameters[0].type
+                val itemType = getTypeParam(arrayType).applyTypeParameters(resultType)
+                val itemClass = itemType.classifier as? KClass<Any> ?:
+                throw DeserializationException("Can't determine array item type")
+                val itemDeserializer = findDeserializer<Any>(itemType, config, references)
+                if (itemDeserializer != null)
+                    return ArrayConstructorDeserializer(
+                        constructor = constructor,
+                        itemClass = itemClass,
+                        itemDeserializer = itemDeserializer,
+                        itemNullable = itemType.isMarkedNullable,
+                    )
+            }
+            resultClass.findSingleParameterConstructor(List::class)?.let { constructor ->
+                val listType = constructor.parameters[0].type
+                val itemType = getTypeParam(listType).applyTypeParameters(resultType)
+                val itemDeserializer = findDeserializer<Any>(itemType, config, references)
+                if (itemDeserializer != null)
+                    return ListConstructorDeserializer(
+                        constructor = constructor,
+                        itemDeserializer = itemDeserializer,
+                        itemNullable = itemType.isMarkedNullable,
+                        listNullable = listType.isMarkedNullable,
+                    )
+            }
+        }
+
+        return null
+    }
+
+    @Suppress("unchecked_cast")
+    private fun <T : Any> determineDeserializerForUserTypes(
+        resultType: KType,
+        config: JSONConfig,
+        references: MutableList<KType>,
+    ): Deserializer<T>? {
+
+        val resultClass = resultType.classifier
+        if (resultClass !is KClass<*>)
+            return null
+        resultClass as KClass<T>
+
+        // is a delegating Map class?
+
+        if (resultClass.isSubclassOf(Map::class)) {
+            resultClass.findSingleParameterConstructor(Map::class)?.let { constructor ->
+                val mapType = constructor.parameters[0].type.applyTypeParameters(resultType)
+                val mapTypeArguments = mapType.arguments
+                val keyType = getTypeParam(mapTypeArguments, 0).applyTypeParameters(resultType)
+                val keyDeserializer = findDeserializer<Any>(keyType, config, references)
+                val valueType = getTypeParam(mapTypeArguments, 1).applyTypeParameters(resultType)
+                val valueDeserializer = findDeserializer<Any>(valueType, config, references)
+                if (keyDeserializer != null && valueDeserializer != null) {
+                    return if (keyType.classifier == String::class && !mapType.isMarkedNullable)
+                        DelegatingMapConstructorDeserializer(
+                            constructor = constructor,
+                            valueDeserializer = valueDeserializer,
+                            valueNullable = valueType.isMarkedNullable,
+                            members = resultClass.members,
+                            config = config,
+                        )
+                    else
+                        MapConstructorDeserializer(
+                            constructor = constructor,
+                            keyDeserializer = keyDeserializer,
+                            keyNullable = keyType.isMarkedNullable,
+                            valueDeserializer = valueDeserializer,
+                            valueNullable = valueType.isMarkedNullable,
+                            mapNullable = mapType.isMarkedNullable,
+                        )
+                }
+            }
+        }
+
+        // is it an object?
+
+        resultClass.objectInstance?.let { instance ->
+            return ObjectDeserializer(
+                resultType = resultType,
+                fieldDescriptors = resultClass.getFields(resultType, config, references),
+                allowExtra = config.allowExtra || config.hasAllowExtraPropertiesAnnotation(resultClass.annotations),
+                instance = instance,
+            ) as Deserializer<T>
+        }
+
+        // is it a Java class?
+
+        if (!resultClass.isKotlinClass())
+            return createJavaClassDeserializer(resultType, resultClass, config, references)
+
+        // deserialize using constructor
+
+        val publicConstructors = resultClass.constructors.filter {
+            it.visibility == KVisibility.PUBLIC
+        }.mapNotNull {
+            createConstructorDescriptor(
+                constructor = it,
+                resultType = resultType,
+                resultClass = resultClass,
+                fields = resultClass.getFields(resultType, config, references),
+                config = config,
+                references = references,
+            )
+        }
+        if (publicConstructors.isNotEmpty()) {
+            return if (publicConstructors.size == 1) {
+                ClassSingleConstructorDeserializer(
+                    constructorDescriptor = publicConstructors[0],
+                ).andStore(resultClass, config)
+            } else {
+                ClassMultiConstructorDeserializer(
+                    resultClass = resultClass,
+                    constructorDescriptors = publicConstructors,
+                ).andStore(resultClass, config)
+            }
+        }
+
+        return null
+    }
+
+    private fun <T : Any> Deserializer<T>.andStore(resultClass: KClass<T>, config: JSONConfig): Deserializer<T> {
+        if (resultClass.typeParameters.isEmpty())
+            config.addDeserializer(resultClass, this)
+        return this
+    }
+
+    private fun <T : Any> Deserializer<T>.andStore(resultType: KType, config: JSONConfig): Deserializer<T> {
+        config.addDeserializer(resultType, this)
+        return this
+    }
+
+    private fun KClass<*>.getFields(
+        resultType: KType,
+        config: JSONConfig,
+        references: MutableList<KType>,
+    ): List<FieldDescriptor<*>> = members.mapNotNull { member ->
+        if (member is KProperty<*> && member.visibility == KVisibility.PUBLIC) {
+            val fieldType = member.getter.returnType.applyTypeParameters(resultType)
+            val deserializer = findDeserializer<Any>(fieldType, config, references) ?:
+            throw DeserializationException("Can't deserialize $resultType")
+            KotlinFieldDescriptor(
+                propertyName = config.findNameFromAnnotation(member.annotations) ?: member.name,
+                ignore = config.hasIgnoreAnnotation(member.annotations),
+                nullable = fieldType.isMarkedNullable,
+                deserializer = deserializer,
+                kProperty = member,
+            )
+        }
+        else
+            null
+    }
+
+    internal fun deserializeFields(
+        json: List<JSONObject.Property>,
+        target: Any,
+        fieldDescriptors: List<FieldDescriptor<*>>,
+        allowExtra: Boolean,
+        instance: Any,
+    ) {
+        for (property in json) {
+            fieldDescriptors.find { it.propertyName == property.name }?.let { field ->
+                if (!field.ignore) {
+                    val value = try {
+                        field.deserializer.deserialize(property.value)
+                    } catch (de: DeserializationException) {
+                        throw de.nested(property.name)
+                    }
+                    if (field.isMutable()) {
+                        try {
+                            field.setValue(instance, value)
+                        }
+                        catch (e: Exception) {
+                            throw DeserializationException("Error setting property ${property.name} in $target",
+                                underlying = e)
                         }
                     }
-                    catch (e: InvocationTargetException) {
-                        val cause = e.cause
-                        if (cause is JSONException)
-                            throw cause
-                        context.fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", e.cause ?: e)
-                    }
-                    catch (e: Exception) {
-                        context.fatal("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", e)
+                    else {
+                        if (field.getValue(instance) != value)
+                            throw DeserializationException("Can't set property ${property.name} in $target")
                     }
                 }
+            } ?: run {
+                if (!allowExtra)
+                    throw DeserializationException("Can't find property ${property.name} in $target")
             }
-            catch (e: JSONException) {
-                throw e
-            }
-            catch (_: Exception) {} // some classes don't allow getting companion object (Kotlin bug?)
-        }
-
-        try {
-            return when (json) {
-                is JSONBoolean -> {
-                    if (resultClass.isSuperclassOf(Boolean::class))
-                        json.value as T
-                    else
-                        context.fatal("Can't deserialize $json as ${resultClass.displayName()}")
-                }
-                is JSONString -> deserializeString(resultClass, json.value, context)
-                is JSONInt -> deserializeNumber(resultClass, json, context)
-                is JSONLong -> deserializeNumber(resultClass, json, context)
-                is JSONDecimal -> deserializeNumber(resultClass, json, context)
-                is JSONArray -> deserializeArray(resultType, resultClass, types, json, context)
-                is JSONObject -> deserializeObject(resultType, resultClass, types, json, context)
-            }
-        }
-        catch (e: JSONException) {
-            throw e
-        }
-        catch (ite: InvocationTargetException) {
-            context.fatal("Error deserializing $resultType - ${ite.cause?.message ?: "InvocationTargetException"}",
-                    ite.cause ?: ite)
-        }
-        catch (e: Exception) {
-            context.fatal("Error deserializing $resultType - ${e.message ?: e::class.simpleName}", e)
         }
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T : Any> deserializeNumber(
-        resultClass: KClass<T>,
-        number: JSONNumber,
-        context: JSONContext,
-    ): T {
-        try {
-            when (resultClass) {
-                Int::class -> if (number.isInt()) return number.toInt() as T
-                Long::class -> if (number.isLong()) return number.toLong() as T
-                Double::class -> return number.toDouble() as T
-                Float::class -> return number.toFloat() as T
-                Short::class -> if (number.isShort()) return number.toShort() as T
-                Byte::class -> if (number.isByte()) return number.toByte() as T
-                BigInteger::class -> if (number.isIntegral()) return number.toBigInteger() as T
-                BigDecimal::class -> return number.toDecimal() as T
-                UInt::class -> if (number.isUInt()) return number.toUInt() as T
-                ULong::class -> if (number.isULong()) return number.toULong() as T
-                UShort::class -> if (number.isUShort()) return number.toUShort() as T
-                UByte::class -> if (number.isUByte()) return number.toUByte() as T
-                Number::class -> return number.value as T
-                Any::class -> return number.value as T
-                else -> resultClass.constructors.singleOrNull { it.hasNumberParameter() }?.apply {
-                    when (parameters[0].type.classifier) {
-                        Int::class -> if (number.isInt()) return callWithSingle(number.toInt())
-                        Long::class -> if (number.isLong()) return callWithSingle(number.toLong())
-                        Short::class -> if (number.isShort()) return callWithSingle(number.toShort())
-                        Byte::class -> if (number.isByte()) return callWithSingle(number.toByte())
-                        UInt::class -> if (number.isUInt()) return callWithSingle(number.toUInt())
-                        ULong::class -> if (number.isULong()) return callWithSingle(number.toULong())
-                        UShort::class -> if (number.isUShort()) return callWithSingle(number.toUShort())
-                        UByte::class -> if (number.isUByte()) return callWithSingle(number.toUByte())
-                        Double::class -> return callWithSingle(number.toDouble())
-                        Float::class -> return callWithSingle(number.toFloat())
-                        BigInteger::class -> if (number.isIntegral()) return callWithSingle(number.toBigInteger())
-                        BigDecimal::class -> return callWithSingle(number.toDecimal())
-                    }
-                }
-            }
-            context.fatal("Can't deserialize $number as ${resultClass.displayName()}")
-        }
-        catch (e: JSONException) {
-            throw e
-        }
-        catch (e: Exception) {
-            context.fatal("Error deserializing $number as ${resultClass.displayName()}", e)
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun <T : Any> deserializeString(
-        resultClass: KClass<T>,
-        str: String,
-        context: JSONContext,
-    ): T {
-        try {
-            if (resultClass.isSuperclassOf(String::class))
-                return str as T
-            when (resultClass) {
-                Char::class -> {
-                    if (str.length != 1)
-                        context.fatal("Character must be string of length 1")
-                    return str[0] as T
-                }
-                CharArray::class -> return str.toCharArray() as T
-                Array<Char>::class -> return Array(str.length) { i -> str[i] } as T
-                java.sql.Date::class -> return java.sql.Date.valueOf(str) as T
-                java.sql.Time::class -> return java.sql.Time.valueOf(str) as T
-                java.sql.Timestamp::class -> return java.sql.Timestamp.valueOf(str) as T
-                Calendar::class -> return parseCalendar(str) as T
-                Date::class -> return parseCalendar(str).time as T
-                Instant::class -> return Instant.parse(str) as T
-                LocalDate::class -> return LocalDate.parse(str) as T
-                LocalDateTime::class -> return LocalDateTime.parse(str) as T
-                LocalTime::class -> return LocalTime.parse(str) as T
-                OffsetTime::class -> return OffsetTime.parse(str) as T
-                OffsetDateTime::class -> return OffsetDateTime.parse(str) as T
-                ZonedDateTime::class -> return ZonedDateTime.parse(str) as T
-                Year::class -> return Year.parse(str) as T
-                YearMonth::class -> return YearMonth.parse(str) as T
-                MonthDay::class -> return MonthDay.parse(str) as T
-                JavaDuration::class -> return JavaDuration.parse(str) as T
-                Period::class -> return Period.parse(str) as T
-                Duration::class -> return Duration.parseIsoString(str) as T
-                UUID::class -> return createUUID(str) as T
-            }
-
-            // is the target class an enum?
-
-            if (resultClass.isSubclassOf(Enum::class))
-                resultClass.staticFunctions.find { it.name == "valueOf" }?.apply { return call(str) as T }
-
-            // does the target class have a public constructor that takes String? (e.g. StringBuilder, URL, ... )
-
-            resultClass.findSingleParameterConstructor(String::class)?.apply {
-                return callWithSingle(str)
-            }
-
-        }
-        catch (e: JSONException) {
-            throw e
-        }
-        catch (e: Exception) {
-            context.fatal("Error deserializing \"$str\" as ${resultClass.displayName()}", e)
-        }
-
-        context.fatal("Can't deserialize \"$str\" as ${resultClass.displayName()}")
-    }
-
-    @Suppress("UNCHECKED_CAST", "IMPLICIT_CAST_TO_ANY")
-    private fun <T : Any> deserializeArray(
-        resultType: KType,
-        resultClass: KClass<T>,
-        types: List<KTypeProjection>,
-        json: JSONArray,
-        context: JSONContext,
-    ): T {
-        return when (resultClass) {
-            BooleanArray::class -> BooleanArray(json.size) { i ->
-                deserializeNonNull<Boolean>(json[i], context.child(i))
-            }
-            ByteArray::class -> ByteArray(json.size) { i ->
-                deserializeNonNull<Byte>(json[i], context.child(i))
-            }
-            CharArray::class -> CharArray(json.size) { i ->
-                deserializeNonNull<Char>(json[i], context.child(i))
-            }
-            DoubleArray::class -> DoubleArray(json.size) { i ->
-                deserializeNonNull<Double>(json[i], context.child(i))
-            }
-            FloatArray::class -> FloatArray(json.size) { i ->
-                deserializeNonNull<Float>(json[i], context.child(i))
-            }
-            IntArray::class -> IntArray(json.size) { i ->
-                deserializeNonNull<Int>(json[i], context.child(i))
-            }
-            LongArray::class -> LongArray(json.size) { i ->
-                deserializeNonNull<Long>(json[i], context.child(i))
-            }
-            ShortArray::class -> ShortArray(json.size) { i ->
-                deserializeNonNull<Short>(json[i], context.child(i))
-            }
-
-            Collection::class,
-            MutableCollection::class,
-            List::class,
-            MutableList::class,
-            Iterable::class,
-            ArrayList::class -> ArrayList<Any?>(json.size).apply {
-                fillFromJSON(resultType, json, getTypeParam(types), context)
-            }
-
-            Any::class -> ArrayList<Any?>(json.size).apply {
-                fillFromJSON(resultType, json, anyQType, context)
-            }
-
-            LinkedList::class -> LinkedList<Any?>().apply {
-                fillFromJSON(resultType, json, getTypeParam(types), context)
-            }
-
-            Stream::class -> ArrayList<Any?>(json.size).apply {
-                fillFromJSON(resultType, json, getTypeParam(types), context)
-            }.stream()
-
-            IntStream::class -> {
-                val intArray = IntArray(json.size) {
-                        i -> deserializeNonNull<Int>(json[i], context.child(i))
-                }
-                IntStream.of(*intArray)
-            }
-
-            LongStream::class -> {
-                val longArray = LongArray(json.size) {
-                        i -> deserializeNonNull<Long>(json[i], context.child(i))
-                }
-                LongStream.of(*longArray)
-            }
-
-            DoubleStream::class -> {
-                val doubleArray = DoubleArray(json.size) {
-                        i -> deserializeNonNull<Double>(json[i], context.child(i))
-                }
-                DoubleStream.of(*doubleArray)
-            }
-
-            Set::class,
-            MutableSet::class,
-            LinkedHashSet::class -> LinkedHashSet<Any?>(json.size).apply {
-                fillFromJSON(resultType, json, getTypeParam(types), context)
-            }
-
-            HashSet::class -> HashSet<Any?>(json.size).apply {
-                fillFromJSON(resultType, json, getTypeParam(types), context)
-            }
-
-            Sequence::class -> json.mapIndexed { i, value ->
-                deserializeNested(resultType, getTypeParam(types), value, context.child(i))
-            }.asSequence()
-
-            Pair::class -> {
-                val result0 = deserializeNested(resultType, getTypeParam(types, 0), json[0], context.child("0"))
-                val result1 = deserializeNested(resultType, getTypeParam(types, 1), json[1], context.child("1"))
-                result0 to result1
-            }
-
-            Triple::class -> {
-                val result0 = deserializeNested(resultType, getTypeParam(types, 0), json[0], context.child("0"))
-                val result1 = deserializeNested(resultType, getTypeParam(types, 1), json[1], context.child("1"))
-                val result2 = deserializeNested(resultType, getTypeParam(types, 2), json[2], context.child("2"))
-                Triple(result0, result1, result2)
-            }
-
-            BitSet::class -> {
-                BitSet().apply {
-                    json.mapIndexed { i, value ->
-                        if (value !is JSONInt)
-                            context.child(i).fatal("Can't deserialize BitSet; array member not int")
-                        set(value.value)
-                    }
-                }
-            }
-
-            else -> {
-                if (resultClass.java.isArray) {
-                    val type = getTypeParam(types)
-                    val itemClass = type.classifier as? KClass<Any> ?: context.fatal("Can't determine array type")
-                    newArray(itemClass, json.size).apply {
-                        for (i in json.indices)
-                            this[i] = deserializeNested(resultType, type, json[i], context.child(i))
-                    }
-                }
-                else {
-
-                    // If the target class has a constructor that takes a single List (or Set) parameter, create a
-                    // List (Set) and invoke that constructor.  This should catch the less frequently used List (Set)
-                    // classes.
-
-                    resultClass.findSingleParameterConstructor(List::class)?.run {
-                        val type = getTypeParam(parameters[0].type.arguments)
-                        callWithSingle(ArrayList<Any?>(json.size).apply {
-                            fillFromJSON(resultType, json, type, context)
-                        })
-                    } ?: resultClass.findSingleParameterConstructor(Set::class)?.run {
-                        val type = getTypeParam(parameters[0].type.arguments)
-                        callWithSingle(LinkedHashSet<Any?>(json.size).apply {
-                            fillFromJSON(resultType, json, type, context)
-                        })
-                    } ?: context.fatal("Can't deserialize array as ${resultClass.displayName()}")
-                }
-            }
-        } as T
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun <T : Any> newArray(
+    internal fun <T : Any> newArray(
         itemClass: KClass<T>,
         size: Int,
     ): Array<T?> = java.lang.reflect.Array.newInstance(itemClass.java, size) as Array<T?>
     // there appears to be no way of creating an array of dynamic type in Kotlin
     // other than to use Java reflection
 
-    private fun getTypeParam(types: List<KTypeProjection>, n: Int = 0): KType = types.getOrNull(n)?.type ?: anyQType
+    internal fun getTypeParam(type: KType, n: Int = 0): KType = type.arguments.getOrNull(n)?.type ?: anyQType
 
-    private fun MutableCollection<Any?>.fillFromJSON(
-        resultType: KType,
-        json: JSONArray,
-        type: KType,
-        context: JSONContext,
-    ) {
-        // using for rather than map to avoid creation of intermediate List
-        for (i in json.indices) {
-            if (!add(deserializeNested(resultType, type, json[i], context.child(i))))
-                context.child(i).fatal("Duplicate not allowed")
-        }
-    }
+    internal fun getTypeParam(types: List<KTypeProjection>, n: Int = 0): KType = types.getOrNull(n)?.type ?: anyQType
 
-    @Suppress("UNCHECKED_CAST")
-    private fun <T : Any> deserializeObject(
-        resultType: KType,
-        resultClass: KClass<T>,
-        types: List<KTypeProjection>,
-        json: JSONObject,
-        context: JSONContext,
-    ): T {
-        if (resultClass.isSubclassOf(Map::class)) {
-            when (resultClass) {
-                Map::class -> return deserializeImmutableMap(resultType, getTypeParam(types, 0), getTypeParam(types, 1),
-                        json, context) as T
-                HashMap::class -> return deserializeMap(resultType, HashMap(json.size), types, json, context) as T
-                MutableMap::class,
-                LinkedHashMap::class -> return deserializeMap(resultType, LinkedHashMap(json.size), types, json,
-                        context) as T
-            }
-            // If the target class has a constructor that takes a single Map parameter, create a Map and invoke that
-            // constructor.  This should catch the less frequently used Map classes.
-            resultClass.findSingleParameterConstructor(Map::class)?.apply {
-                val mapArgumentTypes = parameters[0].type.applyTypeParameters(resultType, context).arguments
-                val keyType = getTypeParam(mapArgumentTypes, 0)
-                val valueType = getTypeParam(mapArgumentTypes, 1)
-                val argMap = if (keyType == stringType) {
-                    // looks like a class delegating to a Map
-                    val array: Array<ImmutableMapEntry<Any, Any?>> = ImmutableMap.createArray(json.size)
-                    val entries = json.entries as ImmutableSet
-                    for (index in 0 until entries.size) {
-                        val entry = entries[index]
-                        val key = entry.key
-                        val memberType = findField(resultClass.members, key, context.config)?.returnType ?: valueType
-                        val value = deserializeNested(resultType, memberType, entry.value, context.child(key))
-                        array[index] = ImmutableMap.entry(key, value)
-                    }
-                    ImmutableMap(array)
-                } else deserializeImmutableMap(
-                    resultType = resultType,
-                    keyType = keyType,
-                    valueType = valueType,
-                    json = json,
-                    context = context,
-                )
-                return callWithSingle(argMap)
-            }
-        }
+    internal fun Collection<Any?>.displayList(): String = joinToString(", ")
 
-        val config = context.config
-        if (resultClass.isSealed) {
-            val discriminator = resultClass.findAnnotation<JSONDiscriminator>()?.id ?: config.sealedClassDiscriminator
-            val subClassName = json[discriminator].asStringOrNull ?:
-                    context.fatal("No discriminator for sealed class ${resultClass.displayName()}")
-            val subClass = resultClass.sealedSubclasses.find {
-                (it.findAnnotation<JSONIdentifier>()?.id ?: it.simpleName) == subClassName
-            } ?: context.fatal("Can't find identifier $subClassName for sealed class ${resultClass.displayName()}")
-            val nestedObject = if (findField(resultClass.members, discriminator, config) == null) {
-                JSONObject.build {
-                    for (property in json)
-                        if (property.key != discriminator)
-                            add(property)
-                }
-            } else
-                json
-            return deserializeObject(subClass.createType(types, nullable = resultType.isMarkedNullable), subClass,
-                    types, nestedObject, context)
-        }
-
-        resultClass.objectInstance?.let { objectInstance ->
-            return objectInstance.also { setRemainingFields(resultType, resultClass, it, json, context) }
-        }
-
-        if (resultClass == Any::class)
-            return deserializeMap(resultType, LinkedHashMap(json.size), stringType, anyQType, json, context) as T
-
-        val publicConstructors = resultClass.constructors.filter { it.visibility == KVisibility.PUBLIC }
-        findBestConstructor(publicConstructors, json, config)?.apply {
-            val args = mutableListOf<ImmutableMapEntry<KParameter, Any?>>()
-            val properties = json.toMutableList()
-            for (i in parameters.indices) {
-                val parameter = parameters[i]
-                val paramName = findParameterName(parameter, config) ?: "param$i"
-                val propertyIndex = properties.indexOfFirst { it.key == paramName }
-                if (!config.hasIgnoreAnnotation(parameter.annotations)) {
-                    if (propertyIndex >= 0) {
-                        val parameterValue = if (parameter.type.classifier == Opt::class) {
-                            val value = deserializeNested(
-                                enclosingType = resultType,
-                                resultType = getTypeParam(parameter.type.arguments),
-                                json = properties[propertyIndex].value,
-                                context = context.child(paramName),
-                            )
-                            Opt.of(value)
-                        }
-                        else {
-                            deserializeNested(
-                                enclosingType = resultType,
-                                resultType = parameter.type,
-                                json = properties[propertyIndex].value,
-                                context = context.child(paramName),
-                            )
-                        }
-                        args.add(ImmutableMap.entry(parameter, parameterValue))
-                    }
-                    else {
-                        if (!parameter.isOptional) {
-                            val parameterValue = when {
-                                parameter.type.classifier == Opt::class -> Opt.UNSET
-                                parameter.type.isMarkedNullable -> null
-                                else -> context.fatal("Can't create $resultClass - missing property $paramName")
-                            }
-                            args.add(ImmutableMap.entry(parameter, parameterValue))
-                        }
-                    }
-                }
-                if (propertyIndex >= 0)
-                    properties.removeAt(propertyIndex)
-            }
-            return callBy(ImmutableMap.from(args)).also {
-                if (properties.isNotEmpty())
-                    setRemainingFields(resultType, resultClass, it, properties, context)
-            }
-        }
-        // there is no matching constructor
-        if (publicConstructors.size == 1) {
-            val missing = resultClass.constructors.first().parameters.filter {
-                !config.hasIgnoreAnnotation(it.annotations) && !it.isOptional && !it.type.isMarkedNullable
-            }.map {
-                findParameterName(it, config)
-            }.filter {
-                !json.containsKey(it)
-            }
-            context.fatal("Can't create ${resultClass.qualifiedName}; missing: ${missing.displayList()}")
-        }
-        val propMessage = when {
-            json.isNotEmpty() -> json.keys.displayList()
-            else -> "none"
-        }
-        context.fatal("Can't locate public constructor for ${resultClass.qualifiedName}; properties: $propMessage")
-    }
-
-    private fun Collection<Any?>.displayList(): String = joinToString(", ")
-
-    private fun deserializeMap(
-        resultType: KType,
-        map: MutableMap<Any, Any?>,
-        types: List<KTypeProjection>,
-        json: JSONObject,
-        context: JSONContext,
-    ): MutableMap<Any, Any?> {
-        val keyType = getTypeParam(types, 0)
-        val valueType = getTypeParam(types, 1)
-        return deserializeMap(resultType, map, keyType, valueType, json, context)
-    }
-
-    private fun deserializeMap(
-        resultType: KType,
-        map: MutableMap<Any, Any?>,
-        keyType: KType,
-        valueType: KType,
-        json: JSONObject,
-        context: JSONContext,
-    ): MutableMap<Any, Any?> {
-        for (property in json) {
-            val child = context.child(property.key)
-            val key = deserializeKey(property.key, keyType, resultType, child)
-            map[key] = deserializeNested(resultType, valueType, property.value, child)
-        }
-        return map
-    }
-
-    private fun deserializeImmutableMap(
-        resultType: KType,
-        keyType: KType,
-        valueType: KType,
-        json: JSONObject,
-        context: JSONContext,
-    ): Map<Any, Any?> {
-        val array: Array<ImmutableMapEntry<Any, Any?>> = ImmutableMap.createArray(json.size)
-        for (index in json.indices) {
-            val property = json[index]
-            val child = context.child(property.key)
-            val key = deserializeKey(property.key, keyType, resultType, child)
-            val value = deserializeNested(resultType, valueType, property.value, child)
-            array[index] = ImmutableMap.entry(key, value)
-        }
-        return ImmutableMap(array)
-    }
-
-    private fun deserializeKey(
-        key: String,
-        keyType: KType,
-        resultType: KType,
-        childContext: JSONContext
-    ): Any = if (keyType == stringType)
-        key
-    else
-        deserializeNested(
-            enclosingType = resultType,
-            resultType = keyType,
-            json = JSONString(key),
-            context = childContext,
-        ) ?: childContext.fatal("Key can not be determined for Map")
-
-    private fun <T : Any> setRemainingFields(
-        resultType: KType,
-        resultClass: KClass<T>,
-        instance: T,
-        properties: List<JSONObject.Property>,
-        context: JSONContext,
-    ) {
-        val config = context.config
-        for (property in properties) { // JSONObject fields not used in constructor
-            val member = findField(resultClass.members, property.key, config)
-            if (member != null) {
-                if (!config.hasIgnoreAnnotation(member.annotations)) {
-                    val value = deserializeNested(
-                        enclosingType = resultType,
-                        resultType = member.returnType,
-                        json = property.value,
-                        context = context.child(property.key),
-                    )
-                    if (member is KMutableProperty<*>) {
-                        val wasAccessible = member.isAccessible
-                        member.isAccessible = true
-                        try {
-                            member.setter.call(instance, value)
-                        }
-                        catch (e: Exception) {
-                            context.fatal("Error setting property ${property.key} in ${resultClass.qualifiedName}", e)
-                        }
-                        finally {
-                            member.isAccessible = wasAccessible
-                        }
-                    }
-                    else {
-                        if (member.getter.call(instance) != value)
-                            context.fatal("Can't set property ${property.key} in ${resultClass.qualifiedName}")
-                    }
-                }
-            }
-            else {
-                if (!(config.allowExtra || config.hasAllowExtraPropertiesAnnotation(resultClass.annotations)))
-                    context.fatal("Can't find property ${property.key} in ${resultClass.qualifiedName}")
-            }
-        }
-    }
-
-    private fun findField(members: Collection<KCallable<*>>, name: String, config: JSONConfig): KProperty<*>? {
+    internal fun findField(members: Collection<KCallable<*>>, name: String, config: JSONConfig): KProperty<*>? {
         for (member in members)
             if (member is KProperty<*> && (config.findNameFromAnnotation(member.annotations) ?: member.name) == name)
                 return member
         return null
     }
 
-    private fun <T : Any> findBestConstructor(
-        constructors: Collection<KFunction<T>>,
-        json: JSONObject,
-        config: JSONConfig,
-    ): KFunction<T>? {
-        var result: KFunction<T>? = null
-        var best = -1
-        for (constructor in constructors) {
-            val parameters = constructor.parameters
-            if (parameters.any { findParameterName(it, config) == null || it.kind != KParameter.Kind.VALUE })
-                continue
-            val n = findMatchingParameters(parameters, json, config)
-            if (n > best) {
-                result = constructor
-                best = n
+    internal fun KType.applyTypeParameters(enclosingType: KType): KType {
+        val typeClassifier = classifier
+        if (typeClassifier is KTypeParameter) {
+            val enclosingClass = enclosingType.classifier
+            if (enclosingClass !is KClass<*>)
+                return this // shouldn't happen
+            val typeParameters = enclosingClass.typeParameters
+            for (index in typeParameters.indices) {
+                val typeParameter = typeParameters[index]
+                if (typeParameter.name == typeClassifier.name) {
+                    val enclosingTypeArguments = enclosingType.arguments
+                    if (index < enclosingTypeArguments.size) {
+                        val enclosingTypeArgumentType = enclosingTypeArguments[index].type
+                        if (enclosingTypeArgumentType != null)
+                            return enclosingTypeArgumentType
+                    }
+                    val typeParameterUpperBounds = typeParameter.upperBounds
+                    if (typeParameterUpperBounds.size == 1)
+                        return typeParameterUpperBounds[0]
+                    break
+                }
             }
-        }
-        return result
-    }
-
-    private fun findMatchingParameters(parameters: List<KParameter>, json: JSONObject, config: JSONConfig): Int {
-        var n = 0
-        for (param in parameters) {
-            if (json.containsKey(findParameterName(param, config)))
-                n++
-            else {
-                if (!(param.isOptional || param.type.isMarkedNullable || param.type.classifier == Opt::class))
-                    return -1
-            }
-        }
-        return n
-    }
-
-    private fun deserializeNested(
-        enclosingType: KType,
-        resultType: KType,
-        json: JSONValue?,
-        context: JSONContext,
-    ): Any? = deserialize(resultType.applyTypeParameters(enclosingType, context), json, context)
-
-    private fun KType.applyTypeParameters(enclosingType: KType, context: JSONContext): KType {
-        (classifier as? KTypeParameter)?.let { typeParameter ->
-            val enclosingClass = enclosingType.classifierAsClass(this, context)
-            val index = enclosingClass.typeParameters.indexOfFirst { it.name == typeParameter.name }
-            return enclosingType.arguments.getOrNull(index)?.type ?:
-            enclosingClass.typeParameters.getOrNull(index)?.upperBounds?.singleOrNull() ?:
-                    context.fatal("Can't create ${displayName()} - no type information for ${typeParameter.name}")
+            return this // shouldn't happen
         }
 
         if (arguments.isEmpty())
             return this
 
-        return classifierAsClass(this, context).createType(arguments.map { (variance, type) ->
+        if (typeClassifier !is KClass<*>)
+            return this  // shouldn't happen
+        if (typeClassifier.typeParameters.isEmpty()) // has Array<Int> become IntArray?
+            return this
+        val mappedArguments = ArrayList<KTypeProjection>(arguments.size)
+        for ((variance, type) in arguments) {
             if (variance == null || type == null)
-                KTypeProjection.STAR
-            else
-                type.applyTypeParameters(enclosingType, context).let {
-                    when (variance) {
-                        KVariance.INVARIANT -> KTypeProjection.invariant(it)
-                        KVariance.IN -> KTypeProjection.contravariant(it)
-                        KVariance.OUT -> KTypeProjection.covariant(it)
-                    }
+                mappedArguments.add(KTypeProjection.STAR)
+            else {
+                val mappedType = type.applyTypeParameters(enclosingType)
+                val mappedArgument = when (variance) {
+                    KVariance.INVARIANT -> KTypeProjection.invariant(mappedType)
+                    KVariance.IN -> KTypeProjection.contravariant(mappedType)
+                    KVariance.OUT -> KTypeProjection.covariant(mappedType)
                 }
-        }, isMarkedNullable, annotations)
+                mappedArguments.add(mappedArgument)
+            }
+        }
+        return typeClassifier.createType(mappedArguments, isMarkedNullable, annotations)
     }
 
 }

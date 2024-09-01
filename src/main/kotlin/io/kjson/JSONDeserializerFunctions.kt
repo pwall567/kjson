@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerFunctions.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,9 +30,10 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.KType
-import kotlin.reflect.full.functions
+import kotlin.reflect.KVisibility
 import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.isSuperclassOf
+import kotlin.reflect.full.isSupertypeOf
 
 import java.math.BigInteger
 import java.util.Calendar
@@ -45,73 +46,106 @@ import net.pwall.util.IntOutput.append2Digits
 
 object JSONDeserializerFunctions {
 
-    abstract class FromJSONInvoker(val instance: Any?) {
-        abstract fun invoke(json: JSONValue, context: JSONContext): Any?
+    abstract class InClassFromJSON<T : Any>(
+        val jsonValueClass: KClass<*>,
+        val jsonNullable: Boolean,
+        val companionInstance: Any?,
+    ) {
+        abstract fun invoke(json: JSONValue?, config: JSONConfig): T
     }
 
-    class FromJSONInvokerBasic(instance: Any?, val function: KFunction<*>) : FromJSONInvoker(instance) {
+    class InClassFromJSONBasic<T : Any>(
+        jsonValueClass: KClass<*>,
+        jsonNullable: Boolean,
+        companionInstance: Any?,
+        private val function: KFunction<T>,
+    ) : InClassFromJSON<T>(jsonValueClass, jsonNullable, companionInstance) {
 
-        override fun invoke(json: JSONValue, context: JSONContext): Any? {
-            return function.call(instance, json)
+        override fun invoke(json: JSONValue?, config: JSONConfig): T {
+            return function.call(companionInstance, json)
         }
 
     }
 
-    class FromJSONInvokerWithContext(instance: Any?, val function: KFunction<*>) : FromJSONInvoker(instance) {
+    class InClassFromJSONWithContext<T : Any>(
+        jsonValueClass: KClass<*>,
+        jsonNullable: Boolean,
+        companionInstance: Any?,
+        private val function: KFunction<T>,
+    ) : InClassFromJSON<T>(jsonValueClass, jsonNullable, companionInstance) {
 
-        override fun invoke(json: JSONValue, context: JSONContext): Any? {
-            return function.call(instance, context, json)
+        override fun invoke(json: JSONValue?, config: JSONConfig): T {
+            return function.call(companionInstance, JSONContext(config), json)
         }
 
     }
 
-    class FromJSONInvokerWithConfig(instance: Any?, val function: KFunction<*>) : FromJSONInvoker(instance) {
+    class InClassFromJSONWithConfig<T : Any>(
+        jsonValueClass: KClass<*>,
+        jsonNullable: Boolean,
+        companionInstance: Any?,
+        private val function: KFunction<T>
+    ) : InClassFromJSON<T>(jsonValueClass, jsonNullable, companionInstance) {
 
-        override fun invoke(json: JSONValue, context: JSONContext): Any? {
-            return function.call(instance, context.config, json)
+        override fun invoke(json: JSONValue?, config: JSONConfig): T {
+            return function.call(companionInstance, config, json)
         }
 
     }
 
-    private val fromJsonCache = HashMap<Pair<KClass<*>, KClass<*>>, FromJSONInvoker>()
+    private val inClassFromJSONCache = HashMap<KClass<*>, List<InClassFromJSON<*>>>()
 
-    fun findFromJSONInvoker(resultClass: KClass<*>, parameterClass: KClass<*>, companionObject: KClass<*>):
-            FromJSONInvoker? {
-        val cacheKey = resultClass to parameterClass
-        return fromJsonCache[cacheKey] ?: run {
-            findInvoker(companionObject.functions, resultClass, parameterClass, companionObject)
-        }?.also { fromJsonCache[cacheKey] = it }
-    }
-
-    private fun findInvoker(
-        functions: Collection<KFunction<*>>,
-        resultClass: KClass<*>,
-        parameterClass: KClass<*>,
+    @Suppress("unchecked_cast")
+    internal fun <T : Any> findAllInClassFromJSON(
+        resultClass: KClass<T>,
         companionObjectClass: KClass<*>,
-    ): FromJSONInvoker? {
-        for (function in functions) {
-            if (function.name == "fromJSON" && function.returnType.classifier == resultClass) {
+    ): List<InClassFromJSON<T>> {
+        inClassFromJSONCache[resultClass]?.let { return it as List<InClassFromJSON<T>> }
+        val result = mutableListOf<InClassFromJSON<T>>()
+        for (function in companionObjectClass.members) {
+            if (function is KFunction<*> && function.name == "fromJSON" && function.isPublic() &&
+                function.returnType.classifier == resultClass) {
+                function as KFunction<T>
                 val parameters = function.parameters
                 if (parameters.size == 2 &&
                     parameters[0].isInstanceParameter(companionObjectClass) &&
-                    parameters[1].isValueParameter(parameterClass)) {
-                    return FromJSONInvokerBasic(companionObjectClass.objectInstance, function)
+                    parameters[1].isValueSubclassParameter(JSONValue::class)) {
+                    val jsonValueType = parameters[1].type
+                    result.add(InClassFromJSONBasic(
+                        jsonValueClass = jsonValueType.classifier as KClass<*>,
+                        jsonNullable = jsonValueType.isMarkedNullable,
+                        companionInstance = companionObjectClass.objectInstance,
+                        function = function
+                    ))
                 }
                 if (parameters.size == 3 &&
                     parameters[0].isInstanceParameter(companionObjectClass) &&
                     parameters[1].isExtensionReceiverParameter(JSONContext::class) &&
-                    parameters[2].isValueParameter(parameterClass)) {
-                    return FromJSONInvokerWithContext(companionObjectClass.objectInstance, function)
+                    parameters[2].isValueSubclassParameter(JSONValue::class)) {
+                    val jsonValueType = parameters[2].type
+                    result.add(InClassFromJSONWithContext(
+                        jsonValueClass = jsonValueType.classifier as KClass<*>,
+                        jsonNullable = jsonValueType.isMarkedNullable,
+                        companionInstance = companionObjectClass.objectInstance,
+                        function = function
+                    ))
                 }
                 if (parameters.size == 3 &&
                     parameters[0].isInstanceParameter(companionObjectClass) &&
                     parameters[1].isExtensionReceiverParameter(JSONConfig::class) &&
-                    parameters[2].isValueParameter(parameterClass)) {
-                    return FromJSONInvokerWithConfig(companionObjectClass.objectInstance, function)
+                    parameters[2].isValueSubclassParameter(JSONValue::class)) {
+                    val jsonValueType = parameters[2].type
+                    result.add(InClassFromJSONWithConfig(
+                        jsonValueClass = jsonValueType.classifier as KClass<*>,
+                        jsonNullable = jsonValueType.isMarkedNullable,
+                        companionInstance = companionObjectClass.objectInstance,
+                        function = function
+                    ))
                 }
             }
         }
-        return null
+        inClassFromJSONCache[resultClass] = result
+        return result
     }
 
     private fun KParameter.isInstanceParameter(instanceClass: KClass<*>?) =
@@ -123,8 +157,16 @@ object JSONDeserializerFunctions {
     private fun KParameter.isValueParameter(valueClass: KClass<*>) =
             kind == KParameter.Kind.VALUE && (type.classifier as KClass<*>).isSuperclassOf(valueClass)
 
+    private fun KParameter.isValueParameter(valueType: KType) =
+            kind == KParameter.Kind.VALUE && type.isSupertypeOf(valueType)
+
+    private fun KParameter.isValueSubclassParameter(valueClass: KClass<*>) =
+            kind == KParameter.Kind.VALUE && (type.classifier as KClass<*>).isSubclassOf(valueClass)
+
     fun <R : Any> KClass<R>.findSingleParameterConstructor(paramClass: KClass<*>): KFunction<R>? =
-            constructors.singleOrNull { it.hasSingleParameter(paramClass) }
+            constructors.singleOrNull { it.isPublic() && it.hasSingleParameter(paramClass) }
+
+    fun KCallable<*>.isPublic(): Boolean = visibility == KVisibility.PUBLIC
 
     private fun KFunction<*>.hasSingleParameter(paramClass: KClass<*>): Boolean = parameters.isNotEmpty() &&
             ((parameters[0].type.classifier as? KClass<*>)?.isSuperclassOf(paramClass) ?: false) &&
@@ -132,6 +174,10 @@ object JSONDeserializerFunctions {
 
     fun KFunction<*>.hasNumberParameter(): Boolean = parameters.isNotEmpty() &&
             ((parameters[0].type.classifier as? KClass<*>)?.isNumberClass() ?: false) &&
+            subsequentParametersOptional()
+
+    fun KFunction<*>.hasArrayParameter(): Boolean = parameters.isNotEmpty() &&
+            ((parameters[0].type.classifier as? KClass<*>)?.java?.isArray ?: false) &&
             subsequentParametersOptional()
 
     private fun KFunction<*>.subsequentParametersOptional(): Boolean {
@@ -148,9 +194,6 @@ object JSONDeserializerFunctions {
         1 -> call(arg)
         else -> callBy(mapOf(parameters[0] to arg))
     }
-
-    fun KType.classifierAsClass(target: KType, context: JSONContext): KClass<*> = classifier as? KClass<*> ?:
-            context.fatal("Can't create ${target.displayName()} - insufficient type information")
 
     fun KClass<*>.displayName(): String = qualifiedName?.displayName() ?: "<unknown>"
 
@@ -178,10 +221,6 @@ object JSONDeserializerFunctions {
      * classes that could be part of a serialised object.  This function expects the date format to correspond to either
      * the `date-time` or the `full-date` production of the [RFC 3339](https://tools.ietf.org/html/rfc3339) standard for
      * date/time representations on the Internet, [section 5.6](https://tools.ietf.org/html/rfc3339#section-5.6).
-     *
-     * @param   string      the input string
-     * @return              the [Calendar]
-     * @throws  IllegalArgumentException    if the string does not represent a valid date
      */
     fun parseCalendar(string: String): Calendar {
         val calendar = Calendar.getInstance()

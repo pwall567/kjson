@@ -56,6 +56,7 @@ import java.util.Calendar
 import java.util.TimeZone
 import java.util.UUID
 import java.util.stream.IntStream
+import java.util.stream.LongStream
 import java.util.stream.Stream
 
 import io.kjson.JSONCoStringify.outputJSON
@@ -91,14 +92,15 @@ import io.kjson.testclasses.OptData
 import io.kjson.testclasses.Organization
 import io.kjson.testclasses.ValueClass
 import io.kjson.testclasses.ValueClassHolder
-import net.pwall.util.CoOutput
+import io.kjson.util.CoCapture
+import io.kjson.util.OutputCapture
 import net.pwall.util.output
 
 class JSONCoStringifyTest {
 
     @Test fun `should stringify null`() = runBlocking {
         val capture = OutputCapture()
-        JSONCoStringify.coStringify(null) { capture.accept(it) }
+        JSONCoStringify.coStringify(null as String?) { capture.accept(it) }
         expect("null") { capture.toString() }
     }
 
@@ -488,6 +490,13 @@ class JSONCoStringifyTest {
         val stream = IntStream.of(1, 1, 2, 3, 5, 8, 13, 21)
         JSONCoStringify.coStringify(stream) { capture.accept(it) }
         expect("[1,1,2,3,5,8,13,21]") { capture.toString() }
+    }
+
+    @Test fun `should stringify a Java LongStream`() = runBlocking {
+        val capture = OutputCapture()
+        val stream = LongStream.of(10_000_000_000, 10_000_000_000, 20_000_000_000, 30_000_000_000, 50_000_000_000)
+        JSONCoStringify.coStringify(stream) { capture.accept(it) }
+        expect("[10000000000,10000000000,20000000000,30000000000,50000000000]") { capture.toString() }
     }
 
     @Test fun `should stringify a map of string to string`() = runBlocking {
@@ -1053,7 +1062,7 @@ class JSONCoStringifyTest {
         circular1.ref2 = circular2
         circular2.ref1 = circular1
         assertFailsWith<JSONKotlinException> { JSONCoStringify.coStringify(circular1) { capture.accept(it) } }.let {
-            expect("Circular reference to Circular1 at /ref2/ref1") { it.message }
+            expect("Circular reference to Circular1, at /ref2/ref1") { it.message }
         }
     }
 
@@ -1062,7 +1071,7 @@ class JSONCoStringifyTest {
         val circularList = mutableListOf<Any>()
         circularList.add(circularList)
         assertFailsWith<JSONKotlinException> { JSONCoStringify.coStringify(circularList) { capture.accept(it) } }.let {
-            expect("Circular reference to ArrayList at /0") { it.message }
+            expect("Circular reference to ArrayList, at /0") { it.message }
         }
     }
 
@@ -1071,7 +1080,7 @@ class JSONCoStringifyTest {
         val circularMap = mutableMapOf<String, Any>()
         circularMap["test1"] = circularMap
         assertFailsWith<JSONKotlinException> { JSONCoStringify.coStringify(circularMap) { capture.accept(it) } }.let {
-            expect("Circular reference to LinkedHashMap at /test1") { it.message }
+            expect("Circular reference to LinkedHashMap, at /test1") { it.message }
         }
     }
 
@@ -1107,36 +1116,6 @@ class JSONCoStringifyTest {
         val coCapture = CoCapture()
         coCapture.outputJSON(OptData(Opt.unset()))
         expect("""{}""") { coCapture.toString() }
-    }
-
-    class OutputCapture(size: Int = 256) {
-
-        private val array = CharArray(size)
-        private var index = 0
-
-        fun accept(ch: Char) {
-            array[index++] = ch
-        }
-
-        fun reset() {
-            index = 0
-        }
-
-        override fun toString() = String(array, 0, index)
-
-    }
-
-    class CoCapture(size: Int = 256) : CoOutput {
-
-        private val array = CharArray(size)
-        private var index = 0
-
-        override suspend fun invoke(ch: Char) {
-            array[index++] = ch
-        }
-
-        override fun toString() = String(array, 0, index)
-
     }
 
 }

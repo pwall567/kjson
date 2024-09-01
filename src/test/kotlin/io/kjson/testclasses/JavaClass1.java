@@ -2,7 +2,7 @@
  * @(#) JavaClass1.java
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -64,6 +64,11 @@ public class JavaClass1 {
     @SuppressWarnings("unused")
     public void setField2(String field2) {
         this.field2 = field2;
+    }
+
+    @SuppressWarnings("unused")
+    public static String getDescription() {
+        return description;
     }
 
     @Override

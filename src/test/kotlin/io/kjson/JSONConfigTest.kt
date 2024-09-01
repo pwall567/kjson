@@ -70,7 +70,7 @@ class JSONConfigTest {
         val config = JSONConfig()
         expect("class") { config.sealedClassDiscriminator }
         expect(8192) { config.readBufferSize }
-        expect(1024) { config.stringifyInitialSize }
+        expect(2048) { config.stringifyInitialSize }
         expect(Charsets.UTF_8) { config.charset }
         assertFalse(config.bigIntegerString)
         assertFalse(config.bigDecimalString)
@@ -93,7 +93,7 @@ class JSONConfigTest {
         val config = JSONConfig {
             fromJSON { json ->
                 if (json !is JSONObject)
-                    fatal("Must be JSONObject")
+                    throw JSONKotlinException("Must be JSONObject")
                 Dummy1(json["a"].asString, json["b"].asInt)
             }
         }
@@ -138,7 +138,7 @@ class JSONConfigTest {
         val config = JSONConfig {
             fromJSON { json ->
                 if (json !is JSONObject)
-                    fatal("Must be JSONObject")
+                    throw JSONKotlinException("Must be JSONObject")
                 Dummy1(json["a"].asString, json["b"].asInt)
             }
         }
@@ -584,7 +584,7 @@ class JSONConfigTest {
 
     @Test fun `should transfer switch settings and numeric values on combineAll`() {
         val options = ParseOptions(
-            objectKeyDuplicate = ParseOptions.DuplicateKeyOption.TAKE_LAST,
+            objectKeyDuplicate = JSONObject.DuplicateKeyOption.TAKE_LAST,
             arrayTrailingComma = true,
         )
         val config = JSONConfig {

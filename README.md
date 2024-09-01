@@ -1,8 +1,8 @@
 # kjson
 
-[![Build Status](https://travis-ci.com/pwall567/kjson.svg?branch=main)](https://app.travis-ci.com/github/pwall567/kjson)
+[![Build Status](https://github.com/pwall567/kjson/actions/workflows/build.yml/badge.svg)](https://github.com/pwall567/kjson/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Kotlin](https://img.shields.io/static/v1?label=Kotlin&message=v1.8.22&color=7f52ff&logo=kotlin&logoColor=7f52ff)](https://github.com/JetBrains/kotlin/releases/tag/v1.8.22)
+[![Kotlin](https://img.shields.io/static/v1?label=Kotlin&message=v1.9.24&color=7f52ff&logo=kotlin&logoColor=7f52ff)](https://github.com/JetBrains/kotlin/releases/tag/v1.9.24)
 [![Maven Central](https://img.shields.io/maven-central/v/io.kjson/kjson?label=Maven%20Central)](https://search.maven.org/search?q=g:%22io.kjson%22%20AND%20a:%22kjson%22)
 
 Reflection-based JSON serialization and deserialization for Kotlin.
@@ -22,6 +22,9 @@ behind the changes.
 
 Also, version 7.0 introduced changes to custom serialization and deserialization; see the
 [Custom Serialization and Deserialization](CUSTOM.md) guide for more information.
+
+Version 8.0 is the result of a major restructuring of the library.
+See [`kjson` 8](KJSON8.md) for more information.
 
 ## Background
 
@@ -267,25 +270,25 @@ See the [Custom Serialization and Deserialization](CUSTOM.md) guide for more inf
 
 ## Dependency Specification
 
-The latest version of the library is 7.6, and it may be obtained from the Maven Central repository.
+The latest version of the library is 8.0, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>7.6</version>
+      <version>8.0</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:7.6'
+    implementation 'io.kjson:kjson:8.0'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:7.6")
+    implementation("io.kjson:kjson:8.0")
 ```
 
 Peter Wall
 
-2024-02-18
+2024-09-01

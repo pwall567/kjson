@@ -47,6 +47,7 @@ import io.kjson.testclasses.Dummy3
 import io.kjson.testclasses.Dummy4
 import io.kjson.testclasses.DummyMap
 import io.kjson.testclasses.DummyObject
+import io.kjson.testclasses.DummyObject2
 import io.kjson.testclasses.DummyWithCustomNameAnnotation
 import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
@@ -189,6 +190,16 @@ class JSONDeserializerObjectTest {
     @Test fun `should deserialize to object from JSONObject`() {
         val json = JSONObject.build { add("field1", "abc") }
         expect(DummyObject) { JSONDeserializer.deserialize(DummyObject::class, json) }
+    }
+
+    @Test fun `should deserialize to object with variable from JSONObject`() {
+        val json = JSONObject.build {
+            add("field1", "abc")
+            add("field2", 999)
+        }
+        DummyObject2.field2 = 123
+        expect(DummyObject2) { JSONDeserializer.deserialize(DummyObject2::class, json) }
+        expect(999) { DummyObject2.field2 }
     }
 
     @Test fun `should deserialize JSONObject into Map derived type`() {

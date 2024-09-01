@@ -118,7 +118,7 @@ class JSONDeserializerTest {
             })
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<DummyFromJSONWithContext>(json) }.let {
-            expect("Can't deserialize \"xyz\" as Int at /aaa/field2") { it.message }
+            expect("Incorrect type, expected Int but was \"xyz\", at /aaa/field2") { it.message }
             expect(JSONPointer("/aaa/field2")) { it.pointer }
         }
     }
@@ -350,7 +350,7 @@ class JSONDeserializerTest {
     @Test fun `should deserialize differently nested custom parameterised type`() {
         val json = JSONObject.build {
             add("lines", JSONArray.of(JSONArray.of(JSONString("abc"), JSONString("ABC")),
-                    JSONArray.of(JSONString("def"), JSONString("DEF"))))
+                JSONArray.of(JSONString("def"), JSONString("DEF"))))
         }
         val expected = TestPage(lines = listOf("abc" to "ABC", "def" to "DEF"))
         expect(expected) { JSONDeserializer.deserialize(json) }
@@ -398,21 +398,23 @@ class JSONDeserializerTest {
     @Test fun `should give error message with pointer`() {
         val json = JSON.parse("""{"field1":"abc","field2":"def"}""")
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<Dummy1>(json) }.let {
-            expect("Can't deserialize \"def\" as Int at /field2") { it.message }
+            expect("Incorrect type, expected Int but was \"def\", at /field2") { it.message }
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<Dummy1>>(JSONArray.of(json)) }.let {
-            expect("Can't deserialize \"def\" as Int at /0/field2") { it.message }
+            expect("Incorrect type, expected Int but was \"def\", at /0/field2") { it.message }
         }
     }
 
     @Test fun `should give expanded error message with pointer`() {
         val json = JSON.parse("""{"field2":1}""")
         val className = Dummy1::class.qualifiedName
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<Dummy1>(json) }.let {
-            expect("Can't create $className; missing: field1") { it.message }
+        assertFailsWith<JSONKotlinException> {
+            JSONDeserializer.deserialize<Dummy1>(json)
+        }.let {
+            expect("Can't create $className - missing property field1") { it.message }
         }
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<Dummy1>>(JSONArray.of(json)) }.let {
-            expect("Can't create $className; missing: field1 at /0") { it.message }
+            expect("Can't create $className - missing property field1, at /0") { it.message }
         }
     }
 
@@ -420,7 +422,7 @@ class JSONDeserializerTest {
         val json = JSON.parse("""[{"aaa":"X"},{"bbb":1},{"ccc":true,"ddd":0}]""")
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<MultiConstructor>>(json) }.let {
             val className = MultiConstructor::class.qualifiedName
-            expect("Can't locate public constructor for $className; properties: ccc, ddd at /2") { it.message }
+            expect("Can't locate public constructor for $className; properties: ccc, ddd, at /2") { it.message }
         }
     }
 
@@ -435,7 +437,7 @@ class JSONDeserializerTest {
         val json = JSON.parse("""{"xxx":123}""")
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<TestPrivate>(json) }.let {
             val className = TestPrivate::class.qualifiedName
-            expect("Can't locate public constructor for $className; properties: xxx") { it.message }
+            expect("Can't deserialize { ... } as $className") { it.message }
         }
     }
 
@@ -449,7 +451,7 @@ class JSONDeserializerTest {
     @Test fun `should give helpful error message on deserialization error`() {
         val json = JSON.parse("""[{"field1":""}]""")
         assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<DummyValidated>>(json) }.let {
-            expect("Error deserializing io.kjson.testclasses.DummyValidated - field1 must not be empty at /0") {
+            expect("Error deserializing io.kjson.testclasses.DummyValidated - field1 must not be empty, at /0") {
                 it.message
             }
             expect(JSONPointer("/0")) { it.pointer }

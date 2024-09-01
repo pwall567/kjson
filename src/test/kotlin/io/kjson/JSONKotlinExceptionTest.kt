@@ -53,14 +53,14 @@ class JSONKotlinExceptionTest {
     @Test fun `should create exception with pointer`() {
         val e = JSONKotlinException("Test message", JSONPointer.root.child(0).child("ace"))
         expect("Test message") { e.text }
-        expect("Test message at /0/ace") { e.message }
+        expect("Test message, at /0/ace") { e.message }
         expect(JSONPointer("/0/ace")) { e.pointer }
         expect(null) { e.cause }
     }
 
     @Test fun `should create exception with cause`() {
         val nested = JSONException("Nested")
-        val e = JSONKotlinException("Test message", nested)
+        val e = JSONKotlinException("Test message", cause = nested)
         expect("Test message") { e.text }
         expect("Test message") { e.message }
         expect(null) { e.pointer }
@@ -71,7 +71,7 @@ class JSONKotlinExceptionTest {
         val nested = JSONException("Nested")
         val e = JSONKotlinException("Test message", JSONPointer.root.child(0).child("ace"), nested)
         expect("Test message") { e.text }
-        expect("Test message at /0/ace") { e.message }
+        expect("Test message, at /0/ace") { e.message }
         expect(JSONPointer("/0/ace")) { e.pointer }
         expect(nested) { e.cause }
     }
@@ -97,7 +97,7 @@ class JSONKotlinExceptionTest {
     @Test fun `should throw exception with pointer`() {
         assertFailsWith<JSONKotlinException> { fatal("Test message", JSONPointer.root.child(0).child("ace")) }.let {
             expect("Test message") { it.text }
-            expect("Test message at /0/ace") { it.message }
+            expect("Test message, at /0/ace") { it.message }
             expect(JSONPointer("/0/ace")) { it.pointer }
             expect(null) { it.cause }
         }
@@ -105,7 +105,7 @@ class JSONKotlinExceptionTest {
 
     @Test fun `should throw exception with cause`() {
         val nested = JSONException("Nested")
-        assertFailsWith<JSONKotlinException> { fatal("Test message", nested) }.let {
+        assertFailsWith<JSONKotlinException> { fatal("Test message", cause = nested) }.let {
             expect("Test message") { it.text }
             expect("Test message") { it.message }
             expect(null) { it.pointer }
@@ -119,7 +119,7 @@ class JSONKotlinExceptionTest {
             fatal("Test message", JSONPointer.root.child(0).child("ace"), nested)
         }.let {
             expect("Test message") { it.text }
-            expect("Test message at /0/ace") { it.message }
+            expect("Test message, at /0/ace") { it.message }
             expect(JSONPointer("/0/ace")) { it.pointer }
             expect(nested) { it.cause }
         }
