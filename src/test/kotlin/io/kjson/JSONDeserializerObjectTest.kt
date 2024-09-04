@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerObjectTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -52,6 +52,8 @@ import io.kjson.testclasses.DummyWithCustomNameAnnotation
 import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.Super
+import io.kjson.testclasses.TestGenericClass
+import io.kjson.testclasses.TestGenericClass2
 import io.kjson.testclasses.TestMapClass
 import io.kjson.testclasses.TypeAliasData
 import io.kjson.testclasses.ValueClassHolder
@@ -333,6 +335,34 @@ class JSONDeserializerObjectTest {
         expect("Hello") { mapClass.field1 }
         expect(UUID.fromString("a20449ac-ade3-11ee-bdf5-139f8439485a")) { mapClass.field2 }
         expect(12345) { mapClass["field3"] }
+    }
+
+    @Test fun `should deserialize into generic class`() {
+        val data = JSONObject.build {
+            add("field1", "turnip")
+            add("field2", 999)
+        }
+        val json = JSONObject.build {
+            add("name", "alpha")
+            add("data", data)
+        }
+        val generic: TestGenericClass<Dummy1> = json.deserialize()
+        expect("alpha") { generic.name }
+        expect(Dummy1("turnip", 999)) { generic.data }
+    }
+
+    @Test fun `should deserialize into generic class with member variables`() {
+        val data = JSONObject.build {
+            add("field1", "turnip")
+            add("field2", 999)
+        }
+        val json = JSONObject.build {
+            add("name", "alpha")
+            add("data", data)
+        }
+        val generic: TestGenericClass2<Dummy1> = json.deserialize()
+        expect("alpha") { generic.name }
+        expect(Dummy1("turnip", 999)) { generic.data }
     }
 
 }

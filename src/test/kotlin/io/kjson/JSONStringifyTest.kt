@@ -87,6 +87,8 @@ import io.kjson.testclasses.ListEnum
 import io.kjson.testclasses.NotANumber
 import io.kjson.testclasses.OptData
 import io.kjson.testclasses.Organization
+import io.kjson.testclasses.TestGenericClass
+import io.kjson.testclasses.TestGenericClass2
 import io.kjson.testclasses.ValueClass
 import io.kjson.testclasses.ValueClassHolder
 
@@ -865,6 +867,44 @@ class JSONStringifyTest {
                 property("field1", 98765)
                 property("field2", "abcdef")
                 property("flag", true)
+            }
+        }
+    }
+
+    @Test fun `should stringify generic class`() {
+        val data = Dummy1("alpha", 1234)
+        val generic = TestGenericClass(
+            name = "testAlpha",
+            data = data,
+        )
+        expectJSON(generic.stringifyJSON()) {
+            exhaustive {
+                property("name", "testAlpha")
+                property("data") {
+                    exhaustive {
+                        property("field1", "alpha")
+                        property("field2", 1234)
+                    }
+                }
+            }
+        }
+    }
+
+    @Test fun `should stringify generic class with member variables`() {
+        val data = Dummy1("alpha", 1234)
+        val generic = TestGenericClass2<Dummy1>().apply {
+            name = "testAlpha"
+            this.data = data
+        }
+        expectJSON(generic.stringifyJSON()) {
+            exhaustive {
+                property("name", "testAlpha")
+                property("data") {
+                    exhaustive {
+                        property("field1", "alpha")
+                        property("field2", 1234)
+                    }
+                }
             }
         }
     }

@@ -31,7 +31,6 @@ import java.time.LocalDate
 
 import io.kjson.JSON.asObject
 import io.kjson.JSON.asString
-import io.kjson.JSONContext
 import io.kjson.JSONException
 import io.kjson.JSONInt
 import io.kjson.JSONObject
@@ -83,8 +82,8 @@ data class DummyFromJSON(val int1: Int) {
 data class DummyFromJSONWithContext(val dummy1: Dummy1) {
 
     companion object {
-        @Suppress("unused")
-        fun JSONContext.fromJSON(json: JSONValue): DummyFromJSONWithContext {
+        @Suppress("unused", "deprecation")
+        fun io.kjson.JSONContext.fromJSON(json: JSONValue): DummyFromJSONWithContext {
             val jsonObject = json as JSONObject
             val dummy1: Dummy1 = deserializeProperty("aaa", jsonObject)
             return DummyFromJSONWithContext(dummy1)

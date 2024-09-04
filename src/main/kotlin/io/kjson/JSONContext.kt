@@ -64,12 +64,14 @@ class JSONContext private constructor(
     /**
      * Create a new `JSONContext` with the [JSONConfig] modified by the application of a lambda.
      */
+    @Suppress("deprecation")
     fun modifyConfig(block: JSONConfig.() -> Unit): JSONContext = JSONContext(config.copy(block), pointerTokenArray,
         pointerTokenArraySize, pointerTokenArrayUsed)
 
     /**
      * Create a new `JSONContext`, replacing the [JSONConfig] with the one supplied.
      */
+    @Suppress("deprecation")
     fun replaceConfig(config: JSONConfig): JSONContext = JSONContext(config, pointerTokenArray, pointerTokenArraySize,
         pointerTokenArrayUsed)
 
@@ -77,6 +79,7 @@ class JSONContext private constructor(
      * Switch this `JSONContext` to point to the nominated property child of an object, perform a set of actions using
      * that updated context, and on completion, return the context to its previous state.
      */
+    @Suppress("deprecation")
     fun <T> useChild(token: String, block: (JSONContext) -> T): T {
         if (pointerTokenArrayUsed == pointerTokenArraySize) {
             pointerTokenArray = pointerTokenArray.copyOf(pointerTokenArraySize + tokenArraySize)
@@ -92,12 +95,14 @@ class JSONContext private constructor(
      * Switch this `JSONContext` to point to the nominated array item child of an array, perform a set of actions using
      * that updated context, and on completion, return the context to its previous state.
      */
+    @Suppress("deprecation")
     fun <T> useChild(index: Int, block: (JSONContext) -> T): T = useChild(index.toString(), block)
 
     /**
      * Switch this `JSONContext` to point to the nominated property child of an object, perform a set of actions as a
      * `suspend` function using that updated context, and on completion, return the context to its previous state.
      */
+    @Suppress("deprecation")
     suspend fun <T> coUseChild(token: String, block: suspend (JSONContext) -> T): T {
         if (pointerTokenArrayUsed == pointerTokenArraySize) {
             pointerTokenArray = pointerTokenArray.copyOf(pointerTokenArraySize + tokenArraySize)
@@ -113,6 +118,7 @@ class JSONContext private constructor(
      * Switch this `JSONContext` to point to the nominated array item child of an array, perform a set of actions as a
      * `suspend` function using that updated context, and on completion, return the context to its previous state.
      */
+    @Suppress("deprecation")
     suspend fun <T> coUseChild(index: Int, block: suspend (JSONContext) -> T): T = coUseChild(index.toString(), block)
 
     /**

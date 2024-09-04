@@ -539,7 +539,7 @@ sealed interface Serializer<in T : Any> {
             // serialize as an object
 
             return if (kClass.isKotlinClass())
-                createObjectSerializer(kClass, config)
+                createObjectSerializer(kType, kClass, config)
             else
                 createJavaObjectSerializer(kClass, config)
         }
@@ -572,6 +572,7 @@ sealed interface Serializer<in T : Any> {
 
         @Suppress("unchecked_cast")
         internal fun <T : Any> createObjectSerializer(
+            kType: KType,
             kClass: KClass<T>,
             config: JSONConfig,
         ): Serializer<T> {
@@ -590,7 +591,7 @@ sealed interface Serializer<in T : Any> {
                             val name = config.findNameFromAnnotation(annotations) ?: member.name
                             if (sealedClassDiscriminator == null || name != sealedClassDiscriminator.name) {
                                 val getter = member.getter
-                                val propertyType = getter.returnType
+                                val propertyType = getter.returnType.applyTypeParameters(kType)
                                 propertyDescriptors.add(
                                     ObjectSerializer.KotlinPropertyDescriptor(
                                         name = name,
@@ -611,7 +612,7 @@ sealed interface Serializer<in T : Any> {
                         if (!config.hasIgnoreAnnotation(annotations)) {
                             val name = config.findNameFromAnnotation(annotations) ?: member.name
                             val getter = member.getter
-                            val propertyType = getter.returnType
+                            val propertyType = getter.returnType.applyTypeParameters(kType)
                             propertyDescriptors.add(
                                 ObjectSerializer.KotlinPropertyDescriptor(
                                     name = name,
@@ -633,7 +634,7 @@ sealed interface Serializer<in T : Any> {
                         if (!config.hasIgnoreAnnotation(annotations)) {
                             val name = config.findNameFromAnnotation(annotations) ?: member.name
                             val getter = member.getter
-                            val propertyType = getter.returnType
+                            val propertyType = getter.returnType.applyTypeParameters(kType)
                             propertyDescriptors.add(
                                 ObjectSerializer.KotlinPropertyDescriptor(
                                     name = name,
@@ -673,7 +674,7 @@ sealed interface Serializer<in T : Any> {
                             if (methodName.length > 3 && methodName.startsWith("get") && methodName[3] in 'A'..'Z') {
                                 val name = methodName[3].lowercase(Locale.US) + methodName.substring(4)
                                 val propertyClass = method.returnType
-                                val propertyType = propertyClass.kotlin.starProjectedType // is this the best approach?
+                                val propertyType = propertyClass.kotlin.starProjectedType // TODO revisit this?
                                 propertyDescriptors.removeIf { it.name == name }
                                 propertyDescriptors.add(
                                     ObjectSerializer.JavaPropertyDescriptor(

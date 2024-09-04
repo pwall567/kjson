@@ -99,7 +99,7 @@ class ObjectSerializerTest {
 
     @Test fun `should serialize simple object using createObjectSerializer`() {
         val testObject = Dummy1("ABC", 123)
-        val serializer = createObjectSerializer(Dummy1::class, config)
+        val serializer = createObjectSerializer(typeOf<Dummy1>(), Dummy1::class, config)
         val result = serializer.serialize(testObject, config, mutableListOf())
         assertIs<JSONObject>(result)
         result.size shouldBe 2
@@ -157,7 +157,6 @@ class ObjectSerializerTest {
         coCapture.toString() shouldBe """{"dummy1":{"field1":"alpha","field2":99},"text":"beta"}"""
     }
 
-    @Suppress("unchecked_cast")
     @Test fun `should serialize Java object`() {
         val testObject = JavaClass1(12345, "Java class")
         val serializer = findSerializer(typeOf<JavaClass1>(), config) as Serializer<JavaClass1>
@@ -245,7 +244,7 @@ class ObjectSerializerTest {
                     ObjectSerializer.KotlinPropertyDescriptor(
                         name = name,
                         kClass = returnType.classifier as KClass<Any>,
-                        serializer = serializer as Serializer<Any>,
+                        serializer = serializer,
                         includeIfNull = false,
                         getter = getter.getter,
                     )

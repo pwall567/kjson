@@ -2,7 +2,7 @@
  * @(#) JSONCoStringifyTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2022, 2023 Peter Wall
+ * Copyright (c) 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -86,10 +86,14 @@ import io.kjson.testclasses.DummyWithIncludeAllProperties
 import io.kjson.testclasses.DummyWithIncludeIfNull
 import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
+import io.kjson.testclasses.JavaClass1
+import io.kjson.testclasses.JavaClass3
 import io.kjson.testclasses.ListEnum
 import io.kjson.testclasses.NotANumber
 import io.kjson.testclasses.OptData
 import io.kjson.testclasses.Organization
+import io.kjson.testclasses.TestGenericClass
+import io.kjson.testclasses.TestGenericClass2
 import io.kjson.testclasses.ValueClass
 import io.kjson.testclasses.ValueClassHolder
 import io.kjson.util.CoCapture
@@ -1116,6 +1120,74 @@ class JSONCoStringifyTest {
         val coCapture = CoCapture()
         coCapture.outputJSON(OptData(Opt.unset()))
         expect("""{}""") { coCapture.toString() }
+    }
+
+    @Test fun `should stringify a Java class`() = runBlocking {
+        val coCapture = CoCapture()
+        val javaClass1 = JavaClass1(98765, "abcdef")
+        coCapture.outputJSON(javaClass1)
+        // Java properties appear to be not necessarily in declaration order
+        expectJSON(coCapture.toString()) {
+            exhaustive {
+                property("field1", 98765)
+                property("field2", "abcdef")
+            }
+        }
+    }
+
+    @Test fun `should stringify a derived Java class`() = runBlocking {
+        val coCapture = CoCapture()
+        val javaClass3 = JavaClass3(98765, "abcdef", true)
+        coCapture.outputJSON(javaClass3)
+        expectJSON(coCapture.toString()) {
+            exhaustive {
+                property("field1", 98765)
+                property("field2", "abcdef")
+                property("flag", true)
+            }
+        }
+    }
+
+    @Test fun `should stringify generic class`() = runBlocking {
+        val coCapture = CoCapture()
+        val data = Dummy1("alpha", 1234)
+        val generic = TestGenericClass(
+            name = "testAlpha",
+            data = data,
+        )
+        coCapture.outputJSON(generic)
+        expectJSON(generic.stringifyJSON()) {
+            exhaustive {
+                property("name", "testAlpha")
+                property("data") {
+                    exhaustive {
+                        property("field1", "alpha")
+                        property("field2", 1234)
+                    }
+                }
+            }
+        }
+    }
+
+    @Test fun `should stringify generic class with member variables`() = runBlocking {
+        val coCapture = CoCapture()
+        val data = Dummy1("alpha", 1234)
+        val generic = TestGenericClass2<Dummy1>().apply {
+            name = "testAlpha"
+            this.data = data
+        }
+        coCapture.outputJSON(generic)
+        expectJSON(coCapture.toString()) {
+            exhaustive {
+                property("name", "testAlpha")
+                property("data") {
+                    exhaustive {
+                        property("field1", "alpha")
+                        property("field2", 1234)
+                    }
+                }
+            }
+        }
     }
 
 }

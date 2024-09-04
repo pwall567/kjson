@@ -2,7 +2,7 @@
  * @(#) JSONSerializerTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ package io.kjson
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -91,11 +92,14 @@ import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.DummyWithVal
 import io.kjson.testclasses.JavaClass1
+import io.kjson.testclasses.JavaClass3
 import io.kjson.testclasses.ListEnum
 import io.kjson.testclasses.NestedDummy
 import io.kjson.testclasses.NotANumber
 import io.kjson.testclasses.OptData
 import io.kjson.testclasses.Organization
+import io.kjson.testclasses.TestGenericClass
+import io.kjson.testclasses.TestGenericClass2
 import io.kjson.testclasses.ValueClass
 import io.kjson.testclasses.ValueClassHolder
 
@@ -1021,6 +1025,99 @@ class JSONSerializerTest {
         with(JSONSerializer.serialize(optData)) {
             assertTrue(this is JSONObject)
             expect(0) { size }
+        }
+    }
+
+    @Test fun `should serialize a Java class`() {
+        val javaClass1 = JavaClass1(98765, "abcdef")
+        // Java properties appear to be not necessarily in declaration order
+        with(JSONSerializer.serialize(javaClass1)) {
+            assertIs<JSONObject>(this)
+            expect(2) { size }
+            with(this["field1"]) {
+                assertIs<JSONInt>(this)
+                expect(98765) { value }
+            }
+            with(this["field2"]) {
+                assertIs<JSONString>(this)
+                expect("abcdef") { value }
+            }
+        }
+    }
+
+    @Test fun `should serialize a derived Java class`() {
+        val javaClass3 = JavaClass3(98765, "abcdef", true)
+        with(JSONSerializer.serialize(javaClass3)) {
+            assertIs<JSONObject>(this)
+            expect(3) { size }
+            with(this["field1"]) {
+                assertIs<JSONInt>(this)
+                expect(98765) { value }
+            }
+            with(this["field2"]) {
+                assertIs<JSONString>(this)
+                expect("abcdef") { value }
+            }
+            with(this["flag"]) {
+                assertIs<JSONBoolean>(this)
+                assertTrue(value)
+            }
+        }
+    }
+
+    @Test fun `should serialize generic class`() {
+        val data = Dummy1("alpha", 1234)
+        val generic = TestGenericClass(
+            name = "testAlpha",
+            data = data,
+        )
+        with(JSONSerializer.serialize(generic)) {
+            assertIs<JSONObject>(this)
+            expect(2) { size }
+            with(this["name"]) {
+                assertIs<JSONString>(this)
+                expect("testAlpha") { value }
+            }
+            with(this["data"]) {
+                assertIs<JSONObject>(this)
+                expect(2) { size }
+                with(this["field1"]) {
+                    assertIs<JSONString>(this)
+                    expect("alpha") { value }
+                }
+                with(this["field2"]) {
+                    assertIs<JSONInt>(this)
+                    expect(1234) { value }
+                }
+            }
+        }
+    }
+
+    @Test fun `should serialize generic class with member variables`() {
+        val data = Dummy1("alpha", 1234)
+        val generic = TestGenericClass2<Dummy1>().apply {
+            name = "testAlpha"
+            this.data = data
+        }
+        with(JSONSerializer.serialize(generic)) {
+            assertIs<JSONObject>(this)
+            expect(2) { size }
+            with(this["name"]) {
+                assertIs<JSONString>(this)
+                expect("testAlpha") { value }
+            }
+            with(this["data"]) {
+                assertIs<JSONObject>(this)
+                expect(2) { size }
+                with(this["field1"]) {
+                    assertIs<JSONString>(this)
+                    expect("alpha") { value }
+                }
+                with(this["field2"]) {
+                    assertIs<JSONInt>(this)
+                    expect(1234) { value }
+                }
+            }
         }
     }
 

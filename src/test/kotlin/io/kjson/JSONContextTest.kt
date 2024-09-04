@@ -2,7 +2,7 @@
  * @(#) JSONContextTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2023 Peter Wall
+ * Copyright (c) 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -49,6 +49,7 @@ class JSONContextTest {
 
     @Test fun `should create JSONContext with config only`() {
         val config = JSONConfig()
+        @Suppress("deprecation")
         val context = JSONContext(config)
         assertSame(config, context.config)
         assertSame(JSONPointer.root, context.pointer)
@@ -57,6 +58,7 @@ class JSONContextTest {
     @Test fun `should create JSONContext with config and pointer`() {
         val config = JSONConfig()
         val pointer = JSONPointer("/abc/def")
+        @Suppress("deprecation")
         val context = JSONContext(config, pointer)
         assertSame(config, context.config)
         expect(pointer) { context.pointer }
@@ -64,6 +66,7 @@ class JSONContextTest {
 
     @Test fun `should create JSONContext with pointer only`() {
         val pointer = JSONPointer("/abc/def")
+        @Suppress("deprecation")
         val context = JSONContext(pointer)
         assertSame(JSONConfig.defaultConfig, context.config)
         expect(pointer) { context.pointer }
@@ -449,6 +452,7 @@ class JSONContextTest {
     }
 
     @Test fun `should throw exception including pointer`() {
+        @Suppress("deprecation")
         val context = JSONContext(JSONPointer("/abc/def"))
         assertFailsWith<JSONKotlinException> { context.fatal("Dummy message") }.let {
             expect("Dummy message, at /abc/def") { it.message }
@@ -456,6 +460,7 @@ class JSONContextTest {
     }
 
     @Test fun `should throw exception including pointer and nested exception`() {
+        @Suppress("deprecation")
         val context = JSONContext(JSONPointer("/abc/def"))
         val nested = NullPointerException("dummy")
         assertFailsWith<JSONKotlinException> { context.fatal("Dummy message", nested) }.let {

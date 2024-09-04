@@ -74,6 +74,7 @@ object JSONDeserializerFunctions {
         private val function: KFunction<T>,
     ) : InClassFromJSON<T>(jsonValueClass, jsonNullable, companionInstance) {
 
+        @Suppress("deprecation")
         override fun invoke(json: JSONValue?, config: JSONConfig): T {
             return function.call(companionInstance, JSONContext(config), json)
         }
@@ -95,7 +96,7 @@ object JSONDeserializerFunctions {
 
     private val inClassFromJSONCache = HashMap<KClass<*>, List<InClassFromJSON<*>>>()
 
-    @Suppress("unchecked_cast")
+    @Suppress("unchecked_cast", "deprecation")
     internal fun <T : Any> findAllInClassFromJSON(
         resultClass: KClass<T>,
         companionObjectClass: KClass<*>,

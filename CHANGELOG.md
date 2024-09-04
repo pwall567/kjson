@@ -2,6 +2,13 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [8.1] - 2024-09-04
+### Changed
+- `Serializer`: fixed bug in serializing parameterized classes
+- `JSONDeserializer`: fixed code formatting issues
+- `JSONContext`, `JSONDeserializerFunctions`, test: added `@Suppress("deprecation")` to references to `JSONContext`
+- `pom.xml`: updated dependency version
+
 ## [8.0] - 2024-08-30
 ### Added
 - individual deserializer classes/objects in `io.kjson.deserialize`

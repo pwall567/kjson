@@ -144,6 +144,7 @@ object JSONDeserializer {
     fun deserialize(
         resultType: KType,
         json: JSONValue?,
+        @Suppress("deprecation")
         context: JSONContext,
     ): Any? = deserialize(resultType, json, context.config)
 
@@ -171,6 +172,7 @@ object JSONDeserializer {
     fun <T : Any> deserialize(
         resultClass: KClass<T>,
         json: JSONValue?,
+        @Suppress("deprecation")
         context: JSONContext,
     ): T? = deserialize(resultClass, json, context.config)
 
@@ -211,7 +213,7 @@ object JSONDeserializer {
     ): T? {
 
         val deserializer = config.findDeserializer(resultClass) ?:
-        determineDeserializer(resultType, config, references = mutableListOf(), json = json)
+                determineDeserializer(resultType, config, references = mutableListOf(), json = json)
 
         if (deserializer != null) {
             try {
@@ -326,9 +328,9 @@ object JSONDeserializer {
         if (resultClass.java.isArray) {
             val itemType = getTypeParam(resultType).applyTypeParameters(resultType)
             val itemDeserializer = findDeserializer<Any>(itemType, config, references) ?:
-            throw DeserializationException("Can't deserialize array of $itemType")
+                    throw DeserializationException("Can't deserialize array of $itemType")
             val itemClass = itemType.classifier as? KClass<Any> ?:
-            throw DeserializationException("Can't determine array item type")
+                    throw DeserializationException("Can't determine array item type")
             return ArrayDeserializer(itemClass, itemDeserializer, itemType.isMarkedNullable) as Deserializer<T>
         }
 
@@ -455,7 +457,7 @@ object JSONDeserializer {
                 val arrayType = constructor.parameters[0].type
                 val itemType = getTypeParam(arrayType).applyTypeParameters(resultType)
                 val itemClass = itemType.classifier as? KClass<Any> ?:
-                throw DeserializationException("Can't determine array item type")
+                        throw DeserializationException("Can't determine array item type")
                 val itemDeserializer = findDeserializer<Any>(itemType, config, references)
                 if (itemDeserializer != null)
                     return ArrayConstructorDeserializer(
@@ -591,7 +593,7 @@ object JSONDeserializer {
         if (member is KProperty<*> && member.visibility == KVisibility.PUBLIC) {
             val fieldType = member.getter.returnType.applyTypeParameters(resultType)
             val deserializer = findDeserializer<Any>(fieldType, config, references) ?:
-            throw DeserializationException("Can't deserialize $resultType")
+                    throw DeserializationException("Can't deserialize $resultType")
             KotlinFieldDescriptor(
                 propertyName = config.findNameFromAnnotation(member.annotations) ?: member.name,
                 ignore = config.hasIgnoreAnnotation(member.annotations),
