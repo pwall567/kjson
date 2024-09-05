@@ -27,6 +27,8 @@ package io.kjson.deserialize
 
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.net.URI
+import java.net.URL
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -144,7 +146,9 @@ sealed interface Deserializer<T> {
             JSONArray::class to JSONArrayDeserializer,
             JSONObject::class to JSONObjectDeserializer,
             JSONValue::class to JSONValueDeserializer,
-            // URI? URL? other classes that would use default string constructor in old version?
+            URI::class to URIDeserializer,
+            URL::class to URLDeserializer,
+            // other classes that would use default string constructor in old version?
         )
 
     }

@@ -31,6 +31,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.expect
 import kotlin.test.fail
+import java.net.URI
+import java.net.URL
 
 import java.time.LocalDate
 import java.util.UUID
@@ -364,5 +366,37 @@ class JSONDeserializerObjectTest {
         expect("alpha") { generic.name }
         expect(Dummy1("turnip", 999)) { generic.data }
     }
+
+    @Test fun `should deserialize into class containing URI`() {
+        val json = JSONObject.build {
+            add("name", "Fred")
+            add("uri", "http://kjson.io")
+        }
+        with(json.deserialize<ClassWithURI>()) {
+            expect("Fred") { name }
+            expect(URI("http://kjson.io")) { uri }
+        }
+    }
+
+    @Test fun `should deserialize into class containing URL`() {
+        val json = JSONObject.build {
+            add("name", "Fred")
+            add("url", "http://kjson.io")
+        }
+        with(json.deserialize<ClassWithURL>()) {
+            expect("Fred") { name }
+            expect(URL("http://kjson.io")) { url }
+        }
+    }
+
+    data class ClassWithURI(
+        val name: String,
+        val uri: URI,
+    )
+
+    data class ClassWithURL(
+        val name: String,
+        val url: URL,
+    )
 
 }

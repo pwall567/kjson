@@ -25,6 +25,8 @@
 
 package io.kjson.deserialize
 
+import java.net.URI
+import java.net.URL
 import java.util.BitSet
 import java.util.UUID
 
@@ -59,5 +61,21 @@ data object BitSetDeserializer : Deserializer<BitSet> {
             }
             else -> typeError("array of integer")
         }
+    }
+}
+
+data object URIDeserializer : Deserializer<URI> {
+    override fun deserialize(json: JSONValue?): URI? = when (json) {
+        null -> null
+        is JSONString -> URI(json.value)
+        else -> UUIDDeserializer.typeError("string")
+    }
+}
+
+data object URLDeserializer : Deserializer<URL> {
+    override fun deserialize(json: JSONValue?): URL? = when (json) {
+        null -> null
+        is JSONString -> URL(json.value)
+        else -> UUIDDeserializer.typeError("string")
     }
 }

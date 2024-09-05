@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [8.2] - 2024-09-06
+### Changed
+- `Deserializer`, `OtherDeserializers.kt`: fixed bug in deserializing Java classes `URI`, `URL`
+
 ## [8.1] - 2024-09-04
 ### Changed
 - `Serializer`: fixed bug in serializing parameterized classes
