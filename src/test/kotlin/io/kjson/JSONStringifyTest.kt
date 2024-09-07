@@ -81,6 +81,7 @@ import io.kjson.testclasses.DummyWithIncludeAllProperties
 import io.kjson.testclasses.DummyWithIncludeIfNull
 import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
+import io.kjson.testclasses.GenericCreator
 import io.kjson.testclasses.JavaClass1
 import io.kjson.testclasses.JavaClass3
 import io.kjson.testclasses.ListEnum
@@ -899,6 +900,27 @@ class JSONStringifyTest {
         expectJSON(generic.stringifyJSON()) {
             exhaustive {
                 property("name", "testAlpha")
+                property("data") {
+                    exhaustive {
+                        property("field1", "alpha")
+                        property("field2", 1234)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * This test covers a case where a generic class is parameterized by a type which is itself a parameter to another
+     * generic class.  The [JSONDeserializer.applyTypeParameters] function can find the first level parameter, but it
+     * does not have access to the information required to find the next level (or any deeper levels if required).
+     */
+    @Test fun `should stringify generic class created in another generic class`() {
+        val creator = GenericCreator<Dummy1>()
+        val data = Dummy1("alpha", 1234)
+        expectJSON(creator.createAndStringify(data)) {
+            exhaustive {
+                property("name", "XXX")
                 property("data") {
                     exhaustive {
                         property("field1", "alpha")

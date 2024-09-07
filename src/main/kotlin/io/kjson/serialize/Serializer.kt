@@ -591,7 +591,9 @@ sealed interface Serializer<in T : Any> {
                             val name = config.findNameFromAnnotation(annotations) ?: member.name
                             if (sealedClassDiscriminator == null || name != sealedClassDiscriminator.name) {
                                 val getter = member.getter
-                                val propertyType = getter.returnType.applyTypeParameters(kType)
+                                val propertyType = getter.returnType.applyTypeParameters(kType).let {
+                                    if (it.classifier is KClass<*>) it else anyQType
+                                }
                                 propertyDescriptors.add(
                                     ObjectSerializer.KotlinPropertyDescriptor(
                                         name = name,
@@ -612,7 +614,9 @@ sealed interface Serializer<in T : Any> {
                         if (!config.hasIgnoreAnnotation(annotations)) {
                             val name = config.findNameFromAnnotation(annotations) ?: member.name
                             val getter = member.getter
-                            val propertyType = getter.returnType.applyTypeParameters(kType)
+                            val propertyType = getter.returnType.applyTypeParameters(kType).let {
+                                if (it.classifier is KClass<*>) it else anyQType
+                            }
                             propertyDescriptors.add(
                                 ObjectSerializer.KotlinPropertyDescriptor(
                                     name = name,
@@ -634,7 +638,9 @@ sealed interface Serializer<in T : Any> {
                         if (!config.hasIgnoreAnnotation(annotations)) {
                             val name = config.findNameFromAnnotation(annotations) ?: member.name
                             val getter = member.getter
-                            val propertyType = getter.returnType.applyTypeParameters(kType)
+                            val propertyType = getter.returnType.applyTypeParameters(kType).let {
+                                if (it.classifier is KClass<*>) it else anyQType
+                            }
                             propertyDescriptors.add(
                                 ObjectSerializer.KotlinPropertyDescriptor(
                                     name = name,

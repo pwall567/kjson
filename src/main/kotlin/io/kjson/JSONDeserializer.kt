@@ -37,6 +37,7 @@ import kotlin.reflect.typeOf
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.isSubclassOf
+import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.full.staticFunctions
 
@@ -96,6 +97,7 @@ import io.kjson.deserialize.createMapDeserializer
 import io.kjson.deserialize.createSequenceDeserializer
 import io.kjson.deserialize.createStreamDeserializer
 import io.kjson.optional.Opt
+import io.kjson.pointer.JSONPointer
 import io.kjson.util.isKotlinClass
 
 /**
@@ -496,7 +498,7 @@ object JSONDeserializer {
             return null
         resultClass as KClass<T>
 
-        // is a delegating Map class?
+        // is it a delegating Map class?
 
         if (resultClass.isSubclassOf(Map::class)) {
             resultClass.findSingleParameterConstructor(Map::class)?.let { constructor ->
@@ -591,11 +593,12 @@ object JSONDeserializer {
         references: MutableList<KType>,
     ): List<FieldDescriptor<*>> = members.mapNotNull { member ->
         if (member is KProperty<*> && member.visibility == KVisibility.PUBLIC) {
+            val propertyName = config.findNameFromAnnotation(member.annotations) ?: member.name
             val fieldType = member.getter.returnType.applyTypeParameters(resultType)
             val deserializer = findDeserializer<Any>(fieldType, config, references) ?:
-                    throw DeserializationException("Can't deserialize $resultType")
+                    cantDeserialize(fieldType, JSONPointer.root.child(propertyName))
             KotlinFieldDescriptor(
-                propertyName = config.findNameFromAnnotation(member.annotations) ?: member.name,
+                propertyName = propertyName,
                 ignore = config.hasIgnoreAnnotation(member.annotations),
                 nullable = fieldType.isMarkedNullable,
                 deserializer = deserializer,
@@ -664,52 +667,52 @@ object JSONDeserializer {
     }
 
     internal fun KType.applyTypeParameters(enclosingType: KType): KType {
+        // TODO - this implementation works for simple cases, but if the class parameter is itself a parameter to
+        //    another class, it can result in a KType with a KTypeParameter, and we have no way of applying that
+        //    KTypeParameter
         val typeClassifier = classifier
         if (typeClassifier is KTypeParameter) {
             val enclosingClass = enclosingType.classifier
             if (enclosingClass !is KClass<*>)
-                return this // shouldn't happen
+                cantDeserialize(enclosingType)
             val typeParameters = enclosingClass.typeParameters
-            for (index in typeParameters.indices) {
-                val typeParameter = typeParameters[index]
-                if (typeParameter.name == typeClassifier.name) {
-                    val enclosingTypeArguments = enclosingType.arguments
-                    if (index < enclosingTypeArguments.size) {
-                        val enclosingTypeArgumentType = enclosingTypeArguments[index].type
-                        if (enclosingTypeArgumentType != null)
-                            return enclosingTypeArgumentType
-                    }
-                    val typeParameterUpperBounds = typeParameter.upperBounds
-                    if (typeParameterUpperBounds.size == 1)
-                        return typeParameterUpperBounds[0]
-                    break
+            val index = typeParameters.indexOfFirst { it.name == typeClassifier.name }
+            if (index >= 0) {
+                val enclosingTypeArguments = enclosingType.arguments
+                if (index < enclosingTypeArguments.size) {
+                    val enclosingTypeArgumentType = enclosingTypeArguments[index].type
+                    if (enclosingTypeArgumentType != null)
+                        return enclosingTypeArgumentType
                 }
+                val typeParameterUpperBounds = typeParameters[index].upperBounds
+                if (typeParameterUpperBounds.size == 1)
+                    return typeParameterUpperBounds[0]
             }
-            return this // shouldn't happen
         }
 
         if (arguments.isEmpty())
             return this
 
         if (typeClassifier !is KClass<*>)
-            return this  // shouldn't happen
+            cantDeserialize(this)
         if (typeClassifier.typeParameters.isEmpty()) // has Array<Int> become IntArray?
             return this
-        val mappedArguments = ArrayList<KTypeProjection>(arguments.size)
-        for ((variance, type) in arguments) {
+        return typeClassifier.createType(arguments.map { (variance, type) ->
             if (variance == null || type == null)
-                mappedArguments.add(KTypeProjection.STAR)
-            else {
-                val mappedType = type.applyTypeParameters(enclosingType)
-                val mappedArgument = when (variance) {
-                    KVariance.INVARIANT -> KTypeProjection.invariant(mappedType)
-                    KVariance.IN -> KTypeProjection.contravariant(mappedType)
-                    KVariance.OUT -> KTypeProjection.covariant(mappedType)
+                KTypeProjection.STAR
+            else
+                type.applyTypeParameters(enclosingType).let {
+                    when (variance) {
+                        KVariance.INVARIANT -> KTypeProjection.invariant(it)
+                        KVariance.IN -> KTypeProjection.contravariant(it)
+                        KVariance.OUT -> KTypeProjection.covariant(it)
+                    }
                 }
-                mappedArguments.add(mappedArgument)
-            }
-        }
-        return typeClassifier.createType(mappedArguments, isMarkedNullable, annotations)
+        }, isMarkedNullable, annotations)
+    }
+
+    private fun cantDeserialize(type: KType, pointer: JSONPointer? = null): Nothing {
+        fatal("Can't deserialize $type - insufficient type information", pointer)
     }
 
 }

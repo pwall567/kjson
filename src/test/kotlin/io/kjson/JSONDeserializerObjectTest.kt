@@ -27,6 +27,7 @@ package io.kjson
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.expect
@@ -53,6 +54,7 @@ import io.kjson.testclasses.DummyObject2
 import io.kjson.testclasses.DummyWithCustomNameAnnotation
 import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
+import io.kjson.testclasses.GenericCreator
 import io.kjson.testclasses.Super
 import io.kjson.testclasses.TestGenericClass
 import io.kjson.testclasses.TestGenericClass2
@@ -365,6 +367,14 @@ class JSONDeserializerObjectTest {
         val generic: TestGenericClass2<Dummy1> = json.deserialize()
         expect("alpha") { generic.name }
         expect(Dummy1("turnip", 999)) { generic.data }
+    }
+
+    @Test fun `should report error when deserializing into generic class within another generic class`() {
+        // TODO - find a way to handle this situation correctly - see comment in JSONDeserializer.applyTypeParameters
+        val json = """{"name":"ZZZ","data":{"field1":"ace","field2":777}}"""
+        assertFailsWith<JSONKotlinException> { GenericCreator<Dummy1>().parseString(json) }.let {
+            expect("Can't deserialize TT - insufficient type information, at /data") { it.message }
+        }
     }
 
     @Test fun `should deserialize into class containing URI`() {

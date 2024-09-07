@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [8.3] - 2024-09-07
+### Changed
+- `JSONDeserializer`, `Serializer`: fixed bug in serializing nested generic classes
+
 ## [8.2] - 2024-09-06
 ### Changed
 - `Deserializer`, `OtherDeserializers.kt`: fixed bug in deserializing Java classes `URI`, `URL`
