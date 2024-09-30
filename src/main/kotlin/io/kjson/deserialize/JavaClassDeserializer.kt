@@ -44,7 +44,7 @@ import io.kjson.util.isPublic
 import io.kjson.util.isStaticOrTransient
 
 class JavaClassDeserializer<T : Any>(
-    private val resultType: KType,
+    private val target: Any,
     private val constructor: Constructor<T>,
     private val fieldDescriptors: List<FieldDescriptor<*>>,
     private val allowExtra: Boolean,
@@ -56,7 +56,7 @@ class JavaClassDeserializer<T : Any>(
         if (json !is JSONObject)
             typeError("object")
         val instance = constructor.newInstance()
-        JSONDeserializer.deserializeFields(json, resultType, fieldDescriptors, allowExtra, instance)
+        JSONDeserializer.deserializeFields(json, target, fieldDescriptors, allowExtra, instance)
         return instance
     }
 
@@ -65,7 +65,7 @@ class JavaClassDeserializer<T : Any>(
         private val booleanType: Class<Boolean> = java.lang.Boolean.TYPE
 
         fun <T : Any> createJavaClassDeserializer(
-            resultType: KType,
+            target: Any,
             resultClass: KClass<T>,
             config: JSONConfig,
             references: MutableList<KType>,
@@ -75,6 +75,33 @@ class JavaClassDeserializer<T : Any>(
             val javaClass = resultClass.java
             val constructor = findJavaNoArgConstructor(javaClass) ?:
                 throw JSONKotlinException("Java class $javaClass requires no-arg constructor") // TODO context
+            return JavaClassDeserializer(
+                target = target,
+                constructor = constructor,
+                fieldDescriptors = getJavaFieldDescriptors(javaClass, config, references),
+                allowExtra = config.allowExtra,
+            )
+        }
+
+        fun <T : Any> createJavaNoArgDeserializer(
+            javaClass: Class<T>,
+            constructor: Constructor<T>,
+            config: JSONConfig,
+            references: MutableList<KType>,
+        ) : Deserializer<T> {
+            return JavaClassDeserializer(
+                target = javaClass,
+                constructor = constructor,
+                fieldDescriptors = getJavaFieldDescriptors(javaClass, config, references),
+                allowExtra = config.allowExtra,
+            )
+        }
+
+        fun <T : Any> getJavaFieldDescriptors(
+            javaClass: Class<T>,
+            config: JSONConfig,
+            references: MutableList<KType>,
+        ) : List<FieldDescriptor<*>> {
             val fieldDescriptors = mutableListOf<FieldDescriptor<*>>()
             val classHierarchy = getJavaClassHierarchy(javaClass)
             while (classHierarchy.isNotEmpty()) {
@@ -132,12 +159,7 @@ class JavaClassDeserializer<T : Any>(
                     }
                 }
             }
-            return JavaClassDeserializer(
-                resultType = resultType,
-                constructor = constructor,
-                fieldDescriptors = fieldDescriptors,
-                allowExtra = config.allowExtra,
-            )
+            return fieldDescriptors
         }
 
         @Suppress("unchecked_cast")

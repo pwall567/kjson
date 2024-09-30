@@ -37,7 +37,6 @@ import kotlin.reflect.typeOf
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.isSubclassOf
-import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.full.staticFunctions
 
@@ -78,8 +77,15 @@ import io.kjson.deserialize.ConstructorDescriptor.Companion.createConstructorDes
 import io.kjson.deserialize.DeferredDeserializer
 import io.kjson.deserialize.DelegatingMapConstructorDeserializer
 import io.kjson.deserialize.DeserializationException
+import io.kjson.deserialize.IntDeserializer
 import io.kjson.deserialize.JavaClassDeserializer.Companion.createJavaClassDeserializer
+import io.kjson.deserialize.JavaClassDeserializer.Companion.getJavaFieldDescriptors
+import io.kjson.deserialize.JavaNamedArgConstructorDescriptor
+import io.kjson.deserialize.JavaNoArgConstructorDescriptor
+import io.kjson.deserialize.JavaParameterDescriptor
+import io.kjson.deserialize.JavaSingleArgConstructorDescriptor
 import io.kjson.deserialize.LongConstructorDeserializer
+import io.kjson.deserialize.LongDeserializer
 import io.kjson.deserialize.MapConstructorDeserializer
 import io.kjson.deserialize.ObjectDeserializer
 import io.kjson.deserialize.OptDeserializer
@@ -87,6 +93,7 @@ import io.kjson.deserialize.PairDeserializer.Companion.createPairDeserializer
 import io.kjson.deserialize.SealedClassDeserializer.Companion.createSealedClassDeserializer
 import io.kjson.deserialize.ShortConstructorDeserializer
 import io.kjson.deserialize.StringConstructorDeserializer
+import io.kjson.deserialize.StringDeserializer
 import io.kjson.deserialize.TripleDeserializer.Companion.createTripleDeserializer
 import io.kjson.deserialize.UByteConstructorDeserializer
 import io.kjson.deserialize.UIntConstructorDeserializer
@@ -99,6 +106,9 @@ import io.kjson.deserialize.createStreamDeserializer
 import io.kjson.optional.Opt
 import io.kjson.pointer.JSONPointer
 import io.kjson.util.isKotlinClass
+import io.kjson.util.isPublic
+import java.beans.ConstructorProperties
+import java.lang.reflect.Constructor
 
 /**
  * Reflection-based JSON deserialization for Kotlin.
@@ -543,8 +553,76 @@ object JSONDeserializer {
 
         // is it a Java class?
 
-        if (!resultClass.isKotlinClass())
+        if (!resultClass.isKotlinClass()) {
+            val resultJavaClass = resultClass.java
+            val constructorDescriptors = resultJavaClass.constructors.filter {
+                it.isPublic()
+            }.mapNotNull {
+                val parameterTypes = it.parameterTypes
+                when (parameterTypes.size) {
+                    0 -> JavaNoArgConstructorDescriptor(
+                        resultClass = resultJavaClass,
+                        constructor = it as Constructor<T>,
+                        fieldDescriptors = getJavaFieldDescriptors(resultJavaClass, config, references),
+                        allowExtra = config.allowExtra ||
+                                config.hasAllowExtraPropertiesAnnotation(resultClass.annotations),
+                    )
+                    1 -> {
+                        val deserializer = when (parameterTypes[0]) {
+                            java.lang.String::class.java -> StringDeserializer
+                            java.lang.Integer::class.java,
+                            java.lang.Integer.TYPE -> IntDeserializer
+                            java.lang.Long::class.java,
+                            java.lang.Long.TYPE -> LongDeserializer
+                            else -> fatal("Can't deserialize using single-arg constructor other than String or Int or Long")
+                        }
+                        JavaSingleArgConstructorDescriptor(
+                            resultClass = resultJavaClass,
+                            constructor = it as Constructor<T>,
+                            deserializer = deserializer,
+                        )
+                    }
+                    else -> {
+                        it.getAnnotation(ConstructorProperties::class.java)?.value?.let { parameterNames ->
+                            // TODO check that parameterNames.length == parameterTypes.length
+                            JavaNamedArgConstructorDescriptor(
+                                resultClass = resultJavaClass,
+                                constructor = it as Constructor<T>,
+                                parameters = parameterTypes.indices.map { index ->
+                                    JavaParameterDescriptor(
+                                        name = parameterNames[index],
+                                        deserializer = findDeserializer<Any>(
+                                            resultType = parameterTypes[index].toKType(),
+                                            config = config,
+                                            references = references,
+                                        ) as Deserializer,
+                                        ignore = config.hasIgnoreAnnotation(it.parameterAnnotations[0].asList()),
+                                    )
+                                },
+                                fieldDescriptors = emptyList(),
+                                allowExtra = config.allowExtra ||
+                                        config.hasAllowExtraPropertiesAnnotation(resultClass.annotations),
+                            )
+                        }
+                    }
+                }
+            }
+            // TODO The possibilities are:
+            //   1. A single no-arg constructor (as per current code)
+            //   2. A single constructor taking a single parameter
+            //   3. A single constructor with a @java.beans.ConstructorProperties annotation
+            //   4. A combination of the above
+            when (constructorDescriptors.size) {
+                0 -> return null
+                1 -> {
+
+                }
+                else -> {
+
+                }
+            }
             return createJavaClassDeserializer(resultType, resultClass, config, references)
+        }
 
         // deserialize using constructor
 

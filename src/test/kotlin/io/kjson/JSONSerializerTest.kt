@@ -466,7 +466,7 @@ class JSONSerializerTest {
         val expected1 = JSONString("2019-04-25T18:52:47.123+10:00")
         val expected2 = JSONString("2019-04-25T08:52:47.123Z")
         val result = JSONSerializer.serialize(date)
-        assertTrue(result == expected1 || result == expected2)
+        assertTrue(result == expected1 || result == expected2, "error - result was $result")
     }
 
     @Test fun `should return java-sql-Date as JSONString`() {

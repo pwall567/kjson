@@ -92,6 +92,7 @@ import io.kjson.testclasses.TestGenericClass
 import io.kjson.testclasses.TestGenericClass2
 import io.kjson.testclasses.ValueClass
 import io.kjson.testclasses.ValueClassHolder
+import kotlin.test.assertTrue
 
 class JSONStringifyTest {
 
@@ -554,7 +555,7 @@ class JSONStringifyTest {
         val expected1 = "\"2019-04-25T18:52:47.123+10:00\""
         val expected2 = "\"2019-04-25T08:52:47.123Z\""
         val result = date.stringifyJSON()
-        expect(true) { result == expected1 || result == expected2 }
+        assertTrue(result == expected1 || result == expected2, "error - result was $result")
     }
 
     @Test fun `should stringify a BitSet`() {
