@@ -728,8 +728,7 @@ object JSONDeserializer {
         itemClass: KClass<T>,
         size: Int,
     ): Array<T?> = java.lang.reflect.Array.newInstance(itemClass.java, size) as Array<T?>
-    // there appears to be no way of creating an array of dynamic type in Kotlin
-    // other than to use Java reflection
+    // there appears to be no way of creating an array of dynamic type in Kotlin other than to use Java reflection
 
     internal fun getTypeParam(type: KType, n: Int = 0): KType = type.arguments.getOrNull(n)?.type ?: anyQType
 
@@ -747,7 +746,7 @@ object JSONDeserializer {
     internal fun KType.applyTypeParameters(enclosingType: KType): KType {
         // TODO - this implementation works for simple cases, but if the class parameter is itself a parameter to
         //    another class, it can result in a KType with a KTypeParameter, and we have no way of applying that
-        //    KTypeParameter
+        //    KTypeParameter (see JSONDeserializerObjectTest)
         val typeClassifier = classifier
         if (typeClassifier is KTypeParameter) {
             val enclosingClass = enclosingType.classifier
