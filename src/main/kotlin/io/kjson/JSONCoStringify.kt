@@ -46,12 +46,12 @@ object JSONCoStringify {
     suspend inline fun <reified T> coStringify(
         obj: T,
         config: JSONConfig = JSONConfig.defaultConfig,
-        noinline out: CoOutput,
+        noinline out: CoOutput
     ) {
-        when (obj) {
-            null -> out.output("null")
-            else -> out.outputJSON(typeOf<T>(), obj, config)
-        }
+        if (obj == null)
+            out.output("null")
+        else
+            out.outputJSON(typeOf<T>(), obj, config)
     }
 
     /**
@@ -62,12 +62,9 @@ object JSONCoStringify {
         kType: KType,
         obj: Any?,
         config: JSONConfig = JSONConfig.defaultConfig,
-        out: CoOutput,
+        out: CoOutput
     ) {
-        when (obj) {
-            null -> out.output("null")
-            else -> out.outputJSON(kType, obj, config)
-        }
+        out.outputJSON(kType, obj, config)
     }
 
     /**
@@ -75,10 +72,13 @@ object JSONCoStringify {
      * serialization process will be supplied to the output function a character at a time.
      */
     suspend inline fun <reified T> CoOutput.outputJSON(
-        obj: T,
+        obj: T?,
         config: JSONConfig = JSONConfig.defaultConfig,
     ) {
-        outputJSON(typeOf<T>(), obj, config, mutableListOf())
+        if (obj == null)
+            output("null")
+        else
+            outputJSON(typeOf<T>(), obj, config)
     }
 
     /**
@@ -90,29 +90,10 @@ object JSONCoStringify {
         obj: Any?,
         config: JSONConfig = JSONConfig.defaultConfig,
     ) {
-        outputJSON(kType, obj, config, mutableListOf())
-    }
-
-    suspend fun CoOutput.outputJSON(
-        kType: KType,
-        obj: Any?,
-        config: JSONConfig,
-        references: MutableList<Any>,
-    ) {
         when (obj) {
             null -> output("null")
             is JSONValue -> obj.coOutputTo(this)
-            in references -> throw JSONKotlinException("Circular reference to ${obj::class.simpleName}")
-            else -> {
-                references.add(obj)
-                try {
-                    val serializer = Serializer.findSerializer(kType, config)
-                    serializer.output(this, obj, config, references)
-                }
-                finally {
-                    references.removeLast()
-                }
-            }
+            else -> Serializer.findSerializer(kType, config).output(this, obj, config, mutableListOf(obj))
         }
     }
 

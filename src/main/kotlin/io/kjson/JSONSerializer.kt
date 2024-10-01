@@ -40,32 +40,16 @@ object JSONSerializer {
     /**
      * Serialize the given object to a [JSONValue].
      */
-    inline fun <reified T> serialize(obj: T, config: JSONConfig = JSONConfig.defaultConfig): JSONValue? {
-        return serialize(typeOf<T>(), obj, config)
-    }
+    inline fun <reified T> serialize(obj: T, config: JSONConfig = JSONConfig.defaultConfig): JSONValue? =
+            serialize(typeOf<T>(), obj, config)
 
     /**
      * Serialize the given object to a [JSONValue].
      */
-    fun serialize(kType: KType, obj: Any?, config: JSONConfig = JSONConfig.defaultConfig): JSONValue? {
-        return serialize(kType, obj, config, mutableListOf())
+    fun serialize(kType: KType, obj: Any?, config: JSONConfig = JSONConfig.defaultConfig): JSONValue? = when (obj) {
+        null -> null
+        is JSONValue -> obj
+        else -> Serializer.findSerializer(kType, config).serialize(obj, config, mutableListOf(obj))
     }
-
-    internal fun serialize(kType: KType, obj: Any?, config: JSONConfig, references: MutableList<Any>): JSONValue? =
-        when (obj) {
-            null -> null
-            is JSONValue -> obj
-            in references -> throw JSONKotlinException("Circular reference to ${obj::class.simpleName}")
-            else -> {
-                references.add(obj)
-                try {
-                    val serializer = Serializer.findSerializer(kType, config)
-                    serializer.serialize(obj, config, references)
-                }
-                finally {
-                    references.removeLast()
-                }
-            }
-        }
 
 }

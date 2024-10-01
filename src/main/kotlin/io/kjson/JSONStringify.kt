@@ -40,24 +40,18 @@ object JSONStringify {
     /**
      * Serialize an object to JSON. (The word "stringify" is borrowed from the JavaScript implementation of JSON.)
      */
-    inline fun <reified T> stringify(obj: T, config: JSONConfig = JSONConfig.defaultConfig): String = when (obj) {
-        null -> "null"
-        else -> buildString(config.stringifyInitialSize) {
-            appendJSON(typeOf<T>(), obj, config)
-        }
-    }
+    inline fun <reified T> stringify(obj: T, config: JSONConfig = JSONConfig.defaultConfig): String = if (obj == null)
+        "null"
+    else
+        buildString(config.stringifyInitialSize) { appendJSON(typeOf<T>(), obj, config) }
 
     /**
      * Serialize an object to JSON. (The word "stringify" is borrowed from the JavaScript implementation of JSON.)
      */
-    fun stringify(kType: KType, obj: Any?, config: JSONConfig = JSONConfig.defaultConfig): String {
-        return when (obj) {
-            null -> "null"
-            else -> buildString(config.stringifyInitialSize) {
-                appendJSON(kType, obj, config)
-            }
-        }
-    }
+    fun stringify(kType: KType, obj: Any?, config: JSONConfig = JSONConfig.defaultConfig): String = if (obj == null)
+        "null"
+    else
+        buildString(config.stringifyInitialSize) { appendJSON(kType, obj, config) }
 
     /**
      * Append the serialized form of an object to an [Appendable] in JSON, specifying the [KType].
@@ -70,29 +64,10 @@ object JSONStringify {
      * Append the serialized form of an object to an [Appendable] in JSON, specifying the [KType].
      */
     fun Appendable.appendJSON(kType: KType, obj: Any?, config: JSONConfig = JSONConfig.defaultConfig) {
-        appendJSON(kType, obj, config, mutableListOf())
-    }
-
-    internal fun Appendable.appendJSON(
-        kType: KType,
-        obj: Any?,
-        config: JSONConfig,
-        references: MutableList<Any>,
-    ) {
         when (obj) {
             null -> append("null")
             is JSONValue -> obj.appendTo(this)
-            in references -> throw JSONKotlinException("Circular reference to ${obj::class.simpleName}")
-            else -> {
-                references.add(obj)
-                try {
-                    val serializer = Serializer.findSerializer(kType, config)
-                    serializer.appendTo(this, obj, config, references)
-                }
-                finally {
-                    references.removeLast()
-                }
-            }
+            else -> Serializer.findSerializer(kType, config).appendTo(this, obj, config, mutableListOf(obj))
         }
     }
 
