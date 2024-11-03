@@ -122,6 +122,12 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
     /** Switch to control whether `kjson-ktor` uses streamed output */
     var streamOutput = defaultStreamOutput
 
+    /** Switch to disable use of `kotlinx.coroutines.channels.Channel` (if optional library not included */
+    var ignoreChannel = false
+
+    /** Switch to disable use of `kotlinx.coroutines.flow.Flow` (if optional library not included */
+    var ignoreFlow = false
+
     private val fromJSONMap: MutableMap<KType, FromJSONMapping> = LinkedHashMap()
 
     private val toJSONMap: MutableMap<KType, ToJSONMapping> = LinkedHashMap()

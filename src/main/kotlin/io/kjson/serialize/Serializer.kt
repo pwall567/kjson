@@ -460,20 +460,34 @@ sealed interface Serializer<in T : Any> {
 
             // is it a Flow?
 
-            if (kClass.isSubclassOf(Flow::class)) {
-                val itemType = JSONDeserializer.getTypeParam(kType.arguments).applyTypeParameters(kType)
-                return FlowSerializer(
-                    itemSerializer = findSerializer(itemType, config),
-                ) as Serializer<TT>
+            if (!config.ignoreFlow) {
+                try {
+                    if (kClass.isSubclassOf(Flow::class)) {
+                        val itemType = JSONDeserializer.getTypeParam(kType.arguments).applyTypeParameters(kType)
+                        return FlowSerializer(
+                            itemSerializer = findSerializer(itemType, config),
+                        ) as Serializer<TT>
+                    }
+                }
+                catch (e: NoClassDefFoundError) {
+                    config.ignoreFlow = true
+                }
             }
 
             // is it a Channel?
 
-            if (kClass.isSubclassOf(Channel::class)) {
-                val itemType = JSONDeserializer.getTypeParam(kType.arguments).applyTypeParameters(kType)
-                return ChannelSerializer(
-                    itemSerializer = findSerializer(itemType, config),
-                ) as Serializer<TT>
+            if (!config.ignoreChannel) {
+                try {
+                    if (kClass.isSubclassOf(Channel::class)) {
+                        val itemType = JSONDeserializer.getTypeParam(kType.arguments).applyTypeParameters(kType)
+                        return ChannelSerializer(
+                            itemSerializer = findSerializer(itemType, config),
+                        ) as Serializer<TT>
+                    }
+                }
+                catch (e: NoClassDefFoundError) {
+                    config.ignoreChannel = true
+                }
             }
 
             // is it a BaseStream?
