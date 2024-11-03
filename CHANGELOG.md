@@ -2,7 +2,12 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [9.0] - 2024-10-09
+## [9.1] - 2024-11-03
+### Changed
+- `Serializer`, `JSONConfig`: make use of `Channel` amd `Flow` conditional (library is optional)
+- `Serializer`: minor fix in serialization of Java classes
+
+## [9.0] - 2024-11-03
 ### Changed
 - `JSONDeserializer`, `deserialize` classes, `JSONConfig`: major restructure of user class deserialization
 
