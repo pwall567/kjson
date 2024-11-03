@@ -683,7 +683,7 @@ sealed interface Serializer<in T : Any> {
             val jClass = kClass.java
             val propertyDescriptors = mutableListOf<ObjectSerializer.PropertyDescriptor<Any>>()
             val classHierarchy = getJavaClassHierarchy(jClass)
-            val includeAll = config.includeNullFields(kClass)
+            val includeAll = config.includeNullFields(jClass)
             while (classHierarchy.isNotEmpty()) {
                 val methods = classHierarchy.removeFirst().declaredMethods
                 for (method in methods) {
