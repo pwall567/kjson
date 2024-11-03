@@ -173,10 +173,6 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
         return deserializerMap[targetType] as Deserializer<Any>?
     }
 
-    internal fun <T : Any> addDeserializer(targetClass: KClass<T>, deserializer: Deserializer<T> ) {
-        deserializerMap[targetClass] = deserializer
-    }
-
     internal fun <T : Any> addDeserializer(type: KType, deserializer: Deserializer<T> ) {
         deserializerMap[type] = deserializer
     }
