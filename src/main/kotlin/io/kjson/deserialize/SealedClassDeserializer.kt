@@ -73,7 +73,7 @@ class SealedClassDeserializer<T : Any>(
 
     companion object {
 
-        fun <TT : Any> createSealedClassDeserializer(
+        fun <TT : Any> create(
             resultClass: KClass<TT>,
             config: JSONConfig,
             references: MutableList<KType>,
@@ -82,7 +82,7 @@ class SealedClassDeserializer<T : Any>(
                     config.sealedClassDiscriminator
             val subClassMap = resultClass.sealedSubclasses.associate { subClass ->
                 subClass.identifierName() to (config.subClassDeserializer(subClass, references) ?:
-                        throw DeserializationException("Can't deserialize ${resultClass.simpleName}"))
+                        throw cantDeserializeException(resultClass.simpleName ?: "sealed class"))
             }
             val removeDiscriminator = findField(resultClass.members, discriminatorName, config) == null
             return SealedClassDeserializer(resultClass, discriminatorName, removeDiscriminator, subClassMap)

@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [9.0] - 2024-10-09
+### Changed
+- `JSONDeserializer`, `deserialize` classes, `JSONConfig`: major restructure of user class deserialization
+
 ## [8.3] - 2024-09-07
 ### Changed
 - `JSONDeserializer`, `Serializer`: fixed bug in serializing nested generic classes

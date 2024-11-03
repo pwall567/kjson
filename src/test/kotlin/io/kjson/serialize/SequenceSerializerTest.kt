@@ -82,8 +82,6 @@ class SequenceSerializerTest {
         coCapture.toString() shouldBe """["$uuidString1","$uuidString2"]"""
     }
 
-    // TODO error cases
-
     companion object {
 
         @Suppress("ConstPropertyName")

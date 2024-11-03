@@ -105,6 +105,4 @@ class PseudoMapSerializerTest {
         coCapture.toString() shouldBe """[[123,"alpha"],[456,"beta"],[789,"gamma"]]"""
     }
 
-    // TODO more tests, including error cases
-
 }

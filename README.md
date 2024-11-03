@@ -14,16 +14,17 @@ dependency specifications and the `import` statements.
 This document provides introductory information on the `kjson` library; fuller information is available in the
 [User Guide](USERGUIDE.md).
 
-**IMPORTANT**
+**IMPORTANT:**
 Version 5.0 introduced changes to the API for deserialization which may be breaking changes for some users (and version
-6.0 made further changes of a similar nature).
-This document describes the API for version 6.0; see [`kjson` 6](KJSON6.md) for further details, including the reasons
-behind the changes.
+6.0 included further changes of a similar nature).
+This document describes the API for version 6.0 and subsequent versions; see [`kjson` 6](KJSON6.md) for further details,
+including the reasons behind the changes.
 
 Also, version 7.0 introduced changes to custom serialization and deserialization; see the
 [Custom Serialization and Deserialization](CUSTOM.md) guide for more information.
 
-Version 8.0 is the result of a major restructuring of the library.
+Version 8.0 is the result of a major restructuring of the library, primarily for performance reasons (and version 9.0
+adds further changes along the same lines).
 See [`kjson` 8](KJSON8.md) for more information.
 
 ## Background
@@ -270,25 +271,25 @@ See the [Custom Serialization and Deserialization](CUSTOM.md) guide for more inf
 
 ## Dependency Specification
 
-The latest version of the library is 8.3, and it may be obtained from the Maven Central repository.
+The latest version of the library is 9.0, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>8.3</version>
+      <version>9.0</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:8.3'
+    implementation 'io.kjson:kjson:9.0'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:8.3")
+    implementation("io.kjson:kjson:9.0")
 ```
 
 Peter Wall
 
-2024-09-07
+2024-10-31

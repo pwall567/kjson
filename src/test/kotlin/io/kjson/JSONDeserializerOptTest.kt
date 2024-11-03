@@ -31,6 +31,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.test.expect
 import kotlin.test.fail
+
 import io.kjson.optional.Opt
 import io.kjson.testclasses.OptComplexData
 import io.kjson.testclasses.OptData

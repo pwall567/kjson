@@ -25,63 +25,40 @@
 
 package io.kjson.deserialize
 
-import kotlin.reflect.KClass
-
-import io.kjson.JSONDeserializer.displayList
-import io.kjson.JSONObject
 import io.kjson.JSONValue
 
 class ClassMultiConstructorDeserializer<T : Any>(
-    private val resultClass: KClass<T>,
-    private val constructorDescriptors: List<ConstructorDescriptor<T>>,
+    private val constructorDescriptors: List<ConstructorDescriptor<T>>, // size must be > 1
 ) : Deserializer<T> {
 
-    override fun deserialize(json: JSONValue?): T? = when (json) {
-        null -> null
-        is JSONObject -> {
-            findBestConstructor(json)?.let {
-                return it.instantiate(json)
+    override fun deserialize(json: JSONValue?): T? {
+        if (json == null)
+            return null
+        var bestMatch = constructorDescriptors[0]
+        var bestMatchValue = bestMatch.matches(json)
+        for (i in 1 until constructorDescriptors.size) {
+            val contender = constructorDescriptors[i]
+            val contenderMatchValue = contender.matches(json)
+            if (contenderMatchValue > bestMatchValue) {
+                bestMatch = contender
+                bestMatchValue = contenderMatchValue
             }
-            val resultName = resultClass.qualifiedName
-            if (constructorDescriptors.size == 1) {
-                val missing = constructorDescriptors[0].parameterDescriptors.filter {
-                    !it.ignore && !json.containsKey(it.propertyName)
-                }.map {
-                    it.propertyName
+        }
+        if (bestMatchValue < 0)
+            throw DeserializationException {
+                "No matching constructor for ${constructorDescriptors[0].targetName} from ${json.errorDisplay()}"
+            }
+        if (bestMatchValue == 0) {
+            try {
+                return bestMatch.instantiate(json)
+            }
+            catch (_: DeserializationException) {
+                throw DeserializationException {
+                    "No matching constructor for ${constructorDescriptors[0].targetName} from ${json.errorDisplay()}"
                 }
-                throw DeserializationException("Can't create $resultName; missing: ${missing.displayList()}")
-            }
-            val propMessage = when {
-                json.isNotEmpty() -> json.keys.displayList()
-                else -> "none"
-            }
-            throw DeserializationException("Can't locate public constructor for $resultName; properties: $propMessage")
-        }
-        else -> typeError("object")
-    }
-
-    private fun findBestConstructor(json: JSONObject): ConstructorDescriptor<T>? {
-        var bestSoFar: ConstructorDescriptor<T>? = null
-        var numMatching = -1
-        for (constructorDescriptor in constructorDescriptors) {
-            val n = findMatchingParameters(constructorDescriptor.parameterDescriptors, json)
-            if (n > numMatching) {
-                bestSoFar = constructorDescriptor
-                numMatching = n
             }
         }
-        return bestSoFar
-    }
-
-    private fun findMatchingParameters(parameterDescriptors: List<ParameterDescriptor<*>>, json: JSONObject): Int {
-        var n = 0
-        for (parameterDescriptor in parameterDescriptors) {
-            when {
-                json.containsKey(parameterDescriptor.propertyName) -> n++
-                !parameterDescriptor.optional -> return -1
-            }
-        }
-        return n
+        return bestMatch.instantiate(json)
     }
 
 }

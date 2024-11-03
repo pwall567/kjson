@@ -1,5 +1,5 @@
 /*
- * @(#) JavaConstructorDescriptor.kt
+ * @(#) KotlinSingleArgConstructorDescriptor.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
  * Copyright (c) 2024 Peter Wall
@@ -25,38 +25,42 @@
 
 package io.kjson.deserialize
 
-import java.lang.reflect.Constructor
+import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
+
 import java.lang.reflect.InvocationTargetException
 
+import io.kjson.JSONDeserializerFunctions.callWithSingle
 import io.kjson.JSONValue
 
-abstract class JavaConstructorDescriptor<T : Any>(
-    val resultClass: Class<T>,
-    private val constructor: Constructor<T>,
-): ConstructorDescriptor<T> {
+class KotlinSingleArgConstructorDescriptor<T : Any>(
+    val resultClass: KClass<T>,
+    val constructor: KFunction<T>,
+    val deserializer: Deserializer<*>,
+    val matchFunction: (JSONValue) -> Boolean
+) : ConstructorDescriptor<T> {
 
-    fun invokeConstructor(arguments: List<Any?>): T {
-        try {
-            return constructor.newInstance(*arguments.toTypedArray())
-        }
-        catch (e: InvocationTargetException) {
-            errorDeserializing(e.targetException ?: e)
-        }
-        catch (e: Exception) {
-            errorDeserializing(e)
-        }
+    override val targetName: String
+        get() = "class ${resultClass.qualifiedName}"
+
+    override val parameterDescriptors: List<ParameterDescriptor<*>>
+        get() = emptyList()
+
+    override fun instantiate(json: JSONValue): T = try {
+        constructor.callWithSingle(deserializer.deserialize(json))
+    } catch (ite: InvocationTargetException) {
+        val cause = ite.targetException
+        throw DeserializationException(
+            text = "Error deserializing $targetName - " + (cause?.message ?: "InvocationTargetException"),
+            underlying = cause ?: ite,
+        )
+    } catch (e: Exception) {
+        throw DeserializationException(
+            text = "Error deserializing $targetName - ${e.message ?: e::class.simpleName}",
+            underlying = e,
+        )
     }
 
-    private fun errorDeserializing(e: Throwable): Nothing {
-        throw DeserializationException(underlying = e) { json: JSONValue? ->
-            "Error deserializing $targetName from ${json.errorDisplay()}"
-        }
-    }
-
-    open fun throwDeserializationException(e: Throwable? = null): Nothing {
-        throw DeserializationException(underlying = e) { json: JSONValue? ->
-            "Error deserializing ${json.errorDisplay()} as Java class ${resultClass.canonicalName}"
-        }
-    }
+    override fun matches(json: JSONValue): Int = if (matchFunction(json)) 1 else -1
 
 }

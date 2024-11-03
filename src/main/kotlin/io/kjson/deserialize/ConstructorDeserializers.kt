@@ -26,20 +26,9 @@
 package io.kjson.deserialize
 
 import kotlin.reflect.KCallable
-import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KProperty
 
-import io.kjson.JSON.asByteOr
-import io.kjson.JSON.asDecimalOr
-import io.kjson.JSON.asIntOr
-import io.kjson.JSON.asLongOr
-import io.kjson.JSON.asShortOr
-import io.kjson.JSON.asStringOr
-import io.kjson.JSON.asUByteOr
-import io.kjson.JSON.asUIntOr
-import io.kjson.JSON.asULongOr
-import io.kjson.JSON.asUShortOr
 import io.kjson.JSONConfig
 import io.kjson.JSONDeserializer.findDeserializer
 import io.kjson.JSONDeserializerFunctions.callWithSingle
@@ -47,146 +36,6 @@ import io.kjson.JSONObject
 import io.kjson.JSONValue
 import net.pwall.util.ImmutableMap
 import net.pwall.util.ImmutableMapEntry
-
-class StringConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T = constructor.callWithSingle(json.asStringOr { typeError("String") })
-
-}
-
-class IntConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T = constructor.callWithSingle(json.asIntOr { typeError("Int") })
-
-}
-
-class LongConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T = constructor.callWithSingle(json.asLongOr { typeError("Long") })
-
-}
-
-class ShortConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T = constructor.callWithSingle(json.asShortOr { typeError("Short") })
-
-}
-
-class ByteConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T = constructor.callWithSingle(json.asByteOr { typeError("Byte") })
-
-}
-
-class UIntConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T = constructor.callWithSingle(json.asUIntOr { typeError("UInt") })
-
-}
-
-class ULongConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T = constructor.callWithSingle(json.asULongOr { typeError("ULong") })
-
-}
-
-class UShortConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T = constructor.callWithSingle(json.asUShortOr { typeError("UShort") })
-
-}
-
-class UByteConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T = constructor.callWithSingle(json.asUByteOr { typeError("UByte") })
-
-}
-
-class DoubleConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T =
-        constructor.callWithSingle(json.asDecimalOr { typeError("Double") }.toDouble())
-
-}
-
-class FloatConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T =
-        constructor.callWithSingle(json.asDecimalOr { typeError("Float") }.toFloat())
-
-}
-
-class BigIntegerConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T =
-        constructor.callWithSingle(json.asDecimalOr { typeError("BigInteger") }.toBigInteger())
-
-}
-
-class BigDecimalConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-): Deserializer<T> {
-
-    override fun deserialize(json: JSONValue?): T =
-        constructor.callWithSingle(json.asDecimalOr { typeError("BigDecimal") })
-
-}
-
-class ArrayConstructorDeserializer<T : Any>(
-    private val constructor: KFunction<T>,
-    itemClass: KClass<Any>,
-    itemDeserializer: Deserializer<Any>,
-    itemNullable: Boolean,
-): Deserializer<T> {
-
-    private val arrayDeserializer = ArrayDeserializer(itemClass, itemDeserializer, itemNullable)
-
-    override fun deserialize(json: JSONValue?): T? =
-        arrayDeserializer.deserialize(json)?.let { constructor.callWithSingle(it) }
-
-}
-
-class ListConstructorDeserializer<T>(
-    private val constructor: KFunction<T>,
-    itemDeserializer: Deserializer<Any>,
-    itemNullable: Boolean,
-    private val listNullable: Boolean,
-): Deserializer<T> {
-
-    private val listDeserializer = CollectionDeserializer(itemDeserializer, itemNullable) { n -> ArrayList(n) }
-
-    override fun deserialize(json: JSONValue?): T? {
-        val list = listDeserializer.deserialize(json)
-        if (list == null && !listNullable)
-            throw DeserializationException("List may not be null")
-        return constructor.callWithSingle(list)
-    }
-
-}
 
 class MapConstructorDeserializer<T>(
     private val constructor: KFunction<T>,

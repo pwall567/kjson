@@ -27,6 +27,8 @@ package io.kjson
 
 import kotlin.reflect.KCallable
 import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
+import kotlin.reflect.KParameter
 import kotlin.reflect.KProperty
 import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
@@ -38,7 +40,6 @@ import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.starProjectedType
-import kotlin.reflect.full.staticFunctions
 
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Type
@@ -48,67 +49,58 @@ import java.util.HashMap
 import java.util.LinkedList
 import java.util.stream.Stream
 
-import io.kjson.JSON.displayValue
 import io.kjson.JSONDeserializerFunctions.displayName
 import io.kjson.JSONDeserializerFunctions.findAllInClassFromJSON
 import io.kjson.JSONDeserializerFunctions.findSingleParameterConstructor
-import io.kjson.JSONDeserializerFunctions.hasArrayParameter
-import io.kjson.JSONDeserializerFunctions.hasNumberParameter
+import io.kjson.JSONDeserializerFunctions.isPublic
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.deserialize.AnyDeserializer
-import io.kjson.deserialize.ArrayConstructorDeserializer
 import io.kjson.deserialize.ArrayDeserializer
-import io.kjson.deserialize.BigDecimalConstructorDeserializer
-import io.kjson.deserialize.BigIntegerConstructorDeserializer
-import io.kjson.deserialize.ByteConstructorDeserializer
+import io.kjson.deserialize.BigDecimalDeserializer
+import io.kjson.deserialize.BigIntegerDeserializer
+import io.kjson.deserialize.BooleanDeserializer
+import io.kjson.deserialize.ByteDeserializer
 import io.kjson.deserialize.ClassMultiConstructorDeserializer
+import io.kjson.deserialize.KotlinSingleArgConstructorDescriptor
 import io.kjson.deserialize.ClassSingleConstructorDeserializer
 import io.kjson.deserialize.ConfigFromJSONDeserializer
+import io.kjson.deserialize.ConstructorDescriptor
+import io.kjson.deserialize.KotlinConstructorDescriptor
 import io.kjson.deserialize.Deserializer
-import io.kjson.deserialize.DoubleConstructorDeserializer
 import io.kjson.deserialize.EnumDeserializer
 import io.kjson.deserialize.FieldDescriptor
-import io.kjson.deserialize.FloatConstructorDeserializer
 import io.kjson.deserialize.InClassMultiFromJSONDeserializer
-import io.kjson.deserialize.IntConstructorDeserializer
 import io.kjson.deserialize.KotlinFieldDescriptor
-import io.kjson.deserialize.ListConstructorDeserializer
-import io.kjson.deserialize.ConstructorDescriptor.Companion.createConstructorDescriptor
 import io.kjson.deserialize.DeferredDeserializer
 import io.kjson.deserialize.DelegatingMapConstructorDeserializer
 import io.kjson.deserialize.DeserializationException
+import io.kjson.deserialize.DoubleDeserializer
+import io.kjson.deserialize.FloatDeserializer
 import io.kjson.deserialize.IntDeserializer
-import io.kjson.deserialize.JavaClassDeserializer.Companion.createJavaClassDeserializer
-import io.kjson.deserialize.JavaClassDeserializer.Companion.getJavaFieldDescriptors
-import io.kjson.deserialize.JavaNamedArgConstructorDescriptor
-import io.kjson.deserialize.JavaNoArgConstructorDescriptor
-import io.kjson.deserialize.JavaParameterDescriptor
-import io.kjson.deserialize.JavaSingleArgConstructorDescriptor
-import io.kjson.deserialize.LongConstructorDeserializer
+import io.kjson.deserialize.JavaClassDeserializerFunctions.createJavaClassDeserializer
+import io.kjson.deserialize.KotlinParameterDescriptor
 import io.kjson.deserialize.LongDeserializer
 import io.kjson.deserialize.MapConstructorDeserializer
 import io.kjson.deserialize.ObjectDeserializer
 import io.kjson.deserialize.OptDeserializer
-import io.kjson.deserialize.PairDeserializer.Companion.createPairDeserializer
-import io.kjson.deserialize.SealedClassDeserializer.Companion.createSealedClassDeserializer
-import io.kjson.deserialize.ShortConstructorDeserializer
-import io.kjson.deserialize.StringConstructorDeserializer
+import io.kjson.deserialize.PairDeserializer
+import io.kjson.deserialize.SealedClassDeserializer
+import io.kjson.deserialize.ShortDeserializer
 import io.kjson.deserialize.StringDeserializer
-import io.kjson.deserialize.TripleDeserializer.Companion.createTripleDeserializer
-import io.kjson.deserialize.UByteConstructorDeserializer
-import io.kjson.deserialize.UIntConstructorDeserializer
-import io.kjson.deserialize.ULongConstructorDeserializer
-import io.kjson.deserialize.UShortConstructorDeserializer
+import io.kjson.deserialize.TripleDeserializer
+import io.kjson.deserialize.UByteDeserializer
+import io.kjson.deserialize.UIntDeserializer
+import io.kjson.deserialize.ULongDeserializer
+import io.kjson.deserialize.UShortDeserializer
 import io.kjson.deserialize.createCollectionDeserializer
 import io.kjson.deserialize.createMapDeserializer
 import io.kjson.deserialize.createSequenceDeserializer
 import io.kjson.deserialize.createStreamDeserializer
+import io.kjson.deserialize.errorDisplay
 import io.kjson.optional.Opt
 import io.kjson.pointer.JSONPointer
+import io.kjson.pointer.find
 import io.kjson.util.isKotlinClass
-import io.kjson.util.isPublic
-import java.beans.ConstructorProperties
-import java.lang.reflect.Constructor
 
 /**
  * Reflection-based JSON deserialization for Kotlin.
@@ -225,7 +217,7 @@ object JSONDeserializer {
     ): T? {
 
         val deserializer = config.findDeserializer(resultClass) ?:
-                determineDeserializer(resultType, config, references = mutableListOf(), json = json)
+                determineDeserializer(resultType, config, references = mutableListOf())
 
         if (deserializer != null) {
             try {
@@ -235,22 +227,23 @@ object JSONDeserializer {
                 return result
             }
             catch (de: DeserializationException) {
-                fatal(de.messageFunction(resultType, json), de.pointer, de.underlying)
+                fatal(de.messageFunction(de.pointer.find(json)), de.pointer, de.underlying)
             }
             catch (je: JSONException) {
                 throw je
             }
             catch (ite: InvocationTargetException) {
+                val cause = ite.targetException
                 fatal(
-                    text = "Error deserializing $resultType - " + (ite.cause?.message ?: "InvocationTargetException"),
-                    cause = ite.cause ?: ite,
+                    text = "Error deserializing $resultType - " + (cause?.message ?: "InvocationTargetException"),
+                    cause = cause ?: ite,
                 )
             }
             catch (e: Exception) {
                 fatal("Error deserializing $resultType - ${e.message ?: e::class.simpleName}", cause = e)
             }
         }
-        fatal("Can't deserialize ${json.displayValue()} as ${resultClass.qualifiedName}")
+        fatal("Can't deserialize ${json.errorDisplay()} as ${resultClass.qualifiedName}")
     }
 
     @Suppress("unchecked_cast")
@@ -258,17 +251,15 @@ object JSONDeserializer {
         resultType: KType,
         config: JSONConfig,
         references: MutableList<KType>,
-        json: JSONValue? = null,
     ): Deserializer<T>? {
         config.findDeserializer(resultType)?.let { return it as Deserializer<T> }
-        return determineDeserializer(resultType, config, references, json)
+        return determineDeserializer(resultType, config, references)
     }
 
     internal fun <T : Any> determineDeserializer(
         resultType: KType,
         config: JSONConfig,
         references: MutableList<KType>,
-        json: JSONValue? = null,
     ): Deserializer<T>? {
 
         if (resultType in references)
@@ -281,12 +272,6 @@ object JSONDeserializer {
 
             determineDeserializerForCacheableTypes<T>(resultType, config, references)?.let {
                 return it.andStore(resultType, config)
-            }
-
-            // deserializers dependent on input JSON type? (not cacheable)
-
-            if (json != null) {
-                determineDeserializerForSpecificJSON<T>(resultType, config, references, json)?.let { return it }
             }
 
             // user classes
@@ -331,9 +316,7 @@ object JSONDeserializer {
         // is it an enum?
 
         if (resultClass.isSubclassOf(Enum::class))
-            resultClass.staticFunctions.find { it.name == "valueOf" }?.let { valueOfFunction ->
-                return (EnumDeserializer(valueOfFunction) as Deserializer<T>)
-            }
+            return EnumDeserializer(resultClass) as Deserializer<T>
 
         // is it an Array?
 
@@ -392,12 +375,12 @@ object JSONDeserializer {
         // is it a Pair?
 
         if (resultClass == Pair::class)
-            return createPairDeserializer<Any, Any>(resultType, config, references) as Deserializer<T>?
+            return PairDeserializer.create<Any, Any>(resultType, config, references) as Deserializer<T>?
 
         // is it a Triple?
 
         if (resultClass == Triple::class)
-            return createTripleDeserializer<Any, Any, Any>(resultType, config, references) as Deserializer<T>?
+            return TripleDeserializer.create<Any, Any, Any>(resultType, config, references) as Deserializer<T>?
 
         // is it an Opt?
 
@@ -410,7 +393,7 @@ object JSONDeserializer {
         // is it a sealed class
 
         if (resultClass.isSealed)
-            return createSealedClassDeserializer(resultClass, config, references)
+            return SealedClassDeserializer.create(resultClass, config, references)
 
         // is it a java.util.stream.Stream?
 
@@ -421,80 +404,7 @@ object JSONDeserializer {
     }
 
     @Suppress("unchecked_cast")
-    private fun <T : Any> determineDeserializerForSpecificJSON(
-        resultType: KType,
-        config: JSONConfig,
-        references: MutableList<KType>,
-        json: JSONValue,
-    ): Deserializer<T>? {
-
-        val resultClass = resultType.classifier
-        if (resultClass !is KClass<*>)
-            return null
-        resultClass as KClass<T>
-
-        // is the JSON a string, and does the class have a single parameter constructor taking String?
-
-        if (json is JSONString) {
-            resultClass.findSingleParameterConstructor(String::class)?.let { constructor ->
-                return StringConstructorDeserializer(constructor)
-            }
-        }
-
-        // is the JSON a number, with a single parameter constructor taking a Number?
-
-        if (json is JSONNumber) {
-            resultClass.constructors.singleOrNull { it.hasNumberParameter() }?.let {
-                when (it.parameters[0].type.classifier) {
-                    Int::class -> if (json.isInt()) return IntConstructorDeserializer(it)
-                    Long::class -> if (json.isLong()) return LongConstructorDeserializer(it)
-                    Short::class -> if (json.isShort()) return ShortConstructorDeserializer(it)
-                    Byte::class -> if (json.isByte()) return ByteConstructorDeserializer(it)
-                    UInt::class -> if (json.isUInt()) return UIntConstructorDeserializer(it)
-                    ULong::class -> if (json.isULong()) return ULongConstructorDeserializer(it)
-                    UShort::class -> if (json.isUShort()) return UShortConstructorDeserializer(it)
-                    UByte::class -> if (json.isUByte()) return UByteConstructorDeserializer(it)
-                    Double::class -> return DoubleConstructorDeserializer(it)
-                    Float::class -> return FloatConstructorDeserializer(it)
-                    BigInteger::class -> if (json.isIntegral()) return BigIntegerConstructorDeserializer(it)
-                    BigDecimal::class -> return BigDecimalConstructorDeserializer(it)
-                }
-            }
-        }
-
-        // likewise for JSON array
-
-        if (json is JSONArray) {
-            resultClass.constructors.singleOrNull { it.hasArrayParameter() }?.let { constructor ->
-                val arrayType = constructor.parameters[0].type
-                val itemType = getTypeParam(arrayType).applyTypeParameters(resultType)
-                val itemClass = itemType.classifier as? KClass<Any> ?:
-                        throw DeserializationException("Can't determine array item type")
-                val itemDeserializer = findDeserializer<Any>(itemType, config, references)
-                if (itemDeserializer != null)
-                    return ArrayConstructorDeserializer(
-                        constructor = constructor,
-                        itemClass = itemClass,
-                        itemDeserializer = itemDeserializer,
-                        itemNullable = itemType.isMarkedNullable,
-                    )
-            }
-            resultClass.findSingleParameterConstructor(List::class)?.let { constructor ->
-                val listType = constructor.parameters[0].type
-                val itemType = getTypeParam(listType).applyTypeParameters(resultType)
-                val itemDeserializer = findDeserializer<Any>(itemType, config, references)
-                if (itemDeserializer != null)
-                    return ListConstructorDeserializer(
-                        constructor = constructor,
-                        itemDeserializer = itemDeserializer,
-                        itemNullable = itemType.isMarkedNullable,
-                        listNullable = listType.isMarkedNullable,
-                    )
-            }
-        }
-
-        return null
-    }
+    private fun <T : Enum<T>> KClass<*>.toEnumClass(): Class<Enum<T>> = java as Class<Enum<T>>
 
     @Suppress("unchecked_cast")
     private fun <T : Any> determineDeserializerForUserTypes(
@@ -553,111 +463,137 @@ object JSONDeserializer {
 
         // is it a Java class?
 
-        if (!resultClass.isKotlinClass()) {
-            val resultJavaClass = resultClass.java
-            val constructorDescriptors = resultJavaClass.constructors.filter {
-                it.isPublic()
-            }.mapNotNull {
-                val parameterTypes = it.parameterTypes
-                when (parameterTypes.size) {
-                    0 -> JavaNoArgConstructorDescriptor(
-                        resultClass = resultJavaClass,
-                        constructor = it as Constructor<T>,
-                        fieldDescriptors = getJavaFieldDescriptors(resultJavaClass, config, references),
-                        allowExtra = config.allowExtra ||
-                                config.hasAllowExtraPropertiesAnnotation(resultClass.annotations),
-                    )
-                    1 -> {
-                        val deserializer = when (parameterTypes[0]) {
-                            java.lang.String::class.java -> StringDeserializer
-                            java.lang.Integer::class.java,
-                            java.lang.Integer.TYPE -> IntDeserializer
-                            java.lang.Long::class.java,
-                            java.lang.Long.TYPE -> LongDeserializer
-                            else -> fatal("Can't deserialize using single-arg constructor other than String or Int or Long")
-                        }
-                        JavaSingleArgConstructorDescriptor(
-                            resultClass = resultJavaClass,
-                            constructor = it as Constructor<T>,
-                            deserializer = deserializer,
-                        )
-                    }
-                    else -> {
-                        it.getAnnotation(ConstructorProperties::class.java)?.value?.let { parameterNames ->
-                            // TODO check that parameterNames.length == parameterTypes.length
-                            JavaNamedArgConstructorDescriptor(
-                                resultClass = resultJavaClass,
-                                constructor = it as Constructor<T>,
-                                parameters = parameterTypes.indices.map { index ->
-                                    JavaParameterDescriptor(
-                                        name = parameterNames[index],
-                                        deserializer = findDeserializer<Any>(
-                                            resultType = parameterTypes[index].toKType(),
-                                            config = config,
-                                            references = references,
-                                        ) as Deserializer,
-                                        ignore = config.hasIgnoreAnnotation(it.parameterAnnotations[0].asList()),
-                                    )
-                                },
-                                fieldDescriptors = emptyList(),
-                                allowExtra = config.allowExtra ||
-                                        config.hasAllowExtraPropertiesAnnotation(resultClass.annotations),
-                            )
-                        }
-                    }
-                }
-            }
-            // TODO The possibilities are:
-            //   1. A single no-arg constructor (as per current code)
-            //   2. A single constructor taking a single parameter
-            //   3. A single constructor with a @java.beans.ConstructorProperties annotation
-            //   4. A combination of the above
-            when (constructorDescriptors.size) {
-                0 -> return null
-                1 -> {
-
-                }
-                else -> {
-
-                }
-            }
-            return createJavaClassDeserializer(resultType, resultClass, config, references)
-        }
+        if (!resultClass.isKotlinClass())
+            return createJavaClassDeserializer(resultClass, resultType, config, references)
 
         // deserialize using constructor
 
-        val publicConstructors = resultClass.constructors.filter {
-            it.visibility == KVisibility.PUBLIC
-        }.mapNotNull {
-            createConstructorDescriptor(
-                constructor = it,
-                resultType = resultType,
-                resultClass = resultClass,
-                fields = resultClass.getFields(resultType, config, references),
-                config = config,
-                references = references,
-            )
+        val constructorDescriptors = ConstructorDescriptorList(resultClass)
+        val fields = resultClass.getFields(resultType, config, references)
+        for (constructor in resultClass.constructors) {
+            if (constructor.isPublic() && constructor.parameters.none {
+                it.name == null || it.kind != KParameter.Kind.VALUE
+            }) {
+                if (constructor.hasSingleParameter())
+                    constructorDescriptors.addSingleParameterDescriptors(constructor, resultType, config, references)
+                val parameterDescriptors = mutableListOf<KotlinParameterDescriptor<*>>()
+                for (parameter in constructor.parameters) {
+                    val parameterDescriptor = KotlinParameterDescriptor.create<Any>(
+                        parameter = parameter,
+                        resultType = resultType,
+                        config = config,
+                        references = references,
+                    )
+                    if (parameterDescriptor == null)
+                        return null
+                    parameterDescriptors.add(parameterDescriptor)
+                }
+                constructorDescriptors.add(
+                    KotlinConstructorDescriptor(
+                        resultType = resultType,
+                        constructor = constructor,
+                        parameterDescriptors = parameterDescriptors.ifEmpty { emptyList() },
+                        fieldDescriptors = fields.filter { f ->
+                            parameterDescriptors.none { p -> f.propertyName == p.propertyName  }
+                        },
+                        allowExtra = config.allowExtra ||
+                                config.hasAllowExtraPropertiesAnnotation(resultClass.annotations),
+                    )
+                )
+            }
         }
-        if (publicConstructors.isNotEmpty()) {
-            return if (publicConstructors.size == 1) {
+        if (constructorDescriptors.isNotEmpty()) {
+            return if (constructorDescriptors.size == 1) {
                 ClassSingleConstructorDeserializer(
-                    constructorDescriptor = publicConstructors[0],
-                ).andStore(resultClass, config)
+                    constructorDescriptor = constructorDescriptors[0],
+                )
             } else {
                 ClassMultiConstructorDeserializer(
-                    resultClass = resultClass,
-                    constructorDescriptors = publicConstructors,
-                ).andStore(resultClass, config)
+                    constructorDescriptors = constructorDescriptors,
+                )
             }
         }
 
         return null
     }
 
-    private fun <T : Any> Deserializer<T>.andStore(resultClass: KClass<T>, config: JSONConfig): Deserializer<T> {
-        if (resultClass.typeParameters.isEmpty())
-            config.addDeserializer(resultClass, this)
-        return this
+    class ConstructorDescriptorList<T : Any>(
+        val resultClass: KClass<T>,
+    ) : MutableList<ConstructorDescriptor<T>> by mutableListOf() {
+
+        @Suppress("unchecked_cast")
+        fun addSingleParameterDescriptors(
+            constructor: KFunction<T>,
+            resultType: KType,
+            config: JSONConfig,
+            references: MutableList<KType>,
+        ) {
+            val parameterType = constructor.parameters[0].type
+            if (!parameterType.isMarkedNullable) {
+                val classifier = parameterType.classifier
+                if (classifier is KClass<*>) {
+                    when (parameterType.classifier) {
+                        String::class -> add(constructor, StringDeserializer) { it is JSONString }
+                        Boolean::class -> add(constructor, BooleanDeserializer) { it is JSONBoolean }
+                        Int::class -> add(constructor, IntDeserializer) { it is JSONNumber && it.isInt() }
+                        Long::class -> add(constructor, LongDeserializer) { it is JSONNumber && it.isLong() }
+                        Short::class -> add(constructor, ShortDeserializer) { it is JSONNumber && it.isShort() }
+                        Byte::class -> add(constructor, ByteDeserializer) { it is JSONNumber && it.isByte() }
+                        UInt::class -> add(constructor, UIntDeserializer) { it is JSONNumber && it.isUInt() }
+                        ULong::class -> add(constructor, ULongDeserializer) { it is JSONNumber && it.isULong() }
+                        UShort::class -> add(constructor, UShortDeserializer) { it is JSONNumber && it.isUShort() }
+                        UByte::class -> add(constructor, UByteDeserializer) { it is JSONNumber && it.isUByte() }
+                        BigDecimal::class -> add(constructor, BigDecimalDeserializer) { it is JSONNumber }
+                        BigInteger::class -> add(constructor, BigIntegerDeserializer) {
+                            it is JSONNumber && it.isIntegral()
+                        }
+                        Double::class -> add(constructor, DoubleDeserializer) { it is JSONNumber }
+                        Float::class -> add(constructor, FloatDeserializer) { it is JSONNumber }
+                        List::class -> {
+                            val listDeserializer =
+                                    createCollectionDeserializer(parameterType, config, references) { ArrayList(it) }
+                            if (listDeserializer != null)
+                                add(constructor, listDeserializer) { it is JSONArray }
+                        }
+                    }
+                    if (classifier.java.isArray) {
+                        val itemType = getTypeParam(parameterType).applyTypeParameters(resultType)
+                        val itemClass = itemType.classifier
+                        if (itemClass is KClass<*>) {
+                            val itemDeserializer = findDeserializer<Any>(itemType, config, references)
+                            if (itemDeserializer != null) {
+                                val arrayDeserializer = ArrayDeserializer(
+                                    itemClass = itemClass as KClass<Any>,
+                                    itemDeserializer = itemDeserializer,
+                                    itemNullable = itemType.isMarkedNullable,
+                                )
+                                add(constructor, arrayDeserializer) { it is JSONArray }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        fun add(constructor: KFunction<T>, deserializer: Deserializer<*>, matchFunction: (JSONValue) -> Boolean) {
+            add(
+                KotlinSingleArgConstructorDescriptor(
+                    resultClass = resultClass,
+                    constructor = constructor,
+                    deserializer = deserializer,
+                    matchFunction = matchFunction,
+                )
+            )
+        }
+
+    }
+
+    private fun KFunction<*>.hasSingleParameter(): Boolean {
+        return when (parameters.size) {
+            0 -> false
+            1 -> true
+            else -> (1 until parameters.size).all { parameters[it].isOptional }
+        }
     }
 
     private fun <T : Any> Deserializer<T>.andStore(resultType: KType, config: JSONConfig): Deserializer<T> {
@@ -744,7 +680,7 @@ object JSONDeserializer {
     }
 
     internal fun KType.applyTypeParameters(enclosingType: KType): KType {
-        // TODO - this implementation works for simple cases, but if the class parameter is itself a parameter to
+        // TODO - this implementation works for most cases, but if the class parameter is itself a parameter to
         //    another class, it can result in a KType with a KTypeParameter, and we have no way of applying that
         //    KTypeParameter (see JSONDeserializerObjectTest)
         val typeClassifier = classifier

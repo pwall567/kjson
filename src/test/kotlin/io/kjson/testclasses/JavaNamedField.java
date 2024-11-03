@@ -1,5 +1,5 @@
 /*
- * @(#) JavaSingleArg.kt
+ * @(#) JavaNamedField.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
  * Copyright (c) 2024 Peter Wall
@@ -25,26 +25,45 @@
 
 package io.kjson.testclasses;
 
-public class JavaSingleArg {
+import io.kjson.annotation.JSONIgnore;
+import io.kjson.annotation.JSONName;
 
-    private final String str;
+public class JavaNamedField {
 
-    public JavaSingleArg(String str) {
-        this.str = str;
+    private String field1;
+    private int field2;
+
+    public String getField1() {
+        return field1;
     }
 
-    public String getStr() {
-        return str;
+    public int getField2() {
+        return field2;
+    }
+
+    @JSONName(name = "alpha")
+    public void setField1(String field1) {
+        this.field1 = field1;
+    }
+
+    @JSONIgnore
+    public void setField2(int field2) {
+        this.field2 = field2;
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof JavaSingleArg && ((JavaSingleArg)obj).str.equals(str);
+        if (this == obj)
+            return true;
+        if (!(obj instanceof JavaNamedField))
+            return false;
+        JavaNamedField otherJNF = (JavaNamedField)obj;
+        return field1.equals(otherJNF.field1) && field2 == otherJNF.field2;
     }
 
     @Override
     public int hashCode() {
-        return str.hashCode();
+        return field1.hashCode() + field2;
     }
 
 }

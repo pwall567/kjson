@@ -39,7 +39,6 @@ import kotlin.reflect.full.staticFunctions
 
 import java.lang.reflect.InvocationTargetException
 
-import io.kjson.JSON.displayValue
 import io.kjson.JSONDeserializer.deserialize
 import io.kjson.JSONDeserializerFunctions.callWithSingle
 import io.kjson.JSONDeserializerFunctions.displayName
@@ -51,6 +50,7 @@ import io.kjson.annotation.JSONIncludeAllProperties
 import io.kjson.annotation.JSONIncludeIfNull
 import io.kjson.annotation.JSONName
 import io.kjson.deserialize.Deserializer
+import io.kjson.deserialize.errorDisplay
 import io.kjson.parser.ParseOptions
 import io.kjson.pointer.JSONPointer
 import io.kjson.pointer.existsIn
@@ -377,7 +377,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
             throw je
         }
         catch (ite: InvocationTargetException) {
-            val cause = ite.cause
+            val cause = ite.targetException
             if (cause is JSONException)
                 throw cause
             fatal("Error deserializing string as $type - ${cause?.message ?: "InvocationTargetException"}",
@@ -444,10 +444,10 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
         }
         fromJSON(type) { jsonValue ->
             if (jsonValue !is JSONObject || !discriminator.existsIn(jsonValue))
-                fatal("Can't deserialize ${jsonValue.displayValue()} as $type")
+                fatal("Can't deserialize ${jsonValue.errorDisplay()} as $type")
             val discriminatorValue = deserialize(mappingClass, discriminator.find(jsonValue))
             val mapping = mappings.find { it.first == discriminatorValue } ?:
-                    fatal("Can't deserialize ${jsonValue.displayValue()} as $type, discriminator value was " +
+                    fatal("Can't deserialize ${jsonValue.errorDisplay()} as $type, discriminator value was " +
                                 discriminatorValue)
             val resultClass = mapping.second.classifier as? KClass<*> ?: fatal("Can't deserialize ${mapping.second}")
             deserialize(mapping.second, resultClass, jsonValue, this)

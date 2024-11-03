@@ -44,6 +44,9 @@ It will be helpful to have some understanding of that library when reading this 
 
 ## `JSONContext`
 
+**IMPORTANT:** `JSONContext` is now deprecated; custom serialization and deserialization functions are now invoked as
+extension functions on `JSONConfig`, as was the case prior to version 7.0.
+
 Most of the custom serialization and deserialization functions are invoked as extension functions on the `JSONContext`
 class.
 That means that the following properties and functions of `JSONContext` are available to the custom serialization /
@@ -321,4 +324,4 @@ that the parameter types themselves may be derived types of the upper bound type
 When using `fromJSONPolymorphic` to distinguish between generic types, the type parameter must be declared with an `out`
 variance.
 
-2023-10-12
+2024-10-31

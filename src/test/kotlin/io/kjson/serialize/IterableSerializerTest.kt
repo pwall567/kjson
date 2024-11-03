@@ -26,6 +26,7 @@
 package io.kjson.serialize
 
 import kotlin.test.Test
+import kotlin.test.assertNull
 import kotlinx.coroutines.runBlocking
 
 import java.util.UUID
@@ -82,7 +83,23 @@ class IterableSerializerTest {
         coCapture.toString() shouldBe """["$uuidString1","$uuidString2"]"""
     }
 
-    // TODO error cases
+    @Test fun `should serialize simple List with nulls`() {
+        val config = JSONConfig.defaultConfig
+        val list = listOf(
+            UUID.fromString(uuidString1),
+            null,
+            UUID.fromString(uuidString2),
+        )
+        val serializer = IterableSerializer(
+            itemSerializer = UUIDSerializer,
+        )
+        with(serializer.serialize(list, config, mutableListOf())) {
+            size shouldBe 3
+            this[0] shouldBe JSONString(uuidString1)
+            assertNull(this[1])
+            this[2] shouldBe JSONString(uuidString2)
+        }
+    }
 
     companion object {
 

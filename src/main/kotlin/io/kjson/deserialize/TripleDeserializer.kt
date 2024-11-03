@@ -56,7 +56,7 @@ class TripleDeserializer<F, S, T>(
 
     companion object {
 
-        fun <FF : Any, SS : Any, TT : Any> createTripleDeserializer(
+        fun <FF : Any, SS : Any, TT : Any> create(
             resultType: KType,
             config: JSONConfig,
             references: MutableList<KType>,

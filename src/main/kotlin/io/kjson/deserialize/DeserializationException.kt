@@ -25,19 +25,16 @@
 
 package io.kjson.deserialize
 
-import kotlin.reflect.KType
-
 import io.kjson.JSON.displayValue
-import io.kjson.JSONDeserializerFunctions.displayName
+import io.kjson.JSONObject
 import io.kjson.JSONValue
 import io.kjson.pointer.JSONPointer
-import io.kjson.pointer.find
 
 class DeserializationException(
     val text: String = "dynamicException",
     val pointer: JSONPointer = JSONPointer.root,
     val underlying: Throwable? = null,
-    val messageFunction: (KType, JSONValue?) -> String = { _: KType, _: JSONValue? -> text }
+    val messageFunction: (JSONValue?) -> String = { text }
 ) : Exception() {
 
     constructor(text: String, index: Int) : this(text, JSONPointer.root.child(index))
@@ -45,19 +42,35 @@ class DeserializationException(
     constructor(text: String, propertyName: String) : this(text, JSONPointer.root.child(propertyName))
 
     fun nested(pointer: JSONPointer): DeserializationException =
-        DeserializationException(text, this.pointer.withParent(pointer), underlying) {
-            resultType: KType, json: JSONValue? -> messageFunction(resultType, pointer.find(json))
-        }
+        DeserializationException(text, this.pointer.withParent(pointer), underlying, messageFunction)
 
     fun nested(name: String): DeserializationException = nested(JSONPointer.root.child(name))
-
 }
 
-val cantDeserializeException = DeserializationException { resultType: KType, _: JSONValue? ->
-    "Can't deserialize ${resultType.displayName()}"
+fun cantDeserializeException(expected: String) = DeserializationException { json: JSONValue? ->
+    "Can't deserialize ${json.errorDisplay()} as $expected"
 }
 
 fun typeException(expected: String, pointer: JSONPointer = JSONPointer.root) =
-    DeserializationException(pointer = pointer) {
-        _: KType, json: JSONValue? -> "Incorrect type, expected $expected but was ${pointer.find(json).displayValue()}"
+    DeserializationException(pointer = pointer) { json: JSONValue? ->
+        "Incorrect type, expected $expected but was ${json.errorDisplay()}"
     }
+
+fun JSONValue?.errorDisplay(maxNames: Int = 5): String = if (this is JSONObject && isNotEmpty()) buildString {
+    append('{')
+    append(' ')
+    var i = 0
+    while (true) {
+        append(this@errorDisplay[i++].name)
+        if (i >= this@errorDisplay.size)
+            break
+        append(',')
+        append(' ')
+        if (i >= maxNames) {
+            append("...")
+            break
+        }
+    }
+    append(' ')
+    append('}')
+} else displayValue()

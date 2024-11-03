@@ -29,11 +29,11 @@ and it can deserialize a node structure into an object of a specified (or implie
 
 Most users of the library will not need to know about this two-stage process (string to `JSONValue` followed by
 `JSONValue` to object, and vice versa) &mdash; first-time users will probably want to start with serializing Kotlin
-objects to string and deserializing strings to Kotlin.
+objects to string and deserializing strings to Kotlin objects.
 More complex uses are described in the sections covering serializing and deserializing to and from `JSONValue`.
 
-As a native Kotlin library, `kjson` will respect the "nullability" of any object being deserialized;
-that is to say, it will not deserialize `null` into a `String?`.
+As a native Kotlin library, `kjson` will respect the &ldquo;nullability&rdquo; of any object being deserialized;
+that is to say, it will deserialize `null` into a `String?`, but not into a `String`.
 It also has built-in support for Kotlin utility classes such as `Sequence` and `Pair`.
 
 ## Type mapping
@@ -66,6 +66,10 @@ For more information see [Custom Serialization and Deserialization](CUSTOM.md).
 | `Byte`          | number                                            |
 | `Double`        | number                                            |
 | `Float`         | number                                            |
+| `UInt`          | number                                            |
+| `ULong`         | number                                            |
+| `UShort`        | number                                            |
+| `UByte`         | number                                            |
 | `Boolean`       | boolean                                           |
 | `Array`         | array                                             |
 | `IntArray`      | array                                             |
@@ -86,7 +90,7 @@ For more information see [Custom Serialization and Deserialization](CUSTOM.md).
 | `LinkedHashSet` | array                                             |
 | `Sequence`      | array                                             |
 | `Map`           | object                                            |
-| `HashMapMap`    | object                                            |
+| `HashMap`       | object                                            |
 | `LinkedHashMap` | object                                            |
 | `Pair`          | array (of length 2)                               |
 | `Triple`        | array (of length 3)                               |
@@ -210,7 +214,8 @@ following this pseudo-code:
 create a shortlist of potential constructors
 for each public constructor in the target class:
     for each parameter in the constructor (there may be no parameters):
-        if there is no property in the JSON object with the same name, and the parameter has no default value,
+        if there is no property in the JSON object with the same name,
+                    and the parameter has no default value,
                     and the parameter is not nullable:
             reject the constructor
     if the constructor has not been rejected add it to the shortlist
@@ -218,24 +223,34 @@ if there is no constructor in the shortlist:
     FAILURE - can't construct an object of the target type from the supplied JSON
 if there is more than one constructor in the shortlist:
     select the constructor that uses the greatest number of properties from the JSON object
-for each parameter in the selected constructor (there may be none in the case of a no-arg constructor):
+for each parameter in the selected constructor (there may be none in the case of a no-arg
+        constructor):
     if the parameter has a matching property in the JSON:
-        invoke the deserialization functions using the target type from the parameter and the property from the JSON
-    if the parameter has no matching property in the JSON, and has no default value, but is nullable:
+        invoke the deserialization functions using the target type from the parameter
+                and the property from the JSON
+    if the parameter has no matching property in the JSON, and has no default value,
+            but is nullable:
         set the parameter value to null
+
 invoke the constructor using the parameter values derived as above
-for each property in the JSON that has not been consumed by the constructor (there may be no such properties):
+
+for each property in the JSON that has not been consumed by the constructor (there may be no
+        such properties):
     locate a property in the instantiated object with the same name
     if no such property exists (and allowExtra not specified):
         FAILURE - can't construct an object of the target type from the supplied JSON
     if a property exists and has a setter (it is a var property):
-        invoke the deserialization functions using the target type from the property and the property from the JSON
+        invoke the deserialization functions using the target type from the property and the
+                property from the JSON
         invoke the setter function with the resulting value
     if a property exists but has no setter (it is a val property):
-        invoke the deserialization functions using the target type from the property and the property from the JSON
+        invoke the deserialization functions using the target type from the property and the
+                property from the JSON
         invoke the getter function
-        if the value from the getter does not match the value from the deserialization of the JSON property:
+        if the value from the getter does not match the value from the deserialization of the
+                JSON property:
             FAILURE - can't construct an object of the target type from the supplied JSON
+
 return the instantiated object
 ```
 
@@ -244,15 +259,21 @@ public constructor and no additional properties in the body of the class, the st
 ```text
 for each parameter in the constructor:
     if the parameter has a matching property in the JSON:
-        invoke the deserialization functions using the target type from the parameter and the property from the JSON
-    if the parameter has no matching property in the JSON, and has no default value, but is nullable:
+        invoke the deserialization functions using the target type from the parameter
+                and the property from the JSON
+    if the parameter has no matching property in the JSON, and has no default value,
+            but is nullable:
         set the parameter value to null
     if the parameter has no matching property in the JSON, the parameter has no default value,
                 and the parameter is not nullable:
         FAILURE - can't construct an object of the target type from the supplied JSON
+
 invoke the constructor using the parameter values derived as above
-if there are properties in the JSON that have not been consumed by the constructor (and allowExtra not specified):
+
+if there are properties in the JSON that have not been consumed by the constructor
+        (and allowExtra not specified):
     FAILURE - can't construct an object of the target type from the supplied JSON
+
 return the instantiated object
 ```
 
@@ -747,4 +768,4 @@ the [Spring and `kjson`](SPRING.md) guide.
 **UPDATE:** the [`kjson-spring`](https://github.com/pwall567/kjson-spring) library now provides a simple way to
 integrate with Spring.
 
-2024-02-05
+2024-10-31

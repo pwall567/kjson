@@ -53,7 +53,7 @@ class PairDeserializer<F, S>(
 
     companion object {
 
-        fun <FF : Any, SS : Any> createPairDeserializer(
+        fun <FF : Any, SS : Any> create(
             resultType: KType,
             config: JSONConfig,
             references: MutableList<KType>,

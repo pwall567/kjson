@@ -25,57 +25,16 @@
 
 package io.kjson.deserialize
 
-import kotlin.reflect.KParameter
-import kotlin.reflect.KType
+interface ParameterDescriptor<T> {
 
-import io.kjson.JSONConfig
-import io.kjson.JSONDeserializer
-import io.kjson.JSONDeserializer.applyTypeParameters
-import io.kjson.JSONDeserializer.findDeserializer
-import io.kjson.JSONDeserializerFunctions.findParameterName
-import io.kjson.optional.Opt
+    val propertyName: String
 
-data class ParameterDescriptor<T>(
-    val propertyName: String,
-    val kParameter: KParameter,
-    val type: KType,
-    val optClass: Boolean,
-    val optional: Boolean,
-    val ignore: Boolean,
-    val nullable: Boolean,
-    val deserializer: Deserializer<T>,
-) {
+    val deserializer: Deserializer<T>
 
-    companion object {
+    val optional: Boolean
 
-        fun <TT : Any> createParameterDescriptor(
-            parameter: KParameter,
-            resultType: KType,
-            config: JSONConfig,
-            references: MutableList<KType>,
-        ) : ParameterDescriptor<TT>? {
-            if (parameter.kind != KParameter.Kind.VALUE)
-                return null
-            val propertyName = findParameterName(parameter, config) ?: return null
-            val type = parameter.type
-            val optClass = type.classifier == Opt::class
-            val optional = parameter.isOptional || type.isMarkedNullable || optClass
-            val ignore = config.hasIgnoreAnnotation(parameter.annotations)
-            val typeExOpt = if (optClass) JSONDeserializer.getTypeParam(type.arguments) else type
-            val targetType = typeExOpt.applyTypeParameters(resultType)
-            val deserializer = findDeserializer<TT>(targetType, config, references) ?: return null
-            return ParameterDescriptor(
-                propertyName = propertyName,
-                kParameter = parameter,
-                type = targetType,
-                optClass = optClass,
-                optional = optional,
-                ignore = ignore,
-                nullable = targetType.isMarkedNullable,
-                deserializer = deserializer,
-            )
-        }
+    val nullable: Boolean
 
-    }
+    val ignore: Boolean
 
 }

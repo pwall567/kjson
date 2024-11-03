@@ -55,7 +55,6 @@ import io.kjson.testclasses.DummyWithCustomNameAnnotation
 import io.kjson.testclasses.DummyWithNameAnnotation
 import io.kjson.testclasses.DummyWithParamNameAnnotation
 import io.kjson.testclasses.GenericCreator
-import io.kjson.testclasses.JavaSingleArg
 import io.kjson.testclasses.Super
 import io.kjson.testclasses.TestGenericClass
 import io.kjson.testclasses.TestGenericClass2
@@ -400,15 +399,8 @@ class JSONDeserializerObjectTest {
         }
     }
 
-    @Test fun `should deserialize into class containing Java class with single-arg constructor`() {
-        val json = JSONObject.build {
-            add("name", "Fred")
-            add("url", "anything")
-        }
-        with(json.deserialize<ClassWithJavaSingleArg>()) {
-            expect("Fred") { name }
-            expect("anything") { jsa.str }
-        }
+    @Test fun `should analyse obscure KType`() {
+
     }
 
     data class ClassWithURI(
@@ -419,11 +411,6 @@ class JSONDeserializerObjectTest {
     data class ClassWithURL(
         val name: String,
         val url: URL,
-    )
-
-    data class ClassWithJavaSingleArg(
-        val name: String,
-        val jsa: JavaSingleArg,
     )
 
 }

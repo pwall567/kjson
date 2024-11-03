@@ -1,5 +1,5 @@
 /*
- * @(#) JavaSingleArg.kt
+ * @(#) JavaMultiConstructor.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
  * Copyright (c) 2024 Peter Wall
@@ -25,26 +25,39 @@
 
 package io.kjson.testclasses;
 
-public class JavaSingleArg {
+import java.beans.ConstructorProperties;
 
-    private final String str;
+public class JavaMultiConstructor {
 
-    public JavaSingleArg(String str) {
-        this.str = str;
+    private final String type;
+    private final String name;
+    private final int number;
+
+    @SuppressWarnings("unused")
+    @ConstructorProperties({"name", "number"})
+    public JavaMultiConstructor(String name, int number) {
+        type = "A";
+        this.name = name;
+        this.number = number;
     }
 
-    public String getStr() {
-        return str;
+    @SuppressWarnings("unused")
+    public JavaMultiConstructor(String name) {
+        type = "B";
+        this.name = name;
+        number = 8;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof JavaSingleArg && ((JavaSingleArg)obj).str.equals(str);
+    public String getType() {
+        return type;
     }
 
-    @Override
-    public int hashCode() {
-        return str.hashCode();
+    public String getName() {
+        return name;
+    }
+
+    public int getNumber() {
+        return number;
     }
 
 }

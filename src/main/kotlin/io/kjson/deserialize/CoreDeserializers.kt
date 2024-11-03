@@ -73,9 +73,21 @@ data object AnyDeserializer : Deserializer<Any> {
     }
 }
 
-data object ImpossibleSerializer : Deserializer<Nothing> {
+data object UnitSerializer : Deserializer<Nothing> {
     override fun deserialize(json: JSONValue?): Nothing {
-        throw cantDeserializeException
+        throw DeserializationException("Can't deserialize Unit")
+    }
+}
+
+data object NothingSerializer : Deserializer<Nothing> {
+    override fun deserialize(json: JSONValue?): Nothing {
+        throw DeserializationException("Can't deserialize Nothing")
+    }
+}
+
+data object VoidSerializer : Deserializer<Nothing> {
+    override fun deserialize(json: JSONValue?): Nothing {
+        throw DeserializationException("Can't deserialize Void")
     }
 }
 

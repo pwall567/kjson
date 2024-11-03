@@ -96,14 +96,15 @@ class InClassMultiFromJSONDeserializer<T : Any>(
             return inClassFromJSON.invoke(json, config)
         }
         catch (ite: InvocationTargetException) {
-            val cause = ite.cause
+            val cause = ite.targetException
             if (cause is JSONException)
                 throw cause
             throw DeserializationException("Error in custom in-class fromJSON - ${resultClass.qualifiedName}",
                     underlying = ite.cause ?: ite)
         }
         catch (e: Exception) {
-            throw DeserializationException("Error in custom in-class fromJSON - ${resultClass.qualifiedName}", underlying = e)
+            throw DeserializationException("Error in custom in-class fromJSON - ${resultClass.qualifiedName}",
+                    underlying = e)
         }
     }
 

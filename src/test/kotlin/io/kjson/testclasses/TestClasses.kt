@@ -45,6 +45,8 @@ import io.kjson.optional.Opt
 
 data class Dummy1(val field1: String, val field2: Int = 999)
 
+data class Dummy1a(val field1: String, val field2: Int)
+
 data class Dummy2(val field1: String, val field2: Int = 999) {
     var extra: String? = null
 }
@@ -222,7 +224,7 @@ class DummyMap(content: Map<String, LocalDate>) : HashMap<String, LocalDate>(con
 
 data class DummyWithIgnore(val field1: String, @JSONIgnore val field2: String = "defaulted", val field3: String)
 
-@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.FIELD, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.FIELD, AnnotationTarget.PROPERTY, AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class CustomIgnore
 
@@ -246,7 +248,7 @@ class DummyWithNameAnnotation {
 
 data class DummyWithParamNameAnnotation(val field1: String, @JSONName("fieldX") val field2: Int)
 
-@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.FIELD, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.FIELD, AnnotationTarget.PROPERTY, AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 @Suppress("unused")
 annotation class CustomName(val symbol: String)

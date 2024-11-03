@@ -680,7 +680,7 @@ sealed interface Serializer<in T : Any> {
                             if (methodName.length > 3 && methodName.startsWith("get") && methodName[3] in 'A'..'Z') {
                                 val name = methodName[3].lowercase(Locale.US) + methodName.substring(4)
                                 val propertyClass = method.returnType
-                                val propertyType = propertyClass.kotlin.starProjectedType // TODO revisit this?
+                                val propertyType = propertyClass.kotlin.starProjectedType
                                 propertyDescriptors.removeIf { it.name == name }
                                 propertyDescriptors.add(
                                     ObjectSerializer.JavaPropertyDescriptor(

@@ -27,7 +27,7 @@ package io.kjson.deserialize
 
 import kotlin.reflect.KType
 
-import io.kjson.JSONDeserializer
+import io.kjson.JSONDeserializer.deserializeFields
 import io.kjson.JSONObject
 import io.kjson.JSONValue
 
@@ -41,7 +41,7 @@ class ObjectDeserializer(
     override fun deserialize(json: JSONValue?): Any {
         if (json !is JSONObject)
             typeError("object")
-        JSONDeserializer.deserializeFields(json, resultType, fieldDescriptors, allowExtra, instance)
+        deserializeFields(json, resultType, fieldDescriptors, allowExtra, instance)
         return instance
     }
 

@@ -98,6 +98,4 @@ class MapSerializerTest {
         coCapture.toString() shouldBe """{"alpha":123,"beta":456,"gamma":789}"""
     }
 
-    // TODO more tests, including error cases
-
 }

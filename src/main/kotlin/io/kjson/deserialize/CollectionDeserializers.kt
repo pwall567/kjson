@@ -42,13 +42,16 @@ import io.kjson.JSON.asShort
 import io.kjson.JSONArray
 import io.kjson.JSONBoolean
 import io.kjson.JSONConfig
-import io.kjson.JSONDeserializer
 import io.kjson.JSONDeserializer.applyTypeParameters
+import io.kjson.JSONDeserializer.findDeserializer
+import io.kjson.JSONDeserializer.getTypeParam
+import io.kjson.JSONDeserializer.newArray
 import io.kjson.JSONKotlinException
 import io.kjson.JSONNumber
 import io.kjson.JSONObject
 import io.kjson.JSONString
 import io.kjson.JSONValue
+import io.kjson.pointer.find
 import io.kjson.util.SizedSequence
 
 class CollectionDeserializer<T : Any, L : MutableCollection<T?>>(
@@ -82,7 +85,7 @@ class SequenceDeserializer<T : Any>(
                 val value = try {
                     itemDeserializer.deserialize(item)
                 } catch (de: DeserializationException) {
-                    throw JSONKotlinException(de.messageFunction(itemType, item), index)
+                    throw JSONKotlinException(de.messageFunction(de.pointer.find(item)), index)
                 } catch (jke: JSONKotlinException) {
                     throw jke.nested(index)
                 }
@@ -143,7 +146,7 @@ class ArrayDeserializer<T : Any>(
             Array(string.length) { i -> string[i] } as Array<T?>
         }
         json is JSONArray -> {
-            val array = JSONDeserializer.newArray(itemClass, json.size)
+            val array = newArray(itemClass, json.size)
             for (i in json.indices)
                 array[i] = itemDeserializer.deserializeValue(json[i], itemNullable, "Array item", i)
             array
@@ -329,8 +332,8 @@ fun <T : Any, L : MutableCollection<T?>> createCollectionDeserializer(
     references: MutableList<KType>,
     constructor: (Int) -> L,
 ): Deserializer<L>? {
-    val itemType = JSONDeserializer.getTypeParam(resultType.arguments).applyTypeParameters(resultType)
-    val itemDeserializer = JSONDeserializer.findDeserializer<T>(itemType, config, references) ?: return null
+    val itemType = getTypeParam(resultType.arguments).applyTypeParameters(resultType)
+    val itemDeserializer = findDeserializer<T>(itemType, config, references) ?: return null
     return CollectionDeserializer(
         itemDeserializer = itemDeserializer,
         itemNullable = itemType.isMarkedNullable,
@@ -343,8 +346,8 @@ fun <T : Any> createSequenceDeserializer(
     config: JSONConfig,
     references: MutableList<KType>,
 ): Deserializer<Sequence<T?>>? {
-    val itemType = JSONDeserializer.getTypeParam(resultType.arguments).applyTypeParameters(resultType)
-    val itemDeserializer = JSONDeserializer.findDeserializer<T>(itemType, config, references) ?: return null
+    val itemType = getTypeParam(resultType.arguments).applyTypeParameters(resultType)
+    val itemDeserializer = findDeserializer<T>(itemType, config, references) ?: return null
     return SequenceDeserializer(
         itemDeserializer = itemDeserializer,
         itemType = itemType,
@@ -356,8 +359,8 @@ fun <T : Any> createStreamDeserializer(
     config: JSONConfig,
     references: MutableList<KType>,
 ): Deserializer<Stream<T?>>? {
-    val itemType = JSONDeserializer.getTypeParam(resultType.arguments).applyTypeParameters(resultType)
-    val itemDeserializer = JSONDeserializer.findDeserializer<T>(itemType, config, references) ?: return null
+    val itemType = getTypeParam(resultType.arguments).applyTypeParameters(resultType)
+    val itemDeserializer = findDeserializer<T>(itemType, config, references) ?: return null
     return StreamDeserializer(
         itemDeserializer = itemDeserializer,
         itemNullable = itemType.isMarkedNullable,
@@ -371,10 +374,10 @@ fun <K : Any, V : Any, M : MutableMap<K?, V?>> createMapDeserializer(
     constructor: (Int) -> M,
 ): Deserializer<M>? {
     val typeArguments = resultType.arguments
-    val keyType = JSONDeserializer.getTypeParam(typeArguments, 0).applyTypeParameters(resultType)
-    val keyDeserializer = JSONDeserializer.findDeserializer<K>(keyType, config, references) ?: return null
-    val valueType = JSONDeserializer.getTypeParam(typeArguments, 1).applyTypeParameters(resultType)
-    val valueDeserializer = JSONDeserializer.findDeserializer<V>(valueType, config, references) ?: return null
+    val keyType = getTypeParam(typeArguments, 0).applyTypeParameters(resultType)
+    val keyDeserializer = findDeserializer<K>(keyType, config, references) ?: return null
+    val valueType = getTypeParam(typeArguments, 1).applyTypeParameters(resultType)
+    val valueDeserializer = findDeserializer<V>(valueType, config, references) ?: return null
     return MapDeserializer(
         keyDeserializer = keyDeserializer,
         keyNullable = keyType.isMarkedNullable,

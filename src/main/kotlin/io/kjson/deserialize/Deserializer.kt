@@ -84,9 +84,9 @@ sealed interface Deserializer<T> {
 
         val initialEntries = listOf(
             Any::class to AnyDeserializer,
-            Unit::class to ImpossibleSerializer,
-            Nothing::class to ImpossibleSerializer,
-            Void::class to ImpossibleSerializer,
+            Unit::class to UnitSerializer,
+            Nothing::class to NothingSerializer,
+            Void::class to VoidSerializer,
             Boolean::class to BooleanDeserializer,
             Int::class to IntDeserializer,
             Long::class to LongDeserializer,

@@ -25,19 +25,21 @@
 
 package io.kjson.deserialize
 
-import kotlin.reflect.KFunction
+import kotlin.reflect.KClass
 
 import io.kjson.JSONString
 import io.kjson.JSONValue
 
 class EnumDeserializer<E : Enum<E>>(
-    private val valueOfFunction: KFunction<*>,
+    enumClass: KClass<*>,
 ) : Deserializer<E> {
 
     @Suppress("unchecked_cast")
+    private val enumClass: Class<E> = enumClass.java as Class<E>
+
     override fun deserialize(json: JSONValue?): E? = when (json) {
         null -> null
-        is JSONString -> valueOfFunction.call(json.value) as E
+        is JSONString -> java.lang.Enum.valueOf(enumClass, json.value)
         else -> typeError("string")
     }
 
