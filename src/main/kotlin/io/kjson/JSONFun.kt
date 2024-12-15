@@ -215,6 +215,13 @@ fun JSONValue?.deserialize(
 ): Any? = JSONDeserializer.deserialize(javaType, this, config)
 
 /**
+ * Deserialize a parsed [JSONValue] to an unspecified ([Any]) type.  Strings will be converted to `String`, numbers to
+ * `Int`, `Long` or `BigDecimal`, booleans to `Boolean`, arrays to `ArrayList<Any?>` and objects to
+ * `LinkedHashMap<String, Any?>` (an implementation of `Map` that preserves order).
+ */
+fun JSONValue?.deserializeAny(): Any? = JSONDeserializer.deserializeAny(this)
+
+/**
  * Deserialize a [JSONValue] to the inferred type.
  */
 inline fun <reified T> JSONValue?.fromJSONValue(

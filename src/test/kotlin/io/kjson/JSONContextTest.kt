@@ -27,14 +27,14 @@ package io.kjson
 
 import kotlin.reflect.typeOf
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertSame
-import kotlin.test.assertTrue
-import kotlin.test.expect
 
 import java.math.BigDecimal
 import java.math.BigInteger
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeSameInstance
+import io.kstuff.test.shouldBeType
+import io.kstuff.test.shouldThrow
 
 import io.kjson.JSON.asInt
 import io.kjson.JSON.asString
@@ -51,8 +51,8 @@ class JSONContextTest {
         val config = JSONConfig()
         @Suppress("deprecation")
         val context = JSONContext(config)
-        assertSame(config, context.config)
-        assertSame(JSONPointer.root, context.pointer)
+        context.config shouldBeSameInstance config
+        context.pointer shouldBeSameInstance JSONPointer.root
     }
 
     @Test fun `should create JSONContext with config and pointer`() {
@@ -60,16 +60,16 @@ class JSONContextTest {
         val pointer = JSONPointer("/abc/def")
         @Suppress("deprecation")
         val context = JSONContext(config, pointer)
-        assertSame(config, context.config)
-        expect(pointer) { context.pointer }
+        context.config shouldBeSameInstance config
+        context.pointer shouldBe pointer
     }
 
     @Test fun `should create JSONContext with pointer only`() {
         val pointer = JSONPointer("/abc/def")
         @Suppress("deprecation")
         val context = JSONContext(pointer)
-        assertSame(JSONConfig.defaultConfig, context.config)
-        expect(pointer) { context.pointer }
+        context.config shouldBeSameInstance JSONConfig.defaultConfig
+        context.pointer shouldBe pointer
     }
 
 //    @Test fun `should create child JSONContext with property name`() {
@@ -99,11 +99,11 @@ class JSONContextTest {
             }
         }
         with(JSONSerializer.serialize(Dummy1("xyz", 12345), config)) {
-            assertIs<JSONObject>(this)
-            expect(3) { size }
-            expect(JSONString("xyz")) { this["field1"] }
-            expect(JSONInt(12345)) { this["field2"] }
-            expect(JSONString("XXX")) { this["marker"] }
+            shouldBeType<JSONObject>()
+            size shouldBe 3
+            this["field1"] shouldBe JSONString("xyz")
+            this["field2"] shouldBe JSONInt(12345)
+            this["marker"] shouldBe JSONString("XXX")
         }
     }
 
@@ -117,19 +117,19 @@ class JSONContextTest {
             }
         }
         with(JSONSerializer.serialize(listOf(Dummy1("xyz", 12345), Dummy1("a", 9)), config)) {
-            assertIs<JSONArray>(this)
-            expect(2) { size }
+            shouldBeType<JSONArray>()
+            size shouldBe 2
             with(this[0]) {
-                assertIs<JSONObject>(this)
-                expect(2) { size }
-                expect(JSONString("a")) { this["field1"] }
-                expect(JSONInt(9)) { this["field2"] }
+                shouldBeType<JSONObject>()
+                size shouldBe 2
+                this["field1"] shouldBe JSONString("a")
+                this["field2"] shouldBe JSONInt(9)
             }
             with(this[1]) {
-                assertIs<JSONObject>(this)
-                expect(2) { size }
-                expect(JSONString("xyz")) { this["field1"] }
-                expect(JSONInt(12345)) { this["field2"] }
+                shouldBeType<JSONObject>()
+                size shouldBe 2
+                this["field1"] shouldBe JSONString("xyz")
+                this["field2"] shouldBe JSONInt(12345)
             }
         }
     }
@@ -144,10 +144,10 @@ class JSONContextTest {
             }
         }
         with(JSONSerializer.serialize(Dummy1("xyz", 12345), config)) {
-            assertIs<JSONObject>(this)
-            expect(2) { size }
-            expect(JSONString("xyz")) { this["a"] }
-            expect(JSONInt(12345)) { this["b"] }
+            shouldBeType<JSONObject>()
+            size shouldBe 2
+            this["a"] shouldBe JSONString("xyz")
+            this["b"] shouldBe JSONInt(12345)
         }
     }
 
@@ -164,19 +164,19 @@ class JSONContextTest {
         }
         val list = listOf(Dummy1("xyz", 12345), Dummy1("abc", 888))
         with(JSONSerializer.serialize(list, config)) {
-            assertIs<JSONObject>(this)
-            expect(2) { size }
+            shouldBeType<JSONObject>()
+            size shouldBe 2
             with(this["first"]) {
-                assertIs<JSONObject>(this)
-                expect(2) { size }
-                expect(JSONString("xyz")) { this["field1"] }
-                expect(JSONInt(12345)) { this["field2"] }
+                shouldBeType<JSONObject>()
+                size shouldBe 2
+                this["field1"] shouldBe JSONString("xyz")
+                this["field2"] shouldBe JSONInt(12345)
             }
             with(this["second"]) {
-                assertIs<JSONObject>(this)
-                expect(2) { size }
-                expect(JSONString("abc")) { this["field1"] }
-                expect(JSONInt(888)) { this["field2"] }
+                shouldBeType<JSONObject>()
+                size shouldBe 2
+                this["field1"] shouldBe JSONString("abc")
+                this["field2"] shouldBe JSONInt(888)
             }
         }
     }
@@ -193,10 +193,10 @@ class JSONContextTest {
             add("field3", 10)
         }
         with(json.fromJSONValue<Super>(config)) {
-            assertTrue(this is Derived)
-            expect("abc") { field1 }
-            expect(888) { field2 }
-            expect(10.0) { field3 }
+            shouldBeType<Derived>()
+            field1 shouldBe "abc"
+            field2 shouldBe 888
+            field3 shouldBe 10.0
         }
     }
 
@@ -211,9 +211,10 @@ class JSONContextTest {
             add("field2", "wrong")
             add("field3", 10)
         }
-        assertFailsWith<JSONKotlinException> { json.fromJSONValue<Super>(config) }.let {
-            expect("Incorrect type, expected Int but was \"wrong\", at /field2") { it.message }
-            expect(JSONPointer("/field2")) { it.pointer }
+        shouldThrow<JSONKotlinException>("Incorrect type, expected Int but was \"wrong\", at /field2") {
+            json.fromJSONValue<Super>(config)
+        }.let {
+            it.pointer shouldBe JSONPointer("/field2")
         }
     }
 
@@ -229,10 +230,10 @@ class JSONContextTest {
             add("field3", 1)
         }
         with(json.fromJSONValue<Super>(config)) {
-            assertTrue(this is Derived)
-            expect("xyz") { field1 }
-            expect(21) { field2 }
-            expect(1.0) { field3 }
+            shouldBeType<Derived>()
+            field1 shouldBe "xyz"
+            field2 shouldBe 21
+            field3 shouldBe 1.0
         }
     }
 
@@ -248,10 +249,10 @@ class JSONContextTest {
             add("field3", 9)
         }
         with(json.fromJSONValue<Super>(config)) {
-            assertTrue(this is Derived)
-            expect("ggg") { field1 }
-            expect(42) { field2 }
-            expect(9.0) { field3 }
+            shouldBeType<Derived>()
+            field1 shouldBe "ggg"
+            field2 shouldBe 42
+            field3 shouldBe 9.0
         }
     }
 
@@ -269,10 +270,10 @@ class JSONContextTest {
             })
         }
         with(json.fromJSONValue<Super>(config)) {
-            assertTrue(this is Derived)
-            expect("abc") { field1 }
-            expect(888) { field2 }
-            expect(10.0) { field3 }
+            shouldBeType<Derived>()
+            field1 shouldBe "abc"
+            field2 shouldBe 888
+            field3 shouldBe 10.0
         }
     }
 
@@ -289,9 +290,10 @@ class JSONContextTest {
                 add("field3", 10)
             })
         }
-        assertFailsWith<JSONKotlinException> { json.fromJSONValue<Super>(config) }.let {
-            expect("Incorrect type, expected Int but was \"bad\", at /inner/field2") { it.message }
-            expect(JSONPointer("/inner/field2")) { it.pointer }
+        shouldThrow<JSONKotlinException>("Incorrect type, expected Int but was \"bad\", at /inner/field2") {
+            json.fromJSONValue<Super>(config)
+        }.let {
+            it.pointer shouldBe JSONPointer("/inner/field2")
         }
     }
 
@@ -309,10 +311,10 @@ class JSONContextTest {
             })
         }
         with(json.fromJSONValue<Super>(config)) {
-            assertTrue(this is Derived)
-            expect("ace") { field1 }
-            expect(-5) { field2 }
-            expect(15.0) { field3 }
+            shouldBeType<Derived>()
+            field1 shouldBe "ace"
+            field2 shouldBe -5
+            field3 shouldBe 15.0
         }
     }
 
@@ -330,10 +332,10 @@ class JSONContextTest {
             })
         }
         with(json.fromJSONValue<Super>(config)) {
-            assertTrue(this is Derived)
-            expect("one") { field1 }
-            expect(1) { field2 }
-            expect(1.0) { field3 }
+            shouldBeType<Derived>()
+            field1 shouldBe "one"
+            field2 shouldBe 1
+            field3 shouldBe 1.0
         }
     }
 
@@ -355,17 +357,17 @@ class JSONContextTest {
         }
         with(json.fromJSONValue<Dummy4>(config)) {
             with(listDummy1) {
-                expect(2) { size }
+                size shouldBe 2
                 with(this[0]) {
-                    expect("one") { field1 }
-                    expect(111) { field2 }
+                    field1 shouldBe "one"
+                    field2 shouldBe 111
                 }
                 with(this[1]) {
-                    expect("two") { field1 }
-                    expect(222) { field2 }
+                    field1 shouldBe "two"
+                    field2 shouldBe 222
                 }
             }
-            expect("default") { text }
+            text shouldBe "default"
         }
     }
 
@@ -381,9 +383,10 @@ class JSONContextTest {
                 add("field2", "111")
             })
         }
-        assertFailsWith<JSONKotlinException> { json.fromJSONValue<Dummy4>(config) }.let {
-            expect("Incorrect type, expected Int but was \"111\", at /0/field2") { it.message }
-            expect(JSONPointer("/0/field2")) { it.pointer }
+        shouldThrow<JSONKotlinException>("Incorrect type, expected Int but was \"111\", at /0/field2") {
+            json.fromJSONValue<Dummy4>(config)
+        }.let {
+            it.pointer shouldBe JSONPointer("/0/field2")
         }
     }
 
@@ -405,17 +408,17 @@ class JSONContextTest {
         }
         with(json.fromJSONValue<Dummy4>(config)) {
             with(listDummy1) {
-                expect(2) { size }
+                size shouldBe 2
                 with(this[0]) {
-                    expect("un") { field1 }
-                    expect(111) { field2 }
+                    field1 shouldBe "un"
+                    field2 shouldBe 111
                 }
                 with(this[1]) {
-                    expect("deux") { field1 }
-                    expect(222) { field2 }
+                    field1 shouldBe "deux"
+                    field2 shouldBe 222
                 }
             }
-            expect("default") { text }
+            text shouldBe "default"
         }
     }
 
@@ -437,25 +440,25 @@ class JSONContextTest {
         }
         with(json.fromJSONValue<Dummy4>(config)) {
             with(listDummy1) {
-                expect(2) { size }
+                size shouldBe 2
                 with(this[0]) {
-                    expect("ein") { field1 }
-                    expect(111) { field2 }
+                    field1 shouldBe "ein"
+                    field2 shouldBe 111
                 }
                 with(this[1]) {
-                    expect("zwei") { field1 }
-                    expect(222) { field2 }
+                    field1 shouldBe "zwei"
+                    field2 shouldBe 222
                 }
             }
-            expect("default") { text }
+            text shouldBe "default"
         }
     }
 
     @Test fun `should throw exception including pointer`() {
         @Suppress("deprecation")
         val context = JSONContext(JSONPointer("/abc/def"))
-        assertFailsWith<JSONKotlinException> { context.fatal("Dummy message") }.let {
-            expect("Dummy message, at /abc/def") { it.message }
+        shouldThrow<JSONKotlinException>("Dummy message, at /abc/def") {
+            context.fatal("Dummy message")
         }
     }
 
@@ -463,9 +466,11 @@ class JSONContextTest {
         @Suppress("deprecation")
         val context = JSONContext(JSONPointer("/abc/def"))
         val nested = NullPointerException("dummy")
-        assertFailsWith<JSONKotlinException> { context.fatal("Dummy message", nested) }.let {
-            expect("Dummy message, at /abc/def") { it.message }
-            assertSame(nested, it.cause)
+        @Suppress("UNREACHABLE_CODE")
+        shouldThrow<JSONKotlinException>("Dummy message, at /abc/def") {
+            context.fatal("Dummy message", nested)
+        }.let {
+            it.cause shouldBeSameInstance nested
         }
     }
 
@@ -483,10 +488,10 @@ class JSONContextTest {
             }
         }
         with(JSONSerializer.serialize(BigHolder(BigInteger("123"), BigDecimal("2.5")), config)) {
-            assertIs<JSONObject>(this)
-            expect(2) { size }
-            expect("123") { this["bi"].asString }
-            expect("2.5") { this["bd"].asString }
+            shouldBeType<JSONObject>()
+            size shouldBe 2
+            this["bi"].asString shouldBe "123"
+            this["bd"].asString shouldBe "2.5"
         }
     }
 
@@ -504,10 +509,10 @@ class JSONContextTest {
             }
         }
         with(JSONSerializer.serialize(BigHolder(BigInteger("123"), BigDecimal("2.5")), config)) {
-            assertIs<JSONObject>(this)
-            expect(2) { size }
-            expect(123) { this["bi"].asInt }
-            expect("2.5") { this["bd"].asString }
+            shouldBeType<JSONObject>()
+            size shouldBe 2
+            this["bi"].asInt shouldBe 123
+            this["bd"].asString shouldBe "2.5"
         }
     }
 

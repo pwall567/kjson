@@ -30,16 +30,15 @@ import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
-import kotlin.test.expect
 import kotlin.test.fail
 
 import java.time.LocalTime
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeEqual
+import io.kstuff.test.shouldBeNonNull
+import io.kstuff.test.shouldBeType
+import io.kstuff.test.shouldThrow
 
 import io.kjson.JSON.asInt
 import io.kjson.JSON.asObject
@@ -68,25 +67,25 @@ class JSONConfigTest {
 
     @Test fun `should construct default config`() {
         val config = JSONConfig()
-        expect("class") { config.sealedClassDiscriminator }
-        expect(8192) { config.readBufferSize }
-        expect(2048) { config.stringifyInitialSize }
-        expect(Charsets.UTF_8) { config.charset }
-        assertFalse(config.bigIntegerString)
-        assertFalse(config.bigDecimalString)
-        assertFalse(config.includeNulls)
-        assertFalse(config.allowExtra)
-        assertFalse(config.stringifyNonASCII)
-        assertFalse(config.streamOutput)
+        config.sealedClassDiscriminator shouldBe "class"
+        config.readBufferSize shouldBe 8192
+        config.stringifyInitialSize shouldBe 2048
+        config.charset shouldBe Charsets.UTF_8
+        config.bigIntegerString shouldBe false
+        config.bigDecimalString shouldBe false
+        config.includeNulls shouldBe false
+        config.allowExtra shouldBe false
+        config.stringifyNonASCII shouldBe false
+        config.streamOutput shouldBe false
     }
 
     @Test fun `should add fromJSON mapping`() {
         val config = JSONConfig()
-        assertNull(config.findFromJSONMapping(stringType))
-        assertNull(config.findFromJSONMapping(String::class))
+        config.findFromJSONMapping(stringType) shouldBe null
+        config.findFromJSONMapping(String::class) shouldBe null
         config.fromJSON { json -> json.toString() }
-        assertNotNull(config.findFromJSONMapping(stringType))
-        assertNotNull(config.findFromJSONMapping(String::class))
+        config.findFromJSONMapping(stringType).shouldBeNonNull()
+        config.findFromJSONMapping(String::class).shouldBeNonNull()
     }
 
     @Test fun `should map simple data class using fromJSON mapping`() {
@@ -101,7 +100,7 @@ class JSONConfigTest {
             add("a", "xyz")
             add("b", 888)
         }
-        expect(Dummy1("xyz", 888)) { JSONDeserializer.deserialize(Dummy1::class.createType(), json, config) }
+        JSONDeserializer.deserialize(Dummy1::class.createType(), json, config) shouldBe Dummy1("xyz", 888)
     }
 
     @Test fun `should map simple data class using fromJSONObject mapping`() {
@@ -114,7 +113,7 @@ class JSONConfigTest {
             add("a", "xyz")
             add("b", 888)
         }
-        expect(Dummy1("xyz", 888)) { JSONDeserializer.deserialize(Dummy1::class.createType(), json, config) }
+        JSONDeserializer.deserialize(Dummy1::class.createType(), json, config) shouldBe Dummy1("xyz", 888)
     }
 
     @Test fun `should map array using fromJSONArray mapping`() {
@@ -131,7 +130,7 @@ class JSONConfigTest {
             add(25)
             add(0)
         }
-        expect(LocalTime.parse("18:25:00")) { JSONDeserializer.deserialize(json, config) }
+        shouldBeEqual(LocalTime.parse("18:25:00"), JSONDeserializer.deserialize(json, config))
     }
 
     @Test fun `should not interfere with other deserialization when using fromJSON mapping`() {
@@ -144,7 +143,7 @@ class JSONConfigTest {
         }
         val json = JSONArray.of(JSONString("AAA"), JSONString("BBB"))
         val result = JSONDeserializer.deserialize<List<Any>>(json, config)
-        expect(listOf("AAA", "BBB")) { result }
+        result shouldBe listOf("AAA", "BBB")
     }
 
     @Test fun `should map nested class using fromJSON mapping`() {
@@ -161,9 +160,8 @@ class JSONConfigTest {
             add("dummy1", json1)
             add("text", "Hello!")
         }
-        expect(Dummy3(Dummy1("xyz", 888), "Hello!")) {
-            JSONDeserializer.deserialize(Dummy3::class.createType(), json2, config)
-        }
+        JSONDeserializer.deserialize(Dummy3::class.createType(), json2, config) shouldBe
+                Dummy3(Dummy1("xyz", 888), "Hello!")
     }
 
     @Test fun `should correctly report error in fromJSON`() {
@@ -172,22 +170,23 @@ class JSONConfigTest {
                 throw IllegalStateException("Wrong")
             }
         }
-        assertFailsWith<JSONKotlinException> { JSONString("data").fromJSONValue<Dummy1>(config) }.let {
-            expect("Error in custom fromJSON mapping of ${Dummy1::class.qualifiedName}") { it.message }
+        shouldThrow<JSONKotlinException>("Error in custom fromJSON mapping of ${Dummy1::class.qualifiedName}") {
+            JSONString("data").fromJSONValue<Dummy1>(config)
+        }.let {
             with(it.cause) {
-                assertTrue(this is IllegalStateException)
-                expect("Wrong") { message }
+                shouldBeType<IllegalStateException>()
+                message shouldBe "Wrong"
             }
         }
     }
 
     @Test fun `should add toJSON mapping`() {
         val config = JSONConfig()
-        assertNull(config.findToJSONMapping(stringType))
-        assertNull(config.findToJSONMapping(String::class))
+        config.findToJSONMapping(stringType) shouldBe null
+        config.findToJSONMapping(String::class) shouldBe null
         config.toJSON<String> { str -> JSONString(str) }
-        assertNotNull(config.findToJSONMapping(stringType))
-        assertNotNull(config.findToJSONMapping(String::class))
+        config.findToJSONMapping(stringType).shouldBeNonNull()
+        config.findToJSONMapping(String::class).shouldBeNonNull()
     }
 
     @Test fun `should map simple data class using toJSON mapping`() {
@@ -205,7 +204,7 @@ class JSONConfigTest {
             add("a", "xyz")
             add("b", 888)
         }
-        expect(expected) { JSONSerializer.serialize(Dummy1("xyz", 888), config) }
+        JSONSerializer.serialize(Dummy1("xyz", 888), config) shouldBe expected
     }
 
     @Test fun `should map nested class using toJSON mapping`() {
@@ -227,21 +226,21 @@ class JSONConfigTest {
             add("dummy1", dummy1)
             add("text", "Hi there!")
         }
-        expect(expected) { JSONSerializer.serialize(Dummy3(Dummy1("xyz", 888), "Hi there!"), config) }
+        JSONSerializer.serialize(Dummy3(Dummy1("xyz", 888), "Hi there!"), config) shouldBe expected
     }
 
     @Test fun `should select correct toJSON mapping of nullable type`() {
         val config = JSONConfig {
             toJSON(Dummy1::class.createType(nullable = true)) { JSONString("A") }
         }
-        expect(JSONString("A")) { JSONSerializer.serialize(Dummy1("X", 0), config) }
+        JSONSerializer.serialize(Dummy1("X", 0), config) shouldBe JSONString("A")
     }
 
     @Test fun `should select correct toJSON mapping of non-nullable type`() {
         val config = JSONConfig {
             toJSON(Dummy1::class.createType(nullable = false)) { JSONString("A") }
         }
-        expect(JSONString("A")) { JSONSerializer.serialize(Dummy1("X", 0), config) }
+        JSONSerializer.serialize(Dummy1("X", 0), config) shouldBe JSONString("A")
     }
 
     @Test fun `should select correct function among derived classes for toJSON mapping`() {
@@ -251,10 +250,10 @@ class JSONConfigTest {
             toJSON<DummyC> { JSONString("C") }
             toJSON<DummyD> { JSONString("D") }
         }
-        expect(JSONString("A")) { JSONSerializer.serialize(DummyA(), config)}
-        expect(JSONString("B")) { JSONSerializer.serialize(DummyB(), config)}
-        expect(JSONString("C")) { JSONSerializer.serialize(DummyC(), config)}
-        expect(JSONString("D")) { JSONSerializer.serialize(DummyD(), config)}
+        JSONSerializer.serialize(DummyA(), config) shouldBe JSONString("A")
+        JSONSerializer.serialize(DummyB(), config) shouldBe JSONString("B")
+        JSONSerializer.serialize(DummyC(), config) shouldBe JSONString("C")
+        JSONSerializer.serialize(DummyD(), config) shouldBe JSONString("D")
     }
 
     @Test fun `should select correct function when order is reversed for toJSON mapping`() {
@@ -264,10 +263,10 @@ class JSONConfigTest {
             toJSON<DummyB> { JSONString("B") }
             toJSON<DummyA> { JSONString("A") }
         }
-        expect(JSONString("A")) { JSONSerializer.serialize(DummyA(), config)}
-        expect(JSONString("B")) { JSONSerializer.serialize(DummyB(), config)}
-        expect(JSONString("C")) { JSONSerializer.serialize(DummyC(), config)}
-        expect(JSONString("D")) { JSONSerializer.serialize(DummyD(), config)}
+        JSONSerializer.serialize(DummyA(), config) shouldBe JSONString("A")
+        JSONSerializer.serialize(DummyB(), config) shouldBe JSONString("B")
+        JSONSerializer.serialize(DummyC(), config) shouldBe JSONString("C")
+        JSONSerializer.serialize(DummyD(), config) shouldBe JSONString("D")
     }
 
     @Test fun `should select correct function when exact match not present for toJSON mapping`() {
@@ -276,10 +275,10 @@ class JSONConfigTest {
             toJSON<DummyB> { JSONString("B") }
             toJSON<DummyC> { JSONString("C") }
         }
-        expect(JSONString("A")) { JSONSerializer.serialize(DummyA(), config)}
-        expect(JSONString("B")) { JSONSerializer.serialize(DummyB(), config)}
-        expect(JSONString("C")) { JSONSerializer.serialize(DummyC(), config)}
-        expect(JSONString("C")) { JSONSerializer.serialize(DummyD(), config)}
+        JSONSerializer.serialize(DummyA(), config) shouldBe JSONString("A")
+        JSONSerializer.serialize(DummyB(), config) shouldBe JSONString("B")
+        JSONSerializer.serialize(DummyC(), config) shouldBe JSONString("C")
+        JSONSerializer.serialize(DummyD(), config) shouldBe JSONString("C")
     }
 
     @Test fun `should select correct function among derived classes for fromJSON mapping`() {
@@ -289,10 +288,10 @@ class JSONConfigTest {
             fromJSON { if (it == JSONString("C")) DummyC() else fail() }
             fromJSON { if (it == JSONString("D")) DummyD() else fail() }
         }
-        assertTrue(JSONDeserializer.deserialize(DummyA::class.createType(), JSONString("A"), config) is DummyA)
-        assertTrue(JSONDeserializer.deserialize(DummyB::class.createType(), JSONString("B"), config) is DummyB)
-        assertTrue(JSONDeserializer.deserialize(DummyC::class.createType(), JSONString("C"), config) is DummyC)
-        assertTrue(JSONDeserializer.deserialize(DummyD::class.createType(), JSONString("D"), config) is DummyD)
+        JSONDeserializer.deserialize(DummyA::class.createType(), JSONString("A"), config).shouldBeType<DummyA>()
+        JSONDeserializer.deserialize(DummyB::class.createType(), JSONString("B"), config).shouldBeType<DummyB>()
+        JSONDeserializer.deserialize(DummyC::class.createType(), JSONString("C"), config).shouldBeType<DummyC>()
+        JSONDeserializer.deserialize(DummyD::class.createType(), JSONString("D"), config).shouldBeType<DummyD>()
     }
 
     @Test fun `should select correct function when order is reversed for fromJSON mapping`() {
@@ -302,10 +301,10 @@ class JSONConfigTest {
             fromJSON { if (it == JSONString("B")) DummyB() else fail() }
             fromJSON { if (it == JSONString("A")) DummyA() else fail() }
         }
-        assertTrue(JSONDeserializer.deserialize(DummyA::class.createType(), JSONString("A"), config) is DummyA)
-        assertTrue(JSONDeserializer.deserialize(DummyB::class.createType(), JSONString("B"), config) is DummyB)
-        assertTrue(JSONDeserializer.deserialize(DummyC::class.createType(), JSONString("C"), config) is DummyC)
-        assertTrue(JSONDeserializer.deserialize(DummyD::class.createType(), JSONString("D"), config) is DummyD)
+        JSONDeserializer.deserialize(DummyA::class.createType(), JSONString("A"), config).shouldBeType<DummyA>()
+        JSONDeserializer.deserialize(DummyB::class.createType(), JSONString("B"), config).shouldBeType<DummyB>()
+        JSONDeserializer.deserialize(DummyC::class.createType(), JSONString("C"), config).shouldBeType<DummyC>()
+        JSONDeserializer.deserialize(DummyD::class.createType(), JSONString("D"), config).shouldBeType<DummyD>()
     }
 
     @Test fun `should select correct function when exact match not present for fromJSON mapping`() {
@@ -314,38 +313,38 @@ class JSONConfigTest {
             fromJSON { if (it == JSONString("C")) DummyC() else fail() }
             fromJSON { if (it == JSONString("D")) DummyD() else fail() }
         }
-        assertTrue(JSONDeserializer.deserialize(DummyA::class.createType(), JSONString("B"), config) is DummyB)
-        assertTrue(JSONDeserializer.deserialize(DummyB::class.createType(), JSONString("B"), config) is DummyB)
-        assertTrue(JSONDeserializer.deserialize(DummyC::class.createType(), JSONString("C"), config) is DummyC)
-        assertTrue(JSONDeserializer.deserialize(DummyD::class.createType(), JSONString("D"), config) is DummyD)
+        JSONDeserializer.deserialize(DummyA::class.createType(), JSONString("B"), config).shouldBeType<DummyB>()
+        JSONDeserializer.deserialize(DummyB::class.createType(), JSONString("B"), config).shouldBeType<DummyB>()
+        JSONDeserializer.deserialize(DummyC::class.createType(), JSONString("C"), config).shouldBeType<DummyC>()
+        JSONDeserializer.deserialize(DummyD::class.createType(), JSONString("D"), config).shouldBeType<DummyD>()
     }
 
     @Test fun `should use toJSON mapping with JSONConfig toJSONString`() {
         val config = JSONConfig {
             toJSONString<Dummy9>()
         }
-        expect(JSONString("abcdef")) { JSONSerializer.serialize(Dummy9("abcdef"), config) }
+        JSONSerializer.serialize(Dummy9("abcdef"), config) shouldBe JSONString("abcdef")
     }
 
     @Test fun `should use String constructor for fromJSON mapping with JSONConfig fromJSONString`() {
         val config = JSONConfig {
             fromJSONString<Dummy9>()
         }
-        expect(Dummy9("abcdef")) { JSONDeserializer.deserialize(JSONString("abcdef"), config) }
+        shouldBeEqual(Dummy9("abcdef"), JSONDeserializer.deserialize(JSONString("abcdef"), config))
     }
 
     @Test fun `should use fromJSONString mapping for fromJSON mapping`() {
         val config = JSONConfig {
             fromJSONString<Dummy9> { Dummy9(it.value.reversed()) }
         }
-        expect(Dummy9("fedcba")) { JSONDeserializer.deserialize(JSONString("abcdef"), config) }
+        shouldBeEqual(Dummy9("fedcba"), JSONDeserializer.deserialize(JSONString("abcdef"), config))
     }
 
     @Test fun `should use String constructor with extra parameters for fromJSON mapping`() {
         val config = JSONConfig {
             fromJSONString<Dummy1>()
         }
-        expect(Dummy1("abcdef")) { JSONDeserializer.deserialize(JSONString("abcdef"), config) }
+        shouldBeEqual(Dummy1("abcdef"), JSONDeserializer.deserialize(JSONString("abcdef"), config))
     }
 
     @Test fun `should distinguish between polymorphic mappings`() {
@@ -355,12 +354,10 @@ class JSONConfigTest {
                 JSONString("TYPE2") to typeOf<PolymorphicDerived2>()
             )
         }
-        expect(PolymorphicDerived1("TYPE1", 1234)) {
-            """{"type":"TYPE1","extra1":1234}""".parseJSON<PolymorphicBase>(config)
-        }
-        expect(PolymorphicDerived2("TYPE2", "hello")) {
-            """{"type":"TYPE2","extra2":"hello"}""".parseJSON<PolymorphicBase>(config)
-        }
+        """{"type":"TYPE1","extra1":1234}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived1("TYPE1", 1234)
+        """{"type":"TYPE2","extra2":"hello"}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived2("TYPE2", "hello")
     }
 
     @Test fun `should distinguish between polymorphic mappings using raw discriminator values`() {
@@ -370,12 +367,10 @@ class JSONConfigTest {
                 "TYPE2" to typeOf<PolymorphicDerived2>()
             )
         }
-        expect(PolymorphicDerived1("TYPE1", 1234)) {
-            """{"type":"TYPE1","extra1":1234}""".parseJSON<PolymorphicBase>(config)
-        }
-        expect(PolymorphicDerived2("TYPE2", "hello")) {
-            """{"type":"TYPE2","extra2":"hello"}""".parseJSON<PolymorphicBase>(config)
-        }
+        """{"type":"TYPE1","extra1":1234}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived1("TYPE1", 1234)
+        """{"type":"TYPE2","extra2":"hello"}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived2("TYPE2", "hello")
     }
 
     enum class Types { TYPE1, TYPE2 }
@@ -387,12 +382,10 @@ class JSONConfigTest {
                 Types.TYPE2 to typeOf<PolymorphicDerived2>()
             )
         }
-        expect(PolymorphicDerived1("TYPE1", 1234)) {
-            """{"type":"TYPE1","extra1":1234}""".parseJSON<PolymorphicBase>(config)
-        }
-        expect(PolymorphicDerived2("TYPE2", "hello")) {
-            """{"type":"TYPE2","extra2":"hello"}""".parseJSON<PolymorphicBase>(config)
-        }
+        """{"type":"TYPE1","extra1":1234}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived1("TYPE1", 1234)
+        """{"type":"TYPE2","extra2":"hello"}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived2("TYPE2", "hello")
     }
 
     @Test fun `should distinguish between polymorphic mappings using JSONPointer`() {
@@ -402,12 +395,10 @@ class JSONConfigTest {
                 JSONString("TYPE2") to typeOf<PolymorphicDerived2>()
             )
         }
-        expect(PolymorphicDerived1("TYPE1", 1234)) {
-            """{"type":"TYPE1","extra1":1234}""".parseJSON<PolymorphicBase>(config)
-        }
-        expect(PolymorphicDerived2("TYPE2", "hello")) {
-            """{"type":"TYPE2","extra2":"hello"}""".parseJSON<PolymorphicBase>(config)
-        }
+        """{"type":"TYPE1","extra1":1234}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived1("TYPE1", 1234)
+        """{"type":"TYPE2","extra2":"hello"}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived2("TYPE2", "hello")
     }
 
     @Test fun `should distinguish between polymorphic mappings using type`() {
@@ -417,12 +408,10 @@ class JSONConfigTest {
                 JSONString("TYPE2") to JSONTypeRef.create<PolymorphicDerived2>().refType
             )
         }
-        expect(PolymorphicDerived1("TYPE1", 987)) {
-            """{"type":"TYPE1","extra1":987}""".parseJSON<PolymorphicBase>(config)
-        }
-        expect(PolymorphicDerived2("TYPE2", "bye")) {
-            """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config)
-        }
+        """{"type":"TYPE1","extra1":987}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived1("TYPE1", 987)
+        """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived2("TYPE2", "bye")
     }
 
     @Test fun `should distinguish between polymorphic mappings using type and JSONPointer`() {
@@ -432,12 +421,10 @@ class JSONConfigTest {
                 JSONString("TYPE2") to createRef<PolymorphicDerived2>()
             )
         }
-        expect(PolymorphicDerived1("TYPE1", 987)) {
-            """{"type":"TYPE1","extra1":987}""".parseJSON<PolymorphicBase>(config)
-        }
-        expect(PolymorphicDerived2("TYPE2", "bye")) {
-            """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config)
-        }
+        """{"type":"TYPE1","extra1":987}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived1("TYPE1", 987)
+        """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived2("TYPE2", "bye")
     }
 
     @Test fun `should distinguish between polymorphic mappings using reified type`() {
@@ -447,12 +434,10 @@ class JSONConfigTest {
                 JSONString("TYPE2") to typeOf<PolymorphicDerived2>()
             )
         }
-        expect(PolymorphicDerived1("TYPE1", 987)) {
-            """{"type":"TYPE1","extra1":987}""".parseJSON<PolymorphicBase>(config)
-        }
-        expect(PolymorphicDerived2("TYPE2", "bye")) {
-            """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config)
-        }
+        """{"type":"TYPE1","extra1":987}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived1("TYPE1", 987)
+        """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived2("TYPE2", "bye")
     }
 
     @Test fun `should distinguish between polymorphic mappings using reified type and JSONPointer`() {
@@ -462,32 +447,28 @@ class JSONConfigTest {
                 "TYPE2" to typeOf<PolymorphicDerived2>()
             )
         }
-        expect(PolymorphicDerived1("TYPE1", 987)) {
-            """{"type":"TYPE1","extra1":987}""".parseJSON<PolymorphicBase>(config)
-        }
-        expect(PolymorphicDerived2("TYPE2", "bye")) {
-            """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config)
-        }
+        """{"type":"TYPE1","extra1":987}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived1("TYPE1", 987)
+        """{"type":"TYPE2","extra2":"bye"}""".parseJSON<PolymorphicBase>(config) shouldBe
+                PolymorphicDerived2("TYPE2", "bye")
     }
 
     @Test fun `should distinguish between polymorphic mappings of generic types`() {
         val type1 = typeOf<Pair<Int, PolymorphicBase>>()
         val type2 = typeOf<Pair<Int, PolymorphicDerived1>>()
-        assertTrue(type2.isSubtypeOf(type1))
+        type2.isSubtypeOf(type1) shouldBe true
         val config = JSONConfig {
             fromJSONPolymorphic<PolymorphicGeneric<PolymorphicBase>>("code",
                 "CODE1" to typeOf<PolymorphicGeneric<PolymorphicDerived1>>(),
                 "CODE2" to typeOf<PolymorphicGeneric<PolymorphicDerived2>>()
             )
         }
-        expect(PolymorphicGeneric<PolymorphicBase>("CODE1", PolymorphicDerived1("TYPE1", 987))) {
-            val json = """{"code":"CODE1","data":{"type":"TYPE1","extra1":987}}"""
-            json.parseJSON<PolymorphicGeneric<PolymorphicBase>>(config)
-        }
-        expect(PolymorphicGeneric<PolymorphicBase>("CODE2", PolymorphicDerived2("TYPE2", "bye"))) {
-            val json = """{"code":"CODE2","data":{"type":"TYPE2","extra2":"bye"}}"""
-            json.parseJSON<PolymorphicGeneric<PolymorphicBase>>(config)
-        }
+        val json1 = """{"code":"CODE1","data":{"type":"TYPE1","extra1":987}}"""
+        json1.parseJSON<PolymorphicGeneric<PolymorphicBase>>(config) shouldBe
+                PolymorphicGeneric<PolymorphicBase>("CODE1", PolymorphicDerived1("TYPE1", 987))
+        val json2 = """{"code":"CODE2","data":{"type":"TYPE2","extra2":"bye"}}"""
+        json2.parseJSON<PolymorphicGeneric<PolymorphicBase>>(config) shouldBe
+                PolymorphicGeneric<PolymorphicBase>("CODE2", PolymorphicDerived2("TYPE2", "bye"))
     }
 
     @Test fun `should use multiple JSONConfig mappings`() {
@@ -518,15 +499,15 @@ class JSONConfigTest {
             add("b", 888)
         }
         val dummy1 = Dummy1("xyz", 888)
-        expect(json1) { JSONSerializer.serialize(dummy1, config) }
-        expect(dummy1) { JSONDeserializer.deserialize(json1, config) }
+        JSONSerializer.serialize(dummy1, config) shouldBe json1
+        shouldBeEqual(dummy1, JSONDeserializer.deserialize(json1, config))
         val json3 = JSONObject.build {
             add("dummy", json1)
             add("text", "excellent")
         }
         val dummy3 = Dummy3(dummy1, "excellent")
-        expect(json3) { JSONSerializer.serialize(dummy3, config) }
-        expect(dummy3) { JSONDeserializer.deserialize(json3, config) }
+        JSONSerializer.serialize(dummy3, config) shouldBe json3
+        shouldBeEqual(dummy3, JSONDeserializer.deserialize(json3, config))
     }
 
     @Test fun `should transfer toJSON mapping on combineMappings`() {
@@ -545,7 +526,7 @@ class JSONConfigTest {
             add("a", "xyz")
             add("b", 888)
         }
-        expect(expected) { JSONSerializer.serialize(Dummy1("xyz", 888), config2) }
+        JSONSerializer.serialize(Dummy1("xyz", 888), config2) shouldBe expected
     }
 
     @Test fun `should transfer toJSON mapping on combineAll`() {
@@ -564,7 +545,7 @@ class JSONConfigTest {
             add("a", "xyz")
             add("b", 888)
         }
-        expect(expected) { JSONSerializer.serialize(Dummy1("xyz", 888), config2) }
+        JSONSerializer.serialize(Dummy1("xyz", 888), config2) shouldBe expected
     }
 
     @Test fun `should transfer JSONName annotation on combineAll`() {
@@ -579,7 +560,7 @@ class JSONConfigTest {
             add("field1", "abc")
             add("fieldX", 123)
         }
-        expect(expected) { JSONSerializer.serialize(obj, config2) }
+        JSONSerializer.serialize(obj, config2) shouldBe expected
     }
 
     @Test fun `should transfer switch settings and numeric values on combineAll`() {
@@ -602,16 +583,16 @@ class JSONConfigTest {
         val config2 = JSONConfig {
             combineAll(config)
         }
-        expect("??") { config2.sealedClassDiscriminator }
-        expect(16384) { config2.readBufferSize }
-        expect(512) { config2.stringifyInitialSize }
-        assertTrue(config2.bigIntegerString)
-        assertTrue(config2.bigDecimalString)
-        assertTrue(config2.includeNulls)
-        assertTrue(config2.allowExtra)
-        assertTrue(config2.stringifyNonASCII)
-        assertTrue(config2.streamOutput)
-        expect(options) { config2.parseOptions }
+        config2.sealedClassDiscriminator shouldBe "??"
+        config2.readBufferSize shouldBe 16384
+        config2.stringifyInitialSize shouldBe 512
+        config2.bigIntegerString shouldBe true
+        config2.bigDecimalString shouldBe true
+        config2.includeNulls shouldBe true
+        config2.allowExtra shouldBe true
+        config2.stringifyNonASCII shouldBe true
+        config2.streamOutput shouldBe true
+        config2.parseOptions shouldBe options
     }
 
     @Test fun `should copy config with specified changes`() {
@@ -622,16 +603,16 @@ class JSONConfigTest {
         val copyConfig = config.copy {
             stringifyInitialSize = 128
         }
-        expect(128) { copyConfig.stringifyInitialSize }
-        expect("?") { copyConfig.sealedClassDiscriminator }
-        expect(256) { config.stringifyInitialSize }
+        copyConfig.stringifyInitialSize shouldBe 128
+        copyConfig.sealedClassDiscriminator shouldBe "?"
+        config.stringifyInitialSize shouldBe 256
     }
 
     @Test fun `should detect whether class has @JSONIncludeAllProperties`() {
         val annotations1 = DummyWithIncludeAllProperties::class.annotations
-        assertTrue(JSONConfig.defaultConfig.hasIncludeAllPropertiesAnnotation(annotations1))
+        JSONConfig.defaultConfig.hasIncludeAllPropertiesAnnotation(annotations1) shouldBe true
         val annotations2 = Dummy1::class.annotations
-        assertFalse(JSONConfig.defaultConfig.hasIncludeAllPropertiesAnnotation(annotations2))
+        JSONConfig.defaultConfig.hasIncludeAllPropertiesAnnotation(annotations2) shouldBe false
     }
 
     @Test fun `should deserialise interface with the right config`() {
@@ -643,9 +624,9 @@ class JSONConfigTest {
             add("number", 123)
         }
         val result: DummyInterface = JSONDeserializer.deserialize(json, config)
-        assertIs<DummyImplementation>(result)
-        expect("Fred") { result.name }
-        expect(123) { result.number }
+        result.shouldBeType<DummyImplementation>()
+        result.name shouldBe "Fred"
+        result.number shouldBe 123
     }
 
     interface DummyInterface {

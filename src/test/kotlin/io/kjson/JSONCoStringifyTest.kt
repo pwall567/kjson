@@ -26,9 +26,6 @@
 package io.kjson
 
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
-import kotlin.test.expect
 import kotlin.time.Duration
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.channels.Channel
@@ -58,6 +55,12 @@ import java.util.UUID
 import java.util.stream.IntStream
 import java.util.stream.LongStream
 import java.util.stream.Stream
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeOneOf
+import io.kstuff.test.shouldEndWith
+import io.kstuff.test.shouldStartWith
+import io.kstuff.test.shouldThrow
 
 import io.kjson.JSONCoStringify.outputJSON
 import io.kjson.optional.Opt
@@ -105,7 +108,7 @@ class JSONCoStringifyTest {
     @Test fun `should stringify null`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(null as String?) { capture.accept(it) }
-        expect("null") { capture.toString() }
+        capture.toString() shouldBe "null"
     }
 
     @Test fun `should use toJSON if specified in JSONConfig`() = runBlocking {
@@ -119,7 +122,7 @@ class JSONCoStringifyTest {
         }
         val capture = OutputCapture()
         JSONCoStringify.coStringify(Dummy1("xyz", 888), config) { capture.accept(it) }
-        expect("""{"a":"xyz","b":888}""") { capture.toString() }
+        capture.toString() shouldBe """{"a":"xyz","b":888}"""
     }
 
     @Test fun `should stringify a JSONValue`() = runBlocking {
@@ -129,165 +132,165 @@ class JSONCoStringifyTest {
         }
         val capture = OutputCapture()
         JSONCoStringify.coStringify(json) { capture.accept(it) }
-        expect("""{"a":"Hello","b":27}""") { capture.toString() }
+        capture.toString() shouldBe """{"a":"Hello","b":27}"""
     }
 
     @Test fun `should stringify a simple string`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify("abc") { capture.accept(it) }
-        expect("\"abc\"") { capture.toString() }
+        capture.toString() shouldBe "\"abc\""
     }
 
     @Test fun `should stringify a string with a newline`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify("a\nc") { capture.accept(it) }
-        expect("\"a\\nc\"") { capture.toString() }
+        capture.toString() shouldBe "\"a\\nc\""
     }
 
     @Test fun `should stringify a string with a unicode sequence`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify("a\u2014c") { capture.accept(it) }
-        expect("\"a\\u2014c\"") { capture.toString() }
+        capture.toString() shouldBe "\"a\\u2014c\""
     }
 
     @Test fun `should stringify a single character`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify('X') { capture.accept(it) }
-        expect("\"X\"") { capture.toString() }
+        capture.toString() shouldBe "\"X\""
     }
 
     @Test fun `should stringify a charArray`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(charArrayOf('a', 'b', 'c')) { capture.accept(it) }
-        expect("\"abc\"") { capture.toString() }
+        capture.toString() shouldBe "\"abc\""
     }
 
     @Test fun `should stringify an integer`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(123456789) { capture.accept(it) }
-        expect("123456789") { capture.toString() }
+        capture.toString() shouldBe "123456789"
     }
 
     @Test fun `should stringify an integer 0`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(0) { capture.accept(it) }
-        expect("0") { capture.toString() }
+        capture.toString() shouldBe "0"
     }
 
     @Test fun `should stringify a negative integer`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(-888) { capture.accept(it) }
-        expect("-888") { capture.toString() }
+        capture.toString() shouldBe "-888"
     }
 
     @Test fun `should stringify a long`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(123456789012345678) { capture.accept(it) }
-        expect("123456789012345678") { capture.toString() }
+        capture.toString() shouldBe "123456789012345678"
     }
 
     @Test fun `should stringify a negative long`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(-111222333444555666) { capture.accept(it) }
-        expect("-111222333444555666") { capture.toString() }
+        capture.toString() shouldBe "-111222333444555666"
     }
 
     @Test fun `should stringify a short`() = runBlocking {
         val capture = OutputCapture()
         val x: Short = 12345
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("12345") { capture.toString() }
+        capture.toString() shouldBe "12345"
     }
 
     @Test fun `should stringify a negative short`() = runBlocking {
         val capture = OutputCapture()
         val x: Short = -4444
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("-4444") { capture.toString() }
+        capture.toString() shouldBe "-4444"
     }
 
     @Test fun `should stringify a byte`() = runBlocking {
         val capture = OutputCapture()
         val x: Byte = 123
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("123") { capture.toString() }
+        capture.toString() shouldBe "123"
     }
 
     @Test fun `should stringify a negative byte`() = runBlocking {
         val capture = OutputCapture()
         val x: Byte = -99
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("-99") { capture.toString() }
+        capture.toString() shouldBe "-99"
     }
 
     @Test fun `should stringify a float`() = runBlocking {
         val capture = OutputCapture()
         val x = 1.2345F
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("1.2345") { capture.toString() }
+        capture.toString() shouldBe "1.2345"
     }
 
     @Test fun `should stringify a negative float`() = runBlocking {
         val capture = OutputCapture()
         val x: Float = -567.888F
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("-567.888") { capture.toString() }
+        capture.toString() shouldBe "-567.888"
     }
 
     @Test fun `should stringify a double`() = runBlocking {
         val capture = OutputCapture()
         val x = 1.23456789
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("1.23456789") { capture.toString() }
+        capture.toString() shouldBe "1.23456789"
     }
 
     @Test fun `should stringify a negative double`() = runBlocking {
         val capture = OutputCapture()
         val x = -9.998877665
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("-9.998877665") { capture.toString() }
+        capture.toString() shouldBe "-9.998877665"
     }
 
     @Test fun `should stringify an unsigned integer`() = runBlocking {
         val capture = OutputCapture()
         val x = 2147483648U // Int.MAX_VALUE + 1
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("2147483648") { capture.toString() }
+        capture.toString() shouldBe "2147483648"
     }
 
     @Test fun `should stringify an unsigned long`() = runBlocking {
         val capture = OutputCapture()
         val x = 9223372036854775808U // Long.MAX_VALUE + 1
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("9223372036854775808") { capture.toString() }
+        capture.toString() shouldBe "9223372036854775808"
     }
 
     @Test fun `should stringify an unsigned short`() = runBlocking {
         val capture = OutputCapture()
         val x: UShort = 32768U // Short.MAX_VALUE + 1
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("32768") { capture.toString() }
+        capture.toString() shouldBe "32768"
     }
 
     @Test fun `should stringify an unsigned byte`() = runBlocking {
         val capture = OutputCapture()
         val x: UByte = 128U // Byte.MAX_VALUE + 1
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("128") { capture.toString() }
+        capture.toString() shouldBe "128"
     }
 
     @Test fun `should stringify a BigInteger`() = runBlocking {
         val capture = OutputCapture()
         val x = BigInteger.valueOf(123456789000)
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("123456789000") { capture.toString() }
+        capture.toString() shouldBe "123456789000"
     }
 
     @Test fun `should stringify a negative BigInteger`() = runBlocking {
         val capture = OutputCapture()
         val x = BigInteger.valueOf(-123456789000)
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("-123456789000") { capture.toString() }
+        capture.toString() shouldBe "-123456789000"
     }
 
     @Test fun `should stringify a BigInteger as string when specified in JSONConfig`() = runBlocking {
@@ -297,14 +300,14 @@ class JSONCoStringifyTest {
         }
         val x = BigInteger.valueOf(123456789000)
         JSONCoStringify.coStringify(x, config) { capture.accept(it) }
-        expect("\"123456789000\"") { capture.toString() }
+        capture.toString() shouldBe "\"123456789000\""
     }
 
     @Test fun `should stringify a BigDecimal`() = runBlocking {
         val capture = OutputCapture()
         val x = BigDecimal("12345.678")
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("12345.678") { capture.toString() }
+        capture.toString() shouldBe "12345.678"
     }
 
     @Test fun `should stringify a BigDecimal as string when specified in JSONConfig`() = runBlocking {
@@ -314,138 +317,138 @@ class JSONCoStringifyTest {
         }
         val x = BigDecimal("12345.678")
         JSONCoStringify.coStringify(x, config) { capture.accept(it) }
-        expect("\"12345.678\"") { capture.toString() }
+        capture.toString() shouldBe "\"12345.678\""
     }
 
     @Test fun `should stringify a Boolean`() = runBlocking {
         val capture = OutputCapture()
         var x = true
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("true") { capture.toString() }
+        capture.toString() shouldBe "true"
         capture.reset()
         x = false
         JSONCoStringify.coStringify(x) { capture.accept(it) }
-        expect("false") { capture.toString() }
+        capture.toString() shouldBe "false"
     }
 
     @Test fun `should stringify an array of characters`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(arrayOf('a', 'b', 'c')) { capture.accept(it) }
-        expect("\"abc\"") { capture.toString() }
+        capture.toString() shouldBe "\"abc\""
     }
 
     @Test fun `should stringify an array of integers`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(arrayOf(123, 456, 789)) { capture.accept(it) }
-        expect("[123,456,789]") { capture.toString() }
+        capture.toString() shouldBe "[123,456,789]"
     }
 
     @Test fun `should stringify an IntArray`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(IntArray(3) { (it + 1) * 111 }) { capture.accept(it) }
-        expect("[111,222,333]") { capture.toString() }
+        capture.toString() shouldBe "[111,222,333]"
     }
 
     @Test fun `should stringify a LongArray`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(LongArray(3) { (it + 1) * 111111111111 }) { capture.accept(it) }
-        expect("[111111111111,222222222222,333333333333]") { capture.toString() }
+        capture.toString() shouldBe "[111111111111,222222222222,333333333333]"
     }
 
     @Test fun `should stringify a ByteArray`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(ByteArray(3) { ((it + 1) * 5).toByte() }) { capture.accept(it) }
-        expect("[5,10,15]") { capture.toString() }
+        capture.toString() shouldBe "[5,10,15]"
     }
 
     @Test fun `should stringify a ShortArray`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(ShortArray(4) { ((it + 1) * 1111).toShort() }) { capture.accept(it) }
-        expect("[1111,2222,3333,4444]") { capture.toString() }
+        capture.toString() shouldBe "[1111,2222,3333,4444]"
     }
 
     @Test fun `should stringify a FloatArray`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(FloatArray(4) { it + 0.5F }) { capture.accept(it) }
-        expect("[0.5,1.5,2.5,3.5]") { capture.toString() }
+        capture.toString() shouldBe "[0.5,1.5,2.5,3.5]"
     }
 
     @Test fun `should stringify a DoubleArray`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(DoubleArray(4) { it + 0.5 }) { capture.accept(it) }
-        expect("[0.5,1.5,2.5,3.5]") { capture.toString() }
+        capture.toString() shouldBe "[0.5,1.5,2.5,3.5]"
     }
 
     @Test fun `should stringify a BooleanArray`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(BooleanArray(4) { (it and 1) == 0 }) { capture.accept(it) }
-        expect("[true,false,true,false]") { capture.toString() }
+        capture.toString() shouldBe "[true,false,true,false]"
     }
 
     @Test fun `should stringify an array of strings`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(arrayOf("Hello", "World")) { capture.accept(it) }
-        expect("""["Hello","World"]""") { capture.toString() }
+        capture.toString() shouldBe """["Hello","World"]"""
     }
 
     @Test fun `should stringify an array of arrays`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(arrayOf(arrayOf(11, 22), arrayOf(33, 44))) { capture.accept(it) }
-        expect("[[11,22],[33,44]]") { capture.toString() }
+        capture.toString() shouldBe "[[11,22],[33,44]]"
     }
 
     @Test fun `should stringify an empty array`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(emptyArray<Int>()) { capture.accept(it) }
-        expect("[]") { capture.toString() }
+        capture.toString() shouldBe "[]"
     }
 
     @Test fun `should stringify an array of nulls`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(arrayOfNulls<String>(3)) { capture.accept(it) }
-        expect("[null,null,null]") { capture.toString() }
+        capture.toString() shouldBe "[null,null,null]"
     }
 
     @Test fun `should stringify a Pair of integers`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(123 to 789) { capture.accept(it) }
-        expect("[123,789]") { capture.toString() }
+        capture.toString() shouldBe "[123,789]"
     }
 
     @Test fun `should stringify a Pair of strings`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify("back" to "front") { capture.accept(it) }
-        expect("""["back","front"]""") { capture.toString() }
+        capture.toString() shouldBe """["back","front"]"""
     }
 
     @Test fun `should stringify a Triple of integers`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(Triple(123, 789, 0)) { capture.accept(it) }
-        expect("[123,789,0]") { capture.toString() }
+        capture.toString() shouldBe "[123,789,0]"
     }
 
     @Test fun `should stringify a class with a custom toJSON`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(DummyFromJSON(49)) { capture.accept(it) }
-        expect("""{"dec":"49","hex":"31"}""") { capture.toString() }
+        capture.toString() shouldBe """{"dec":"49","hex":"31"}"""
     }
 
     @Test fun `should stringify a list of integers`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(listOf(1234, 4567, 7890)) { capture.accept(it) }
-        expect("[1234,4567,7890]") { capture.toString() }
+        capture.toString() shouldBe "[1234,4567,7890]"
     }
 
     @Test fun `should stringify a list of strings`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(listOf("alpha", "beta", "gamma")) { capture.accept(it) }
-        expect("""["alpha","beta","gamma"]""") { capture.toString() }
+        capture.toString() shouldBe """["alpha","beta","gamma"]"""
     }
 
     @Test fun `should stringify a list of strings including null`() = runBlocking {
         val capture = OutputCapture()
         JSONCoStringify.coStringify(listOf("alpha", "beta", null, "gamma")) { capture.accept(it) }
-        expect("""["alpha","beta",null,"gamma"]""") { capture.toString() }
+        capture.toString() shouldBe """["alpha","beta",null,"gamma"]"""
     }
 
     @Test fun `should stringify a set of strings`() = runBlocking {
@@ -453,54 +456,55 @@ class JSONCoStringifyTest {
         JSONCoStringify.coStringify(listOf("alpha", "beta", "gamma")) { capture.accept(it) }
         // unfortunately, we don't know in what order a set iterator will return the entries, so...
         val str = capture.toString()
-        expect(true) { str.startsWith('[') && str.endsWith(']')}
+        str shouldStartWith "["
+        str shouldEndWith "]"
         val items = str.drop(1).dropLast(1).split(',').sorted()
-        expect(3) { items.size }
-        expect("\"alpha\"") { items[0] }
-        expect("\"beta\"") { items[1] }
-        expect("\"gamma\"") { items[2] }
+        items.size shouldBe 3
+        items[0] shouldBe "\"alpha\""
+        items[1] shouldBe "\"beta\""
+        items[2] shouldBe "\"gamma\""
     }
 
     @Test fun `should stringify the results of an iterator`() = runBlocking {
         val capture = OutputCapture()
         val list = listOf(1, 1, 2, 3, 5, 8, 13, 21)
         JSONCoStringify.coStringify(list.iterator()) { capture.accept(it) }
-        expect("[1,1,2,3,5,8,13,21]") { capture.toString() }
+        capture.toString() shouldBe "[1,1,2,3,5,8,13,21]"
     }
 
     @Test fun `should stringify a sequence`() = runBlocking {
         val capture = OutputCapture()
         val list = listOf(1, 1, 2, 3, 5, 8, 13, 21)
         JSONCoStringify.coStringify(list.asSequence()) { capture.accept(it) }
-        expect("[1,1,2,3,5,8,13,21]") { capture.toString() }
+        capture.toString() shouldBe "[1,1,2,3,5,8,13,21]"
     }
 
     @Test fun `should stringify the results of an enumeration`() = runBlocking {
         val capture = OutputCapture()
         val list = listOf("tahi", "rua", "toru", "wh\u0101")
         JSONCoStringify.coStringify(ListEnum(list)) { capture.accept(it) }
-        expect("""["tahi","rua","toru","wh\u0101"]""") { capture.toString() }
+        capture.toString() shouldBe """["tahi","rua","toru","wh\u0101"]"""
     }
 
     @Test fun `should stringify a Java Stream of strings`() = runBlocking {
         val capture = OutputCapture()
         val stream = Stream.of("tahi", "rua", "toru", "wh\u0101")
         JSONCoStringify.coStringify(stream) { capture.accept(it) }
-        expect("""["tahi","rua","toru","wh\u0101"]""") { capture.toString() }
+        capture.toString() shouldBe """["tahi","rua","toru","wh\u0101"]"""
     }
 
     @Test fun `should stringify a Java IntStream`() = runBlocking {
         val capture = OutputCapture()
         val stream = IntStream.of(1, 1, 2, 3, 5, 8, 13, 21)
         JSONCoStringify.coStringify(stream) { capture.accept(it) }
-        expect("[1,1,2,3,5,8,13,21]") { capture.toString() }
+        capture.toString() shouldBe "[1,1,2,3,5,8,13,21]"
     }
 
     @Test fun `should stringify a Java LongStream`() = runBlocking {
         val capture = OutputCapture()
         val stream = LongStream.of(10_000_000_000, 10_000_000_000, 20_000_000_000, 30_000_000_000, 50_000_000_000)
         JSONCoStringify.coStringify(stream) { capture.accept(it) }
-        expect("[10000000000,10000000000,20000000000,30000000000,50000000000]") { capture.toString() }
+        capture.toString() shouldBe "[10000000000,10000000000,20000000000,30000000000,50000000000]"
     }
 
     @Test fun `should stringify a map of string to string`() = runBlocking {
@@ -532,7 +536,7 @@ class JSONCoStringifyTest {
         val capture = OutputCapture()
         val value = DummyEnum.ALPHA
         JSONCoStringify.coStringify(value) { capture.accept(it) }
-        expect("\"ALPHA\"") { capture.toString() }
+        capture.toString() shouldBe "\"ALPHA\""
     }
 
     @Test fun `should stringify an SQL date`() = runBlocking {
@@ -540,7 +544,7 @@ class JSONCoStringifyTest {
         val str = "2020-04-10"
         val date = java.sql.Date.valueOf(str)
         JSONCoStringify.coStringify(date) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify an SQL time`() = runBlocking {
@@ -548,7 +552,7 @@ class JSONCoStringifyTest {
         val str = "00:21:22"
         val time = java.sql.Time.valueOf(str)
         JSONCoStringify.coStringify(time) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify an SQL date-time`() = runBlocking {
@@ -556,7 +560,7 @@ class JSONCoStringifyTest {
         val str = "2020-04-10 00:21:22.0"
         val timeStamp = java.sql.Timestamp.valueOf(str)
         JSONCoStringify.coStringify(timeStamp) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify an Instant`() = runBlocking {
@@ -564,7 +568,7 @@ class JSONCoStringifyTest {
         val str = "2020-04-09T14:28:51.234Z"
         val instant = Instant.parse(str)
         JSONCoStringify.coStringify(instant) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a LocalDate`() = runBlocking {
@@ -572,7 +576,7 @@ class JSONCoStringifyTest {
         val str = "2020-04-10"
         val localDate = LocalDate.parse(str)
         JSONCoStringify.coStringify(localDate) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a LocalDateTime`() = runBlocking {
@@ -580,7 +584,7 @@ class JSONCoStringifyTest {
         val str = "2020-04-10T00:09:26.123"
         val localDateTime = LocalDateTime.parse(str)
         JSONCoStringify.coStringify(localDateTime) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a LocalTime`() = runBlocking {
@@ -588,7 +592,7 @@ class JSONCoStringifyTest {
         val str = "00:09:26.123"
         val localTime = LocalTime.parse(str)
         JSONCoStringify.coStringify(localTime) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify an OffsetTime`() = runBlocking {
@@ -596,7 +600,7 @@ class JSONCoStringifyTest {
         val str = "10:15:06.543+10:00"
         val offsetTime = OffsetTime.parse(str)
         JSONCoStringify.coStringify(offsetTime) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify an OffsetDateTime`() = runBlocking {
@@ -604,7 +608,7 @@ class JSONCoStringifyTest {
         val str = "2020-04-10T10:15:06.543+10:00"
         val offsetDateTime = OffsetDateTime.parse(str)
         JSONCoStringify.coStringify(offsetDateTime) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a ZonedDateTime`() = runBlocking {
@@ -612,7 +616,7 @@ class JSONCoStringifyTest {
         val str = "2020-04-10T10:15:06.543+10:00[Australia/Sydney]"
         val zonedDateTime = ZonedDateTime.parse(str)
         JSONCoStringify.coStringify(zonedDateTime) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a Year`() = runBlocking {
@@ -620,7 +624,7 @@ class JSONCoStringifyTest {
         val str = "2020"
         val year = Year.parse(str)
         JSONCoStringify.coStringify(year) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a YearMonth`() = runBlocking {
@@ -628,7 +632,7 @@ class JSONCoStringifyTest {
         val str = "2020-04"
         val yearMonth = YearMonth.parse(str)
         JSONCoStringify.coStringify(yearMonth) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a MonthDay`() = runBlocking {
@@ -636,7 +640,7 @@ class JSONCoStringifyTest {
         val str = "--04-23"
         val monthDay = MonthDay.parse(str)
         JSONCoStringify.coStringify(monthDay) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a Java Duration`() = runBlocking {
@@ -644,7 +648,7 @@ class JSONCoStringifyTest {
         val str = "PT2H"
         val duration = JavaDuration.parse(str)
         JSONCoStringify.coStringify(duration) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a Period`() = runBlocking {
@@ -652,7 +656,7 @@ class JSONCoStringifyTest {
         val str = "P3M"
         val period = Period.parse(str)
         JSONCoStringify.coStringify(period) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a Duration`() = runBlocking {
@@ -660,7 +664,7 @@ class JSONCoStringifyTest {
         val str = "PT2H"
         val duration = Duration.parseIsoString(str)
         JSONCoStringify.coStringify(duration) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a URI`() = runBlocking {
@@ -668,7 +672,7 @@ class JSONCoStringifyTest {
         val str = "http://kjson.io"
         val uri = URI(str)
         JSONCoStringify.coStringify(uri) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a URL`() = runBlocking {
@@ -676,7 +680,7 @@ class JSONCoStringifyTest {
         val str = "http://kjson.io"
         val url = URL(str)
         JSONCoStringify.coStringify(url) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a UUID`() = runBlocking {
@@ -684,7 +688,7 @@ class JSONCoStringifyTest {
         val str = "e24b6740-7ac3-11ea-9e47-37640adfe63a"
         val uuid = UUID.fromString(str)
         JSONCoStringify.coStringify(uuid) { capture.accept(it) }
-        expect("\"$str\"") { capture.toString() }
+        capture.toString() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a Calendar`() = runBlocking {
@@ -700,7 +704,7 @@ class JSONCoStringifyTest {
             set(Calendar.ZONE_OFFSET, 10 * 60 * 60 * 1000)
         }
         JSONCoStringify.coStringify(cal) { capture.accept(it) }
-        expect("\"2019-04-25T18:52:47.123+10:00\"") { capture.toString() }
+        capture.toString() shouldBe "\"2019-04-25T18:52:47.123+10:00\""
     }
 
     @Test fun `should stringify a Date`() = runBlocking {
@@ -719,10 +723,7 @@ class JSONCoStringifyTest {
         JSONCoStringify.coStringify(date) { capture.accept(it) }
         // NOTE - Java implementations are inconsistent - some will normalise the time to UTC
         // while others preserve the time zone as supplied.  The test below allows for either.
-        val expected1 = "\"2019-04-25T18:52:47.123+10:00\""
-        val expected2 = "\"2019-04-25T08:52:47.123Z\""
-        val result = capture.toString()
-        assertTrue(result == expected1 || result == expected2, "error - result was $result")
+        capture.toString() shouldBeOneOf listOf("\"2019-04-25T18:52:47.123+10:00\"", "\"2019-04-25T08:52:47.123Z\"")
     }
 
     @Test fun `should stringify a BitSet`() = runBlocking {
@@ -732,14 +733,14 @@ class JSONCoStringifyTest {
             set(3)
         }
         JSONCoStringify.coStringify(bitSet) { capture.accept(it) }
-        expect("[1,3]") { capture.toString() }
+        capture.toString() shouldBe "[1,3]"
     }
 
     @Test fun `should stringify a simple object`() = runBlocking {
         val capture = OutputCapture()
         val dummy1 = Dummy1("abcdef", 98765)
         JSONCoStringify.coStringify(dummy1) { capture.accept(it) }
-        expect("""{"field1":"abcdef","field2":98765}""") { capture.toString() }
+        capture.toString() shouldBe """{"field1":"abcdef","field2":98765}"""
     }
 
     @Test fun `should stringify a simple object with extra property`() = runBlocking {
@@ -747,7 +748,7 @@ class JSONCoStringifyTest {
         val dummy2 = Dummy2("abcdef", 98765)
         dummy2.extra = "extra123"
         JSONCoStringify.coStringify(dummy2) { capture.accept(it) }
-        expect("""{"field1":"abcdef","field2":98765,"extra":"extra123"}""") { capture.toString() }
+        capture.toString() shouldBe """{"field1":"abcdef","field2":98765,"extra":"extra123"}"""
     }
 
     @Test fun `should stringify a simple object with extra property omitting null field`() = runBlocking {
@@ -755,7 +756,7 @@ class JSONCoStringifyTest {
         val dummy2 = Dummy2("abcdef", 98765)
         dummy2.extra = null
         JSONCoStringify.coStringify(dummy2) { capture.accept(it) }
-        expect("""{"field1":"abcdef","field2":98765}""") { capture.toString() }
+        capture.toString() shouldBe """{"field1":"abcdef","field2":98765}"""
     }
 
     @Test fun `should stringify a simple object with extra property including null when config set`() = runBlocking {
@@ -766,7 +767,7 @@ class JSONCoStringifyTest {
             includeNulls = true
         }
         JSONCoStringify.coStringify(dummy2, config) { capture.accept(it) }
-        expect("""{"field1":"abcdef","field2":98765,"extra":null}""") { capture.toString() }
+        capture.toString() shouldBe """{"field1":"abcdef","field2":98765,"extra":null}"""
     }
 
     @Test fun `should stringify an object of a derived class`() = runBlocking {
@@ -1065,8 +1066,8 @@ class JSONCoStringifyTest {
         val circular2 = Circular2()
         circular1.ref2 = circular2
         circular2.ref1 = circular1
-        assertFailsWith<JSONKotlinException> { JSONCoStringify.coStringify(circular1) { capture.accept(it) } }.let {
-            expect("Circular reference to Circular1, at /ref2/ref1") { it.message }
+        shouldThrow<JSONKotlinException> { JSONCoStringify.coStringify(circular1) { capture.accept(it) } }.let {
+            it.message shouldBe "Circular reference to Circular1, at /ref2/ref1"
         }
     }
 
@@ -1074,8 +1075,8 @@ class JSONCoStringifyTest {
         val capture = OutputCapture()
         val circularList = mutableListOf<Any>()
         circularList.add(circularList)
-        assertFailsWith<JSONKotlinException> { JSONCoStringify.coStringify(circularList) { capture.accept(it) } }.let {
-            expect("Circular reference to ArrayList, at /0") { it.message }
+        shouldThrow<JSONKotlinException> { JSONCoStringify.coStringify(circularList) { capture.accept(it) } }.let {
+            it.message shouldBe "Circular reference to ArrayList, at /0"
         }
     }
 
@@ -1083,8 +1084,8 @@ class JSONCoStringifyTest {
         val capture = OutputCapture()
         val circularMap = mutableMapOf<String, Any>()
         circularMap["test1"] = circularMap
-        assertFailsWith<JSONKotlinException> { JSONCoStringify.coStringify(circularMap) { capture.accept(it) } }.let {
-            expect("Circular reference to LinkedHashMap, at /test1") { it.message }
+        shouldThrow<JSONKotlinException> { JSONCoStringify.coStringify(circularMap) { capture.accept(it) } }.let {
+            it.message shouldBe "Circular reference to LinkedHashMap, at /test1"
         }
     }
 
@@ -1095,31 +1096,31 @@ class JSONCoStringifyTest {
             number = 999,
         )
         coCapture.outputJSON(holder)
-        expect("""{"innerValue":{"string":"xyz"},"number":999}""") { coCapture.toString() }
+        coCapture.toString() shouldBe """{"innerValue":{"string":"xyz"},"number":999}"""
     }
 
     @Test fun `should stringify Opt`() = runBlocking {
         val coCapture = CoCapture()
         coCapture.outputJSON(Opt.of(123))
-        expect("123") { coCapture.toString() }
+        coCapture.toString() shouldBe "123"
     }
 
     @Test fun `should stringify Opt missing`() = runBlocking {
         val coCapture = CoCapture()
         coCapture.outputJSON(Opt.unset<Any>())
-        expect("""null""") { coCapture.toString() }
+        coCapture.toString() shouldBe """null"""
     }
 
     @Test fun `should stringify Opt property`() = runBlocking {
         val coCapture = CoCapture()
         coCapture.outputJSON(OptData(Opt.of(123)))
-        expect("""{"aaa":123}""") { coCapture.toString() }
+        coCapture.toString() shouldBe """{"aaa":123}"""
     }
 
     @Test fun `should stringify Opt property missing`() = runBlocking {
         val coCapture = CoCapture()
         coCapture.outputJSON(OptData(Opt.unset()))
-        expect("""{}""") { coCapture.toString() }
+        coCapture.toString() shouldBe """{}"""
     }
 
     @Test fun `should stringify a Java class`() = runBlocking {

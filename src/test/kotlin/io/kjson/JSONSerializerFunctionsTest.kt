@@ -2,7 +2,7 @@
  * @(#) JSONSerializerFunctionsTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2020, 2022 Peter Wall
+ * Copyright (c) 2020, 2022, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,14 +26,12 @@
 package io.kjson
 
 import kotlin.test.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
-import kotlin.test.expect
 
 import java.net.URL
 import java.util.UUID
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeNonNull
 
 import io.kjson.JSONSerializerFunctions.appendUUID
 import io.kjson.JSONSerializerFunctions.findToJSON
@@ -46,38 +44,38 @@ import io.kjson.util.findSealedClass
 class JSONSerializerFunctionsTest {
 
     @Test fun `should find toJSON when it is present`() {
-        assertNotNull(DummyFromJSON::class.findToJSON())
+        DummyFromJSON::class.findToJSON().shouldBeNonNull()
     }
 
     @Test fun `should return null when toJSON is not present`() {
-        assertNull(Dummy1::class.findToJSON())
+        Dummy1::class.findToJSON() shouldBe null
     }
 
     @Test fun `should return parent when class is a subclass of a sealed class`() {
-        expect("Expr") { NotANumber::class.findSealedClass()?.simpleName }
+        NotANumber::class.findSealedClass()?.simpleName shouldBe "Expr"
     }
 
     @Test fun `should return null when class is not a subclass of a sealed class`() {
-        assertNull(Dummy1::class.findSealedClass())
+        Dummy1::class.findSealedClass() shouldBe null
     }
 
     @Test fun `should recognise a toString-able class`() {
-        assertTrue(URL::class.isToStringClass())
+        URL::class.isToStringClass() shouldBe true
     }
 
     @Test fun `should recognise a not-toString-able class`() {
-        assertFalse(Dummy1::class.isToStringClass())
+        Dummy1::class.isToStringClass() shouldBe false
     }
 
     @Test fun `should not crash on reflection on system classes`() {
         val map: Map<String, String> = emptyMap()
-        assertNull(map::class.findToJSON())
+        map::class.findToJSON() shouldBe null
         val int = 1
-        assertNull(int::class.findToJSON())
+        int::class.findToJSON() shouldBe null
         val lambda: (Int) -> Int = { it }
-        assertNull(lambda::class.findToJSON())
+        lambda::class.findToJSON() shouldBe null
         val str = "???"
-        assertNull(str::class.findToJSON())
+        str::class.findToJSON() shouldBe null
     }
 
     @Test fun `should serialize UUID correctly`() {
@@ -85,7 +83,7 @@ class JSONSerializerFunctionsTest {
         val uuid = UUID.fromString(string)
         val sb = StringBuilder()
         sb.appendUUID(uuid)
-        expect(string) { sb.toString() }
+        sb.toString() shouldBe string
     }
 
 }

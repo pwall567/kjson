@@ -30,9 +30,11 @@ import kotlin.reflect.KProperty
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.typeOf
 import kotlin.test.Test
-import kotlin.test.assertIs
 import kotlin.test.fail
 import kotlinx.coroutines.runBlocking
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeType
 
 import io.kjson.JSONConfig
 import io.kjson.JSONInt
@@ -44,7 +46,6 @@ import io.kjson.testclasses.Dummy1
 import io.kjson.testclasses.Dummy3
 import io.kjson.testclasses.JavaClass1
 import io.kjson.util.CoCapture
-import io.kjson.util.shouldBe
 
 class ObjectSerializerTest {
 
@@ -52,7 +53,7 @@ class ObjectSerializerTest {
         val testObject = Dummy1("ABC", 123)
         val serializer = createSerializerForDummy1()
         val result = serializer.serialize(testObject, config, mutableListOf())
-        assertIs<JSONObject>(result)
+        result.shouldBeType<JSONObject>()
         result.size shouldBe 2
         with(result[0]) {
             name shouldBe  "field1"
@@ -85,7 +86,7 @@ class ObjectSerializerTest {
         val testObject = Dummy1("ABC", 123)
         val serializer = createSerializerFor(Dummy1::class, "field1", "field2")
         val result = serializer.serialize(testObject, config, mutableListOf())
-        assertIs<JSONObject>(result)
+        result.shouldBeType<JSONObject>()
         result.size shouldBe 2
         with(result[0]) {
             name shouldBe  "field1"
@@ -101,7 +102,7 @@ class ObjectSerializerTest {
         val testObject = Dummy1("ABC", 123)
         val serializer = createObjectSerializer(typeOf<Dummy1>(), Dummy1::class, config)
         val result = serializer.serialize(testObject, config, mutableListOf())
-        assertIs<JSONObject>(result)
+        result.shouldBeType<JSONObject>()
         result.size shouldBe 2
         with(result[0]) {
             name shouldBe  "field1"
@@ -117,12 +118,12 @@ class ObjectSerializerTest {
         val testObject = Dummy3(Dummy1("alpha", 99), "beta")
         val serializer = createSerializerForDummy3()
         val result = serializer.serialize(testObject, config, mutableListOf())
-        assertIs<JSONObject>(result)
+        result.shouldBeType<JSONObject>()
         result.size shouldBe 2
         with(result[0]) {
             name shouldBe "dummy1"
             with(value) {
-                assertIs<JSONObject>(this)
+                shouldBeType<JSONObject>()
                 size shouldBe 2
                 with(this[0]) {
                     name shouldBe "field1"
@@ -161,7 +162,7 @@ class ObjectSerializerTest {
         val testObject = JavaClass1(12345, "Java class")
         val serializer = findSerializer(typeOf<JavaClass1>(), config) as Serializer<JavaClass1>
         val result = serializer.serialize(testObject, config, mutableListOf())
-        assertIs<JSONObject>(result)
+        result.shouldBeType<JSONObject>()
         result.size shouldBe 2
         // unfortunately, we don't know what order the functions appear in the Java class members array (I suspect they
         // are stored internally in a HashMap), and hence what order the JSONObject entries appear in

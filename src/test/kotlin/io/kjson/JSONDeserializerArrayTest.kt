@@ -25,15 +25,7 @@
 
 package io.kjson
 
-import kotlin.reflect.KTypeProjection
-import kotlin.reflect.full.createType
 import kotlin.test.Test
-import kotlin.test.assertContains
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
-import kotlin.test.expect
 
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -44,19 +36,14 @@ import java.util.stream.IntStream
 import java.util.stream.LongStream
 import java.util.stream.Stream
 
-import io.kjson.Constants.arrayListStringType
-import io.kjson.Constants.hashSetStringType
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeEqual
+import io.kstuff.test.shouldBeType
+import io.kstuff.test.shouldContain
+import io.kstuff.test.shouldThrow
+
 import io.kjson.Constants.jsonArrayString
-import io.kjson.Constants.linkedHashSetStringType
-import io.kjson.Constants.linkedListStringType
-import io.kjson.Constants.listStringType
 import io.kjson.Constants.listStrings
-import io.kjson.Constants.pairStringIntType
-import io.kjson.Constants.pairStringStringType
-import io.kjson.Constants.setStringType
-import io.kjson.Constants.stringTypeProjection
-import io.kjson.Constants.tripleStringIntStringType
-import io.kjson.Constants.tripleStringStringStringType
 import io.kjson.util.SizedSequence
 import io.kjson.testclasses.DummyList
 import io.kjson.testclasses.DummyList2
@@ -75,7 +62,7 @@ class JSONDeserializerArrayTest {
             add(2)
             add(7)
         }
-        expect(bitset) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(bitset, json.deserialize())
     }
 
     @Test fun `should return BooleanArray from JSONArray of boolean`() {
@@ -84,8 +71,7 @@ class JSONDeserializerArrayTest {
             add(false)
             add(false)
         }
-        val expected = booleanArrayOf(true, false, false)
-        assertTrue(expected.contentEquals(JSONDeserializer.deserialize(BooleanArray::class, json)))
+        shouldBeEqual(booleanArrayOf(true, false, false), json.deserialize())
     }
 
     @Test fun `should fail deserializing BooleanArray if entries not boolean`() {
@@ -94,8 +80,8 @@ class JSONDeserializerArrayTest {
             add("ABC")
             add(false)
         }
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(BooleanArray::class, json) }.let {
-            expect("Incorrect type, expected Boolean but was 123, at /0") { it.message }
+        shouldThrow<JSONKotlinException>("Incorrect type, expected Boolean but was 123, at /0") {
+            json.deserialize<BooleanArray>()
         }
     }
 
@@ -105,8 +91,7 @@ class JSONDeserializerArrayTest {
             add(2)
             add(3)
         }
-        val expected = byteArrayOf(1, 2, 3)
-        assertTrue(expected.contentEquals(JSONDeserializer.deserialize(ByteArray::class, json)))
+        shouldBeEqual(byteArrayOf(1, 2, 3), json.deserialize())
     }
 
     @Test fun `should return CharArray from JSONArray of character`() {
@@ -115,8 +100,7 @@ class JSONDeserializerArrayTest {
             add("b")
             add("c")
         }
-        val expected = charArrayOf('a', 'b', 'c')
-        assertTrue(expected.contentEquals(JSONDeserializer.deserialize(CharArray::class, json)))
+        shouldBeEqual(charArrayOf('a', 'b', 'c'), json.deserialize())
     }
 
     @Test fun `should return DoubleArray from JSONArray of number`() {
@@ -125,8 +109,7 @@ class JSONDeserializerArrayTest {
             add(0)
             add(BigDecimal("0.012"))
         }
-        val expected = doubleArrayOf(123.0, 0.0, 0.012)
-        assertTrue(expected.contentEquals(JSONDeserializer.deserialize(DoubleArray::class, json)))
+        shouldBeEqual(doubleArrayOf(123.0, 0.0, 0.012), json.deserialize())
     }
 
     @Test fun `should return FloatArray from JSONArray of number`() {
@@ -135,8 +118,7 @@ class JSONDeserializerArrayTest {
             add(0)
             add(BigDecimal("0.012"))
         }
-        val expected = floatArrayOf(123.0F, 0.0F, 0.012F)
-        assertTrue(expected.contentEquals(JSONDeserializer.deserialize(FloatArray::class, json)))
+        shouldBeEqual(floatArrayOf(123.0F, 0.0F, 0.012F), json.deserialize())
     }
 
     @Test fun `should return IntArray from JSONArray of number`() {
@@ -145,8 +127,7 @@ class JSONDeserializerArrayTest {
             add(2468)
             add(321321)
         }
-        val expected = intArrayOf(12345, 2468, 321321)
-        assertTrue(expected.contentEquals(JSONDeserializer.deserialize(IntArray::class, json)))
+        shouldBeEqual(intArrayOf(12345, 2468, 321321), json.deserialize())
     }
 
     @Test fun `should fail deserializing JSONArray of number if entries not number`() {
@@ -155,8 +136,8 @@ class JSONDeserializerArrayTest {
             add(true)
             add(321321)
         }
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(IntArray::class, json) }.let {
-            expect("Incorrect type, expected Int but was \"12345\", at /0") { it.message }
+        shouldThrow<JSONKotlinException>("Incorrect type, expected Int but was \"12345\", at /0") {
+            json.deserialize<IntArray>()
         }
     }
 
@@ -166,8 +147,8 @@ class JSONDeserializerArrayTest {
             add(BigDecimal("0.125"))
             add(321321)
         }
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(IntArray::class, json) }.let {
-            expect("Incorrect type, expected Int but was 0.125, at /1") { it.message }
+        shouldThrow<JSONKotlinException>("Incorrect type, expected Int but was 0.125, at /1") {
+            json.deserialize<IntArray>()
         }
     }
 
@@ -177,8 +158,7 @@ class JSONDeserializerArrayTest {
             add(0)
             add(321321L)
         }
-        val expected = longArrayOf(123456789123456, 0, 321321)
-        assertTrue(expected.contentEquals(JSONDeserializer.deserialize(LongArray::class, json)))
+        shouldBeEqual(longArrayOf(123456789123456, 0, 321321), json.deserialize())
     }
 
     @Test fun `should return ShortArray from JSONArray of number`() {
@@ -187,24 +167,23 @@ class JSONDeserializerArrayTest {
             add(0)
             add(321)
         }
-        val expected = shortArrayOf(1234, 0, 321)
-        assertTrue(expected.contentEquals(JSONDeserializer.deserialize(ShortArray::class, json)))
+        shouldBeEqual(shortArrayOf(1234, 0, 321), json.deserialize())
     }
 
     @Test fun `should return List of String from JSONArray of JSONString`() {
-        expect(listStrings) { JSONDeserializer.deserialize(listStringType, jsonArrayString) }
+        shouldBeEqual(listStrings, jsonArrayString.deserialize())
     }
 
     @Test fun `should return ArrayList of String from JSONArray of JSONString`() {
-        expect(ArrayList(listStrings)) { JSONDeserializer.deserialize(arrayListStringType, jsonArrayString) }
+        shouldBeEqual(ArrayList(listStrings), jsonArrayString.deserialize())
     }
 
     @Test fun `should return LinkedList of String from JSONArray of JSONString`() {
-        expect(LinkedList(listStrings)) { JSONDeserializer.deserialize(linkedListStringType, jsonArrayString) }
+        shouldBeEqual(LinkedList(listStrings), jsonArrayString.deserialize())
     }
 
     @Test fun `should return Set of String from JSONArray of JSONString`() {
-        expect(LinkedHashSet(listStrings)) { JSONDeserializer.deserialize(setStringType, jsonArrayString) }
+        jsonArrayString.deserialize<Set<String>>() shouldBe LinkedHashSet(listStrings)
     }
 
     @Test fun `should reject duplicate when deserializing Set from JSONArray of JSONString`() {
@@ -213,17 +192,17 @@ class JSONDeserializerArrayTest {
             add("def")
             add("abc")
         }
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(setStringType, jsonArrayDuplicate) }.let {
-            expect("Duplicate not allowed, at /2") { it.message }
+        shouldThrow<JSONKotlinException>("Duplicate not allowed, at /2") {
+            jsonArrayDuplicate.deserialize<Set<String>>()
         }
     }
 
     @Test fun `should return HashSet of String from JSONArray of JSONString`() {
-        expect(HashSet(listStrings)) { JSONDeserializer.deserialize(hashSetStringType, jsonArrayString) }
+        shouldBeEqual(HashSet(listStrings), jsonArrayString.deserialize())
     }
 
     @Test fun `should return LinkedHashSet of String from JSONArray of JSONString`() {
-        expect(LinkedHashSet(listStrings)) { JSONDeserializer.deserialize(linkedHashSetStringType, jsonArrayString) }
+        shouldBeEqual(LinkedHashSet(listStrings), jsonArrayString.deserialize())
     }
 
     @Test fun `should return Pair from JSONArray`() {
@@ -231,7 +210,7 @@ class JSONDeserializerArrayTest {
             add("abc")
             add("def")
         }
-        expect("abc" to "def") { JSONDeserializer.deserialize(pairStringStringType, json) }
+        shouldBeEqual("abc" to "def", json.deserialize())
     }
 
     @Test fun `should return heterogenous Pair from JSONArray`() {
@@ -239,7 +218,7 @@ class JSONDeserializerArrayTest {
             add("abc")
             add(88)
         }
-        expect("abc" to 88) { JSONDeserializer.deserialize(pairStringIntType, json) }
+        shouldBeEqual("abc" to 88, json.deserialize())
     }
 
     @Test fun `should fail deserializing null into non-nullable Pair item`() {
@@ -247,10 +226,8 @@ class JSONDeserializerArrayTest {
             add("abc")
             add(null)
         }
-        assertFailsWith<JSONKotlinException> {
-            JSONDeserializer.deserialize<Pair<String, Int>>(json)
-        }.let {
-            expect("Pair item may not be null, at /1") { it.message }
+        shouldThrow<JSONKotlinException>("Pair item may not be null, at /1") {
+            json.deserialize<Pair<String, Int>>()
         }
     }
 
@@ -260,7 +237,7 @@ class JSONDeserializerArrayTest {
             add("def")
             add("xyz")
         }
-        expect(Triple("abc", "def", "xyz")) { JSONDeserializer.deserialize(tripleStringStringStringType, json) }
+        shouldBeEqual(Triple("abc", "def", "xyz"), json.deserialize())
     }
 
     @Test fun `should return heterogenous Triple from JSONArray`() {
@@ -269,7 +246,7 @@ class JSONDeserializerArrayTest {
             add(66)
             add("xyz")
         }
-        expect(Triple("abc", 66, "xyz")) { JSONDeserializer.deserialize(tripleStringIntStringType, json) }
+        shouldBeEqual(Triple("abc", 66, "xyz"), json.deserialize())
     }
 
     @Test fun `should fail deserializing null into non-nullable Triple item`() {
@@ -278,10 +255,8 @@ class JSONDeserializerArrayTest {
             add(null)
             add(1)
         }
-        assertFailsWith<JSONKotlinException> {
-            JSONDeserializer.deserialize<Triple<String, Int, Int>>(json)
-        }.let {
-            expect("Triple item may not be null, at /1") { it.message }
+        shouldThrow<JSONKotlinException>("Triple item may not be null, at /1") {
+            json.deserialize<Triple<String, Int, Int>>()
         }
     }
 
@@ -294,10 +269,8 @@ class JSONDeserializerArrayTest {
             })
             add("a")
         }
-        assertFailsWith<JSONKotlinException> {
-            JSONDeserializer.deserialize<Pair<Triple<String, Int, Int>, String>>(json)
-        }.let {
-            expect("Triple item may not be null, at /0/1") { it.message }
+        shouldThrow<JSONKotlinException>("Triple item may not be null, at /0/1") {
+            json.deserialize<Pair<Triple<String, Int, Int>, String>>()
         }
     }
 
@@ -306,9 +279,7 @@ class JSONDeserializerArrayTest {
             add("2019-10-06")
             add("2019-10-05")
         }
-        expect(DummyList(listOf(LocalDate.of(2019, 10, 6), LocalDate.of(2019, 10, 5)))) {
-            JSONDeserializer.deserialize(DummyList::class, json)
-        }
+        shouldBeEqual(DummyList(listOf(LocalDate.of(2019, 10, 6), LocalDate.of(2019, 10, 5))), json.deserialize())
     }
 
     @Test fun `should deserialize JSONArray into Sequence`() {
@@ -316,15 +287,15 @@ class JSONDeserializerArrayTest {
             add("abcde")
             add("fghij")
         }
-        val sequence = JSONDeserializer.deserialize<Sequence<String>>(json)
-        assertIs<SizedSequence<*>>(sequence)
-        expect(2) { sequence.size }
+        val sequence = json.deserialize<Sequence<String>>()
+        sequence.shouldBeType<SizedSequence<*>>()
+        sequence.size shouldBe 2
         with(sequence.iterator()) {
-            assertTrue(hasNext())
-            expect("abcde") { next() }
-            assertTrue(hasNext())
-            expect("fghij") { next() }
-            assertFalse(hasNext())
+            hasNext() shouldBe true
+            next() shouldBe "abcde"
+            hasNext() shouldBe true
+            next() shouldBe "fghij"
+            hasNext() shouldBe false
         }
     }
 
@@ -334,16 +305,16 @@ class JSONDeserializerArrayTest {
             add("fghij")
             add(null)
         }
-        val sequence = JSONDeserializer.deserialize<Sequence<String>>(json)
-        assertIs<SizedSequence<*>>(sequence)
-        expect(3) { sequence.size }
+        val sequence = json.deserialize<Sequence<String>>()
+        sequence.shouldBeType<SizedSequence<*>>()
+        sequence.size shouldBe 3
         with(sequence.iterator()) {
-            assertTrue(hasNext())
-            expect("abcde") { next() }
-            assertTrue(hasNext())
-            expect("fghij") { next() }
-            assertFailsWith<JSONKotlinException> { hasNext() }.let {
-                expect("Sequence item may not be null, at /2") { it.message }
+            hasNext() shouldBe true
+            next() shouldBe "abcde"
+            hasNext() shouldBe true
+            next() shouldBe "fghij"
+            shouldThrow<JSONKotlinException>("Sequence item may not be null, at /2") {
+                hasNext()
             }
         }
     }
@@ -354,32 +325,28 @@ class JSONDeserializerArrayTest {
             add("fghij")
             add(12345)
         }
-        val sequence = JSONDeserializer.deserialize<Sequence<String>>(json)
-        assertIs<SizedSequence<*>>(sequence)
-        expect(3) { sequence.size }
+        val sequence = json.deserialize<Sequence<String>>()
+        sequence.shouldBeType<SizedSequence<*>>()
+        sequence.size shouldBe 3
         with(sequence.iterator()) {
-            assertTrue(hasNext())
-            expect("abcde") { next() }
-            assertTrue(hasNext())
-            expect("fghij") { next() }
-            assertFailsWith<JSONKotlinException> { hasNext() }.let {
-                expect("Incorrect type, expected string but was 12345, at /2") { it.message }
+            hasNext() shouldBe true
+            next() shouldBe "abcde"
+            hasNext() shouldBe true
+            next() shouldBe "fghij"
+            shouldThrow<JSONKotlinException>("Incorrect type, expected string but was 12345, at /2") {
+                hasNext()
             }
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     @Test fun `should deserialize JSONArray into Array`() {
         val json = JSONArray.build {
             add("abcde")
             add("fghij")
         }
-        val expected = arrayOf("abcde", "fghij")
-        val stringArrayType = Array<String>::class.createType(listOf(stringTypeProjection))
-        assertTrue(expected.contentEquals(JSONDeserializer.deserialize(stringArrayType, json) as Array<String>))
+        shouldBeEqual(arrayOf("abcde", "fghij"), json.deserialize())
     }
 
-    @Suppress("UNCHECKED_CAST")
     @Test fun `should deserialize JSONArray into nested Array`() {
         val list1 = JSONArray.build {
             add("qwerty")
@@ -397,10 +364,8 @@ class JSONDeserializerArrayTest {
         val array1 = arrayOf("qwerty", "asdfgh", "zxcvbn")
         val array2 = arrayOf("abcde", "fghij")
         val expected = arrayOf(array1, array2)
-        val stringArrayType = Array<String>::class.createType(listOf(stringTypeProjection))
-        val stringArrayArrayType = Array<String>::class.createType(listOf(KTypeProjection.invariant(stringArrayType)))
-        val actual = JSONDeserializer.deserialize(stringArrayArrayType, json) as Array<Array<String>>
-        assertTrue(expected.contentDeepEquals(actual))
+        val actual = json.deserialize<Array<Array<String>>>()
+        expected.contentDeepEquals(actual) shouldBe true
     }
 
     @Test fun `should report error correctly deserializing JSONArray into nested Array`() {
@@ -418,57 +383,53 @@ class JSONDeserializerArrayTest {
             add(list1)
             add(list2)
         }
-        val stringArrayType = Array<String>::class.createType(listOf(stringTypeProjection))
-        val stringArrayArrayType = Array<String>::class.createType(listOf(KTypeProjection.invariant(stringArrayType)))
-        assertFailsWith<JSONKotlinException> {
-            JSONDeserializer.deserialize(stringArrayArrayType, json)
-        }.let {
-            expect("Incorrect type, expected string but was 123, at /1/2") { it.message }
+        shouldThrow<JSONKotlinException>("Incorrect type, expected string but was 123, at /1/2") {
+            json.deserialize<Array<Array<String>>>()
         }
     }
 
     @Test fun `should deserialize Java Stream`() {
         val json = JSONArray.of(JSONString("abc"), JSONString("def"))
-        val result: Stream<String> = JSONDeserializer.deserialize(json)
+        val result: Stream<String> = json.deserialize()
         val iterator = result.iterator()
-        expect(true) { iterator.hasNext() }
-        expect("abc") { iterator.next() }
-        expect(true) { iterator.hasNext() }
-        expect("def") { iterator.next() }
-        expect(false) { iterator.hasNext() }
+        iterator.hasNext() shouldBe true
+        iterator.next() shouldBe "abc"
+        iterator.hasNext() shouldBe true
+        iterator.next() shouldBe "def"
+        iterator.hasNext() shouldBe false
     }
 
     @Test fun `should deserialize Java IntStream`() {
         val json = JSONArray.of(JSONInt(2345), JSONInt(6789))
-        val result: IntStream = JSONDeserializer.deserialize(json)
+        val result: IntStream = json.deserialize()
         val iterator = result.iterator()
-        expect(true) { iterator.hasNext() }
-        expect(2345) { iterator.next() }
-        expect(true) { iterator.hasNext() }
-        expect(6789) { iterator.next() }
-        expect(false) { iterator.hasNext() }
+        iterator.hasNext() shouldBe true
+        iterator.next() shouldBe 2345
+        iterator.hasNext() shouldBe true
+        iterator.next() shouldBe 6789
+        iterator.hasNext() shouldBe false
     }
 
     @Test fun `should deserialize Java LongStream`() {
         val json = JSONArray.of(JSONLong(1234567812345678), JSONLong(9876543298765432))
-        val result: LongStream = JSONDeserializer.deserialize(json)
+        val result: LongStream = json.deserialize()
         val iterator = result.iterator()
-        expect(true) { iterator.hasNext() }
-        expect(1234567812345678) { iterator.next() }
-        expect(true) { iterator.hasNext() }
-        expect(9876543298765432) { iterator.next() }
-        expect(false) { iterator.hasNext() }
+        iterator.hasNext() shouldBe true
+        iterator.next() shouldBe 1234567812345678
+        iterator.hasNext() shouldBe true
+        iterator.next() shouldBe 9876543298765432
+        iterator.hasNext() shouldBe false
     }
 
     @Test fun `should deserialize Java DoubleStream`() {
         val json = JSONArray.of(JSONDecimal("1234.5"), JSONDecimal("1e40"))
-        val result: DoubleStream = JSONDeserializer.deserialize(json)
+        val result: DoubleStream = json.deserialize()
         val iterator = result.iterator()
-        expect(true) { iterator.hasNext() }
-        expect(1234.5) { iterator.next() }
-        expect(true) { iterator.hasNext() }
-        expect(1e40) { iterator.next() }
-        expect(false) { iterator.hasNext() }
+        iterator.hasNext() shouldBe true
+        iterator.next() shouldBe 1234.5
+        iterator.hasNext() shouldBe true
+        iterator.next() shouldBe 1e40
+        iterator.hasNext() shouldBe false
     }
 
     @Test fun `should deserialize JSONArray to Any`() {
@@ -476,7 +437,7 @@ class JSONDeserializerArrayTest {
             add("abcde")
             add("fghij")
         }
-        expect(listOf("abcde", "fghij")) { JSONDeserializer.deserializeAny(json) }
+        json.deserializeAny() shouldBe listOf("abcde", "fghij")
     }
 
     @Test fun `should deserialize List taking Array constructor parameter`() {
@@ -486,8 +447,7 @@ class JSONDeserializerArrayTest {
             add("bbb")
             add("abc")
         }
-        val immutableList = DummyList2(arrayOf("aaa", "ccc", "bbb", "abc"))
-        expect(immutableList) { json.deserialize<DummyList2>() }
+        json.deserialize<DummyList2>() shouldBe DummyList2(arrayOf("aaa", "ccc", "bbb", "abc"))
     }
 
     @Test fun `should deserialize List taking List constructor parameter`() {
@@ -497,8 +457,7 @@ class JSONDeserializerArrayTest {
             add("bbb")
             add("abc")
         }
-        val immutableList = DummyList3(listOf("aaa", "ccc", "bbb", "abc"))
-        expect(immutableList) { json.deserialize<DummyList3>() }
+        json.deserialize<DummyList3>() shouldBe DummyList3(listOf("aaa", "ccc", "bbb", "abc"))
     }
 
     @Test fun `should deserialize ImmutableList`() {
@@ -509,7 +468,7 @@ class JSONDeserializerArrayTest {
             add("abc")
         }
         val immutableList = ImmutableList.listOf(arrayOf("aaa", "ccc", "bbb", "abc"))
-        expect(immutableList) { json.deserialize<ImmutableList<String>>() }
+        json.deserialize<ImmutableList<String>>() shouldBe immutableList
     }
 
     @Test fun `should deserialize Set taking Set constructor parameter`() {
@@ -520,7 +479,7 @@ class JSONDeserializerArrayTest {
             add("abc")
         }
         val immutableSet = ImmutableSet.setOf(arrayOf("aaa", "ccc", "bbb", "abc"))
-        expect(immutableSet) { json.deserialize<ImmutableSet<String>>() }
+        json.deserialize<ImmutableSet<String>>() shouldBe immutableSet
     }
 
     @Test fun `should deserialize Collection taking Collection constructor parameter`() {
@@ -532,11 +491,11 @@ class JSONDeserializerArrayTest {
         }
         // there's no equals defined for Collection, so we have to do this the hard way...
         val immutableCollection: ImmutableCollection<String> = json.deserialize()
-        expect(4) { immutableCollection.size }
-        assertContains(immutableCollection, "aaa")
-        assertContains(immutableCollection, "bbb")
-        assertContains(immutableCollection, "ccc")
-        assertContains(immutableCollection, "abc")
+        immutableCollection.size shouldBe 4
+        immutableCollection shouldContain "aaa"
+        immutableCollection shouldContain "bbb"
+        immutableCollection shouldContain "ccc"
+        immutableCollection shouldContain "abc"
     }
 
 }

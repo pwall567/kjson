@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerIntTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,10 +26,12 @@
 package io.kjson
 
 import kotlin.test.Test
-import kotlin.test.expect
 
 import java.math.BigDecimal
 import java.math.BigInteger
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeEqual
 
 import io.kjson.testclasses.ConstructBigDecimal
 import io.kjson.testclasses.ConstructBigInteger
@@ -49,151 +51,151 @@ class JSONDeserializerIntTest {
     @Test fun `should return Int from JSONInt`() {
         val json = JSONInt(1234)
         val expected = 1234
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return Long from JSONInt`() {
         val json = JSONInt(1234)
         val expected: Long = 1234
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return Short from JSONInt`() {
         val json = JSONInt(1234)
         val expected: Short = 1234
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return Byte from JSONInt`() {
         val json = JSONInt(123)
         val expected: Byte = 123
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return Double from JSONInt`() {
         val json = JSONInt(123)
         val expected = 123.0
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return Float from JSONInt`() {
         val json = JSONInt(123)
         val expected = 123.0F
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return BigInteger from JSONInt`() {
         val value = 12345678
         val json = JSONInt(value)
         val expected: BigInteger? = BigInteger.valueOf(value.toLong())
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return BigDecimal from JSONInt`() {
         val json = JSONInt(1234)
         val expected = BigDecimal(1234)
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return ULong from JSONInt`() {
         val json = JSONInt(1234567)
         val expected: ULong = 1234567U
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return UInt from JSONInt`() {
         val json = JSONInt(1234567)
-        val expected: UInt = 1234567U
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        val expected = 1234567U
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return UShort from JSONInt`() {
         val json = JSONInt(40000)
         val expected: UShort = 40000U
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return UByte from JSONInt`() {
         val json = JSONInt(200)
         val expected: UByte = 200U
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with Long constructor from JSONInt`() {
         val json = JSONInt(1234567)
         val expected = ConstructLong(1234567)
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with Int constructor from JSONInt`() {
         val json = JSONInt(1234567)
         val expected = ConstructInt(1234567)
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with Short constructor from JSONInt`() {
         val json = JSONInt(12345)
         val expected = ConstructShort(12345)
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with Byte constructor from JSONInt`() {
         val json = JSONInt(123)
         val expected = ConstructByte(123)
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with ULong constructor from JSONInt`() {
         val json = JSONInt(1234567)
         val expected = ConstructULong(1234567U)
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with UInt constructor from JSONInt`() {
         val json = JSONInt(1234567)
         val expected = ConstructUInt(1234567U)
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with UShort constructor from JSONInt`() {
         val json = JSONInt(12345)
         val expected = ConstructUShort(12345U)
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with UByte constructor from JSONInt`() {
         val json = JSONInt(123)
         val expected = ConstructUByte(123U)
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with Double constructor from JSONInt`() {
         val json = JSONInt(12345678)
         val expected = ConstructDouble(12345678.toDouble())
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with Float constructor from JSONInt`() {
         val json = JSONInt(12345678)
         val expected = ConstructFloat(12345678.toFloat())
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with BigDecimal constructor from JSONInt`() {
         val json = JSONInt(12345678)
         val expected = ConstructBigDecimal(BigDecimal("12345678"))
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should return class with BigInteger constructor from JSONInt`() {
         val json = JSONInt(1234567)
         val expected = ConstructBigInteger(BigInteger("1234567"))
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should deserialize JSONInt to Any`() {
         val json = JSONInt(123456)
-        expect(123456) { JSONDeserializer.deserializeAny(json) }
+        json.deserializeAny() shouldBe 123456
     }
 
 }

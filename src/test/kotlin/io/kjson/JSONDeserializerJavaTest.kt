@@ -26,10 +26,12 @@
 package io.kjson
 
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNull
 
 import java.lang.reflect.Type
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeEqual
+import io.kstuff.test.shouldThrow
 
 import io.kjson.testclasses.CustomIgnore
 import io.kjson.testclasses.CustomName
@@ -40,7 +42,6 @@ import io.kjson.testclasses.JavaNamedArg
 import io.kjson.testclasses.JavaNamedArg1
 import io.kjson.testclasses.JavaNamedField
 import io.kjson.testclasses.JavaSingleArg
-import io.kjson.util.shouldBe
 
 class JSONDeserializerJavaTest {
 
@@ -49,7 +50,7 @@ class JSONDeserializerJavaTest {
             add("field1", 1234)
             add("field2", "Hello!")
         }
-        JSONDeserializer.deserialize(JavaClass1::class, json) shouldBe JavaClass1(1234, "Hello!")
+        shouldBeEqual(JavaClass1(1234, "Hello!"), JSONDeserializer.deserialize(json))
     }
 
     @Test fun `should deserialize object using Java Class correctly`() {
@@ -61,7 +62,7 @@ class JSONDeserializerJavaTest {
     }
 
     @Test fun `should deserialize null using Java Class correctly`() {
-        assertNull(JSONDeserializer.deserialize(JavaClass1::class.java, null))
+        JSONDeserializer.deserialize(JavaClass1::class.java, null) shouldBe null
     }
 
     @Test fun `should deserialize List using Java Type correctly`() {
@@ -81,7 +82,7 @@ class JSONDeserializerJavaTest {
 
     @Test fun `should deserialize null using Java Type correctly`() {
         val type: Type = JavaClass2::class.java.getField("field1").genericType
-        assertNull(JSONDeserializer.deserialize(type, null))
+        JSONDeserializer.deserialize(type, null) shouldBe null
     }
 
     @Test fun `should deserialize Java class with single-arg constructor`() {
@@ -105,8 +106,8 @@ class JSONDeserializerJavaTest {
             add("name", "Fred")
             add("jsa", 1234)
         }
-        assertFailsWith<JSONKotlinException> { json.deserialize<ClassWithJavaSingleArg>() }.let {
-            it.message shouldBe "Incorrect type, expected string but was 1234, at /jsa"
+        shouldThrow<JSONKotlinException>("Incorrect type, expected string but was 1234, at /jsa") {
+            json.deserialize<ClassWithJavaSingleArg>()
         }
     }
 
@@ -126,7 +127,7 @@ class JSONDeserializerJavaTest {
             add("field2", 1234)
         }
         with(json.deserialize<JavaNamedArg>()) {
-            assertNull(field1)
+            field1 shouldBe null
             field2 shouldBe 1234
         }
     }
@@ -135,8 +136,8 @@ class JSONDeserializerJavaTest {
         val json = JSONObject.build {
             add("field1", "Fred")
         }
-        assertFailsWith<JSONKotlinException> { json.deserialize<JavaNamedArg>() }.let {
-            it.message shouldBe "Property may not be null - field2"
+        shouldThrow<JSONKotlinException>("Property may not be null - field2") {
+            json.deserialize<JavaNamedArg>()
         }
     }
 
@@ -145,15 +146,15 @@ class JSONDeserializerJavaTest {
             add("field1", "Fred")
             add("field22", 1234)
         }
-        assertFailsWith<JSONKotlinException> { json.deserialize<JavaNamedArg>() }.let {
-            it.message shouldBe "Property may not be null - field2"
+        shouldThrow<JSONKotlinException>("Property may not be null - field2") {
+            json.deserialize<JavaNamedArg>()
         }
     }
 
     @Test fun `should report error correctly deserializing Java class with named arguments 2`() {
         val json = JSONString("Fred")
-        assertFailsWith<JSONKotlinException> { json.deserialize<JavaNamedArg>() }.let {
-            it.message shouldBe "Incorrect type, expected object but was \"Fred\""
+        shouldThrow<JSONKotlinException>("Incorrect type, expected object but was \"Fred\"") {
+            json.deserialize<JavaNamedArg>()
         }
     }
 
@@ -161,8 +162,8 @@ class JSONDeserializerJavaTest {
         val json = JSONString("George")
         val jsonArray = JSONArray.build { add(json) }
         val jsonObject = JSONObject.build { add("inner", jsonArray) }
-        assertFailsWith<JSONKotlinException> { jsonObject.deserialize<Map<String, Array<JavaNamedArg>>>() }.let {
-            it.message shouldBe "Incorrect type, expected object but was \"George\", at /inner/0"
+        shouldThrow<JSONKotlinException>("Incorrect type, expected object but was \"George\", at /inner/0") {
+            jsonObject.deserialize<Map<String, Array<JavaNamedArg>>>()
         }
     }
 
@@ -200,9 +201,10 @@ class JSONDeserializerJavaTest {
 
     @Test fun `should report error when no constructor found`() {
         val json = JSONInt(7777)
-        assertFailsWith<JSONKotlinException> { json.deserialize<JavaMultiConstructor>() }.let {
-            it.message shouldBe
-                    "No matching constructor for Java class io.kjson.testclasses.JavaMultiConstructor from 7777"
+        shouldThrow<JSONKotlinException>(
+            message = "No matching constructor for Java class io.kjson.testclasses.JavaMultiConstructor from 7777",
+        ) {
+            json.deserialize<JavaMultiConstructor>()
         }
     }
 

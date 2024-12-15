@@ -26,8 +26,8 @@
 package io.kjson.util
 
 import kotlin.test.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+
+import io.kstuff.test.shouldBe
 
 class SizedSequenceTest {
 
@@ -39,15 +39,15 @@ class SizedSequenceTest {
         }
         sizedSequence.size shouldBe 4
         val iterator = sizedSequence.iterator()
-        assertTrue(iterator.hasNext())
+        iterator.hasNext() shouldBe true
         iterator.next() shouldBe "one"
-        assertTrue(iterator.hasNext())
+        iterator.hasNext() shouldBe true
         iterator.next() shouldBe "two"
-        assertTrue(iterator.hasNext())
+        iterator.hasNext() shouldBe true
         iterator.next() shouldBe "three"
-        assertTrue(iterator.hasNext())
+        iterator.hasNext() shouldBe true
         iterator.next() shouldBe "four"
-        assertFalse(iterator.hasNext())
+        iterator.hasNext() shouldBe false
     }
 
 }

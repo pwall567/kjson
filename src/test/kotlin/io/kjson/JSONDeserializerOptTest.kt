@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerOptTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2023 Peter Wall
+ * Copyright (c) 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,11 +26,10 @@
 package io.kjson
 
 import kotlin.test.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
-import kotlin.test.expect
 import kotlin.test.fail
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeNonNull
 
 import io.kjson.optional.Opt
 import io.kjson.testclasses.OptComplexData
@@ -41,24 +40,24 @@ class JSONDeserializerOptTest {
     @Test fun `should deserialize Opt`() {
         val json = JSONInt(123)
         val result = JSONDeserializer.deserialize<Opt<Int>>(json)
-        assertNotNull(result)
-        assertTrue(result.isSet)
-        expect(123) { result.value }
+        result.shouldBeNonNull()
+        result.isSet shouldBe true
+        result.value shouldBe 123
     }
 
     @Test fun `should deserialize null Opt`() {
         val result = JSONDeserializer.deserialize<Opt<Int>>(null)
-        assertNotNull(result)
-        assertFalse(result.isSet)
+        result.shouldBeNonNull()
+        result.isSet shouldBe false
     }
 
     @Test fun `should deserialize Opt property`() {
         val json = JSON.parse("""{"aaa":123}""") ?: fail()
         val result = JSONDeserializer.deserialize<OptData>(json)
         with(result) {
-            assertNotNull(this)
-            assertTrue(aaa.isSet)
-            expect(123) { aaa.value }
+            shouldBeNonNull()
+            aaa.isSet shouldBe true
+            aaa.value shouldBe 123
         }
     }
 
@@ -66,8 +65,8 @@ class JSONDeserializerOptTest {
         val json = JSONObject.EMPTY
         val result = JSONDeserializer.deserialize<OptData>(json)
         with(result) {
-            assertNotNull(this)
-            assertFalse(aaa.isSet)
+            shouldBeNonNull()
+            aaa.isSet shouldBe false
         }
     }
 
@@ -75,9 +74,9 @@ class JSONDeserializerOptTest {
         val json = JSON.parse("""{"aaa":["content"]}""") ?: fail()
         val result = JSONDeserializer.deserialize<OptComplexData>(json)
         with(result) {
-            assertNotNull(this)
-            assertTrue(aaa.isSet)
-            expect(listOf("content")) { aaa.value }
+            shouldBeNonNull()
+            aaa.isSet shouldBe true
+            aaa.value shouldBe listOf("content")
         }
     }
 
@@ -85,8 +84,8 @@ class JSONDeserializerOptTest {
         val json = JSON.parse("""{}""") ?: fail()
         val result = JSONDeserializer.deserialize<OptComplexData>(json)
         with(result) {
-            assertNotNull(this)
-            assertFalse(aaa.isSet)
+            shouldBeNonNull()
+            aaa.isSet shouldBe false
         }
     }
 

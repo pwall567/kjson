@@ -29,10 +29,9 @@ import kotlin.reflect.KType
 import kotlin.reflect.full.createType
 import kotlin.reflect.typeOf
 import kotlin.test.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeType
 
 import io.kjson.deserialize.Deserializer
 import io.kjson.deserialize.IntDeserializer
@@ -44,14 +43,14 @@ class TypeMapTest {
 
     @Test fun `should save simple class`() {
         val deserializerTypeMap = TypeMap<Deserializer<*>>(Deserializer.initialEntries)
-        assertNull(deserializerTypeMap[Dummy1::class])
+        deserializerTypeMap[Dummy1::class] shouldBe null
         val initialSize = deserializerTypeMap.classMap.size
         deserializerTypeMap[Dummy1::class] = StringDeserializer
         deserializerTypeMap[Dummy1::class] shouldBe StringDeserializer
         deserializerTypeMap[Dummy1::class.createType()] shouldBe StringDeserializer
         deserializerTypeMap.classMap.size shouldBe initialSize + 1
         with(deserializerTypeMap.classMap[Dummy1::class]) {
-            assertIs<TypeMap.SimpleClassEntry<*>>(this)
+            shouldBeType<TypeMap.SimpleClassEntry<*>>()
             handler shouldBe StringDeserializer
         }
     }
@@ -59,13 +58,13 @@ class TypeMapTest {
     @Test fun `should save parameterised class`() {
         val deserializerTypeMap = TypeMap<Deserializer<*>>(Deserializer.initialEntries)
         val listStringType = typeOf<List<String>>()
-        assertNull(deserializerTypeMap[listStringType])
+        deserializerTypeMap[listStringType] shouldBe null
         val initialSize = deserializerTypeMap.classMap.size
         deserializerTypeMap[listStringType] = IntDeserializer
         deserializerTypeMap[listStringType] shouldBe IntDeserializer
         deserializerTypeMap.classMap.size shouldBe initialSize + 1
         with(deserializerTypeMap.classMap[List::class]) {
-            assertIs<TypeMap.ParameterizedClassEntry<*>>(this)
+            shouldBeType<TypeMap.ParameterizedClassEntry<*>>()
             numParams shouldBe 1
             candidates.size shouldBe 1
             with(candidates[0]) {
@@ -74,9 +73,9 @@ class TypeMapTest {
                 with(second[0]) {
                     with(this) {
                         with(type) {
-                            assertIs<KType>(this)
+                            shouldBeType<KType>()
                             classifier shouldBe String::class
-                            assertFalse(isMarkedNullable)
+                            isMarkedNullable shouldBe false
                         }
                     }
                 }
@@ -88,7 +87,7 @@ class TypeMapTest {
         val deserializerTypeMap = TypeMap<Deserializer<*>>(Deserializer.initialEntries)
         val listStringType = typeOf<List<String>>()
         val listStringQType = typeOf<List<String?>>()
-        assertNull(deserializerTypeMap[listStringType])
+        deserializerTypeMap[listStringType] shouldBe null
         val initialSize = deserializerTypeMap.classMap.size
         deserializerTypeMap[listStringType] = IntDeserializer
         deserializerTypeMap[listStringType] shouldBe IntDeserializer
@@ -97,7 +96,7 @@ class TypeMapTest {
         deserializerTypeMap[listStringType] shouldBe IntDeserializer
         deserializerTypeMap.classMap.size shouldBe initialSize + 1
         with(deserializerTypeMap.classMap[List::class]) {
-            assertIs<TypeMap.ParameterizedClassEntry<*>>(this)
+            shouldBeType<TypeMap.ParameterizedClassEntry<*>>()
             numParams shouldBe 1
             candidates.size shouldBe 2
             with(candidates[0]) {
@@ -106,9 +105,9 @@ class TypeMapTest {
                 with(second[0]) {
                     with(this) {
                         with(type) {
-                            assertIs<KType>(this)
+                            shouldBeType<KType>()
                             classifier shouldBe String::class
-                            assertFalse(isMarkedNullable)
+                            isMarkedNullable shouldBe false
                         }
                     }
                 }
@@ -119,9 +118,9 @@ class TypeMapTest {
                 with(second[0]) {
                     with(this) {
                         with(type) {
-                            assertIs<KType>(this)
+                            shouldBeType<KType>()
                             classifier shouldBe String::class
-                            assertTrue(isMarkedNullable)
+                            isMarkedNullable shouldBe true
                         }
                     }
                 }

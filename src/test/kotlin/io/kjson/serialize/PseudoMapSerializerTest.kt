@@ -26,15 +26,16 @@
 package io.kjson.serialize
 
 import kotlin.test.Test
-import kotlin.test.assertIs
 import kotlinx.coroutines.runBlocking
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeType
 
 import io.kjson.JSONArray
 import io.kjson.JSONConfig
 import io.kjson.JSONInt
 import io.kjson.JSONString
 import io.kjson.util.CoCapture
-import io.kjson.util.shouldBe
 
 class PseudoMapSerializerTest {
 
@@ -52,19 +53,19 @@ class PseudoMapSerializerTest {
         with(serializer.serialize(map, config, mutableListOf())) {
             size shouldBe 3
             with(this[0]) {
-                assertIs<JSONArray>(this)
+                shouldBeType<JSONArray>()
                 size shouldBe 2
                 this[0] shouldBe JSONInt(123)
                 this[1] shouldBe JSONString("alpha")
             }
             with(this[1]) {
-                assertIs<JSONArray>(this)
+                shouldBeType<JSONArray>()
                 size shouldBe 2
                 this[0] shouldBe JSONInt(456)
                 this[1] shouldBe JSONString("beta")
             }
             with(this[2]) {
-                assertIs<JSONArray>(this)
+                shouldBeType<JSONArray>()
                 size shouldBe 2
                 this[0] shouldBe JSONInt(789)
                 this[1] shouldBe JSONString("gamma")

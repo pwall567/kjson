@@ -2,6 +2,12 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [9.2] - 2024-12-15
+### Changed
+- `JSONFun`: added `deserializeAny()` extension function
+- `pom.xml`: updated dependency versions
+- tests: converted to `should-test` library
+
 ## [9.1] - 2024-11-03
 ### Changed
 - `Serializer`, `JSONConfig`: make use of `Channel` amd `Flow` conditional (library is optional)

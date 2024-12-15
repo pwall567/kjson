@@ -26,9 +26,8 @@
 package io.kjson.util
 
 import kotlin.test.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+
+import io.kstuff.test.shouldBe
 
 import io.kjson.JSONArray
 import io.kjson.JSONBoolean
@@ -44,28 +43,28 @@ class ReflectionUtilTest {
 
     @Test fun `should determine whether class is a Kotlin class`() {
         val kotlinClass = Dummy1::class
-        assertTrue(kotlinClass.isKotlinClass())
+        kotlinClass.isKotlinClass() shouldBe true
         val javaClass = JavaClass1::class
-        assertFalse(javaClass.isKotlinClass())
+        javaClass.isKotlinClass() shouldBe false
     }
 
     @Test fun `should locate sealed class in hierarchy of a given class`() {
         JSONInt::class.findSealedClass() shouldBe JSONNumber::class
         JSONBoolean::class.findSealedClass() shouldBe JSONPrimitive::class
         JSONArray::class.findSealedClass() shouldBe JSONStructure::class
-        assertNull(JSONObject.Property::class.findSealedClass())
+        JSONObject.Property::class.findSealedClass() shouldBe null
     }
 
     @Test fun `should test whether a Java class member is public`() {
         val javaClass1Class = JavaClass1::class.java
-        assertFalse(javaClass1Class.getDeclaredField("field1").isPublic())
-        assertTrue(javaClass1Class.getDeclaredMethod("getField1").isPublic())
+        javaClass1Class.getDeclaredField("field1").isPublic() shouldBe false
+        javaClass1Class.getDeclaredMethod("getField1").isPublic() shouldBe true
     }
 
     @Test fun `should test whether a Java class member is static`() {
         val javaClass1Class = JavaClass1::class.java
-        assertFalse(javaClass1Class.getDeclaredMethod("getField1").isStatic())
-        assertTrue(javaClass1Class.getDeclaredMethod("getDescription").isStatic())
+        javaClass1Class.getDeclaredMethod("getField1").isStatic() shouldBe false
+        javaClass1Class.getDeclaredMethod("getDescription").isStatic() shouldBe true
     }
 
 }

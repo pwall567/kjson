@@ -26,8 +26,6 @@
 package io.kjson
 
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
-import kotlin.test.expect
 import kotlin.time.Duration
 
 import java.math.BigDecimal
@@ -53,6 +51,10 @@ import java.util.UUID
 import java.util.stream.IntStream
 import java.util.stream.LongStream
 import java.util.stream.Stream
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeOneOf
+import io.kstuff.test.shouldThrow
 
 import io.kjson.JSONStringify.appendJSON
 import io.kjson.optional.Opt
@@ -92,12 +94,13 @@ import io.kjson.testclasses.TestGenericClass
 import io.kjson.testclasses.TestGenericClass2
 import io.kjson.testclasses.ValueClass
 import io.kjson.testclasses.ValueClassHolder
-import kotlin.test.assertTrue
+import io.kstuff.test.shouldEndWith
+import io.kstuff.test.shouldStartWith
 
 class JSONStringifyTest {
 
     @Test fun `should stringify null`() {
-        expect("null") { (null as String?).stringifyJSON() }
+        (null as String?).stringifyJSON() shouldBe "null"
     }
 
     @Test fun `should use toJSON if specified in JSONConfig`() {
@@ -109,7 +112,7 @@ class JSONStringifyTest {
                 }
             }
         }
-        expect("""{"a":"xyz","b":888}""") { Dummy1("xyz", 888).stringifyJSON(config) }
+        Dummy1("xyz", 888).stringifyJSON(config) shouldBe """{"a":"xyz","b":888}"""
     }
 
     @Test fun `should stringify a JSONValue`() {
@@ -117,117 +120,117 @@ class JSONStringifyTest {
             add("a", "Hello")
             add("b", 27)
         }
-        expect("""{"a":"Hello","b":27}""") { json.stringifyJSON() }
+        json.stringifyJSON() shouldBe """{"a":"Hello","b":27}"""
     }
 
     @Test fun `should stringify a simple string`() {
-        expect("\"abc\"") { "abc".stringifyJSON() }
+        "abc".stringifyJSON() shouldBe "\"abc\""
     }
 
     @Test fun `should stringify a string with a newline`() {
-        expect("\"a\\nc\"") { "a\nc".stringifyJSON() }
+        "a\nc".stringifyJSON() shouldBe "\"a\\nc\""
     }
 
     @Test fun `should stringify a string with a unicode sequence`() {
-        expect("\"a\\u2014c\"") { "a\u2014c".stringifyJSON() }
+        "a\u2014c".stringifyJSON() shouldBe "\"a\\u2014c\""
     }
 
     @Test fun `should stringify a single character`() {
-        expect("\"X\"") { 'X'.stringifyJSON() }
+        'X'.stringifyJSON() shouldBe "\"X\""
     }
 
     @Test fun `should stringify a charArray`() {
-        expect("\"abc\"") { charArrayOf('a', 'b', 'c').stringifyJSON() }
+        charArrayOf('a', 'b', 'c').stringifyJSON() shouldBe "\"abc\""
     }
 
     @Test fun `should stringify an integer`() {
-        expect("123456789") { 123456789.stringifyJSON() }
+        123456789.stringifyJSON() shouldBe "123456789"
     }
 
     @Test fun `should stringify an integer 0`() {
-        expect("0") { 0.stringifyJSON() }
+        0.stringifyJSON() shouldBe "0"
     }
 
     @Test fun `should stringify a negative integer`() {
-        expect("-888") { (-888).stringifyJSON() }
+        (-888).stringifyJSON() shouldBe "-888"
     }
 
     @Test fun `should stringify a long`() {
-        expect("123456789012345678") { 123456789012345678.stringifyJSON() }
+        123456789012345678.stringifyJSON() shouldBe "123456789012345678"
     }
 
     @Test fun `should stringify a negative long`() {
-        expect("-111222333444555666") { (-111222333444555666).stringifyJSON() }
+        (-111222333444555666).stringifyJSON() shouldBe "-111222333444555666"
     }
 
     @Test fun `should stringify a short`() {
         val x: Short = 12345
-        expect("12345") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "12345"
     }
 
     @Test fun `should stringify a negative short`() {
         val x: Short = -4444
-        expect("-4444") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "-4444"
     }
 
     @Test fun `should stringify a byte`() {
         val x: Byte = 123
-        expect("123") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "123"
     }
 
     @Test fun `should stringify a negative byte`() {
         val x: Byte = -99
-        expect("-99") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "-99"
     }
 
     @Test fun `should stringify a float`() {
         val x = 1.2345F
-        expect("1.2345") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "1.2345"
     }
 
     @Test fun `should stringify a negative float`() {
         val x: Float = -567.888F
-        expect("-567.888") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "-567.888"
     }
 
     @Test fun `should stringify a double`() {
         val x = 1.23456789
-        expect("1.23456789") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "1.23456789"
     }
 
     @Test fun `should stringify a negative double`() {
         val x = -9.998877665
-        expect("-9.998877665") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "-9.998877665"
     }
 
     @Test fun `should stringify an unsigned integer`() {
         val x = 2147483648U // Int.MAX_VALUE + 1
-        expect("2147483648") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "2147483648"
     }
 
     @Test fun `should stringify an unsigned long`() {
         val x = 9223372036854775808U // Long.MAX_VALUE + 1
-        expect("9223372036854775808") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "9223372036854775808"
     }
 
     @Test fun `should stringify an unsigned short`() {
         val x: UShort = 32768U // Short.MAX_VALUE + 1
-        expect("32768") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "32768"
     }
 
     @Test fun `should stringify an unsigned byte`() {
         val x: UByte = 128U // Byte.MAX_VALUE + 1
-        expect("128") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "128"
     }
 
     @Test fun `should stringify a BigInteger`() {
         val x = BigInteger.valueOf(123456789000)
-        expect("123456789000") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "123456789000"
     }
 
     @Test fun `should stringify a negative BigInteger`() {
         val x = BigInteger.valueOf(-123456789000)
-        expect("-123456789000") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "-123456789000"
     }
 
     @Test fun `should stringify a BigInteger as string when specified in JSONConfig`() {
@@ -235,12 +238,12 @@ class JSONStringifyTest {
             bigIntegerString = true
         }
         val x = BigInteger.valueOf(123456789000)
-        expect("\"123456789000\"") { x.stringifyJSON(config) }
+        x.stringifyJSON(config) shouldBe "\"123456789000\""
     }
 
     @Test fun `should stringify a BigDecimal`() {
         val x = BigDecimal("12345.678")
-        expect("12345.678") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "12345.678"
     }
 
     @Test fun `should stringify a BigDecimal as string when specified in JSONConfig`() {
@@ -248,138 +251,136 @@ class JSONStringifyTest {
             bigDecimalString = true
         }
         val x = BigDecimal("12345.678")
-        expect("\"12345.678\"") { x.stringifyJSON(config) }
+        x.stringifyJSON(config) shouldBe "\"12345.678\""
     }
 
     @Test fun `should stringify a Boolean`() {
         var x = true
-        expect("true") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "true"
         x = false
-        expect("false") { x.stringifyJSON() }
+        x.stringifyJSON() shouldBe "false"
     }
 
     @Test fun `should stringify an array of characters`() {
-        expect("\"abc\"") { arrayOf('a', 'b', 'c').stringifyJSON() }
+        arrayOf('a', 'b', 'c').stringifyJSON() shouldBe "\"abc\""
     }
 
     @Test fun `should stringify an array of integers`() {
-        expect("[123,456,789]") { arrayOf(123, 456, 789).stringifyJSON() }
+        arrayOf(123, 456, 789).stringifyJSON() shouldBe "[123,456,789]"
     }
 
     @Test fun `should stringify an IntArray`() {
-        expect("[111,222,333]") { (IntArray(3) { (it + 1) * 111 }).stringifyJSON() }
+        (IntArray(3) { (it + 1) * 111 }).stringifyJSON() shouldBe "[111,222,333]"
     }
 
     @Test fun `should stringify a LongArray`() {
-        expect("[111111111111,222222222222,333333333333]") {
-            (LongArray(3) { (it + 1) * 111111111111 }).stringifyJSON()
-        }
+        (LongArray(3) { (it + 1) * 111111111111 }).stringifyJSON() shouldBe "[111111111111,222222222222,333333333333]"
     }
 
     @Test fun `should stringify a ByteArray`() {
-        expect("[5,10,15]") { (ByteArray(3) { ((it + 1) * 5).toByte() }).stringifyJSON() }
+        (ByteArray(3) { ((it + 1) * 5).toByte() }).stringifyJSON() shouldBe "[5,10,15]"
     }
 
     @Test fun `should stringify a ShortArray`() {
-        expect("[1111,2222,3333,4444]") { (ShortArray(4) { ((it + 1) * 1111).toShort() }).stringifyJSON() }
+        (ShortArray(4) { ((it + 1) * 1111).toShort() }).stringifyJSON() shouldBe "[1111,2222,3333,4444]"
     }
 
     @Test fun `should stringify a FloatArray`() {
-        expect("[0.5,1.5,2.5,3.5]") { (FloatArray(4) { it + 0.5F }).stringifyJSON() }
+        (FloatArray(4) { it + 0.5F }).stringifyJSON() shouldBe "[0.5,1.5,2.5,3.5]"
     }
 
     @Test fun `should stringify a DoubleArray`() {
-        expect("[0.5,1.5,2.5,3.5]") { (DoubleArray(4) { it + 0.5 }).stringifyJSON() }
+        (DoubleArray(4) { it + 0.5 }).stringifyJSON() shouldBe "[0.5,1.5,2.5,3.5]"
     }
 
     @Test fun `should stringify a BooleanArray`() {
-        expect("[true,false,true,false]") { (BooleanArray(4) { (it and 1) == 0 }).stringifyJSON() }
+        (BooleanArray(4) { (it and 1) == 0 }).stringifyJSON() shouldBe "[true,false,true,false]"
     }
 
     @Test fun `should stringify an array of strings`() {
-        expect("""["Hello","World"]""") { arrayOf("Hello", "World").stringifyJSON() }
+        arrayOf("Hello", "World").stringifyJSON() shouldBe """["Hello","World"]"""
     }
 
     @Test fun `should stringify an array of arrays`() {
-        expect("[[11,22],[33,44]]") { arrayOf(arrayOf(11, 22), arrayOf(33, 44)).stringifyJSON() }
+        arrayOf(arrayOf(11, 22), arrayOf(33, 44)).stringifyJSON() shouldBe "[[11,22],[33,44]]"
     }
 
     @Test fun `should stringify an empty array`() {
-        expect("[]") { emptyArray<Int>().stringifyJSON() }
+        emptyArray<Int>().stringifyJSON() shouldBe "[]"
     }
 
     @Test fun `should stringify an array of nulls`() {
-        expect("[null,null,null]") { arrayOfNulls<String>(3).stringifyJSON() }
+        arrayOfNulls<String>(3).stringifyJSON() shouldBe "[null,null,null]"
     }
 
     @Test fun `should stringify a Pair of integers`() {
-        expect("[123,789]") { (123 to 789).stringifyJSON() }
+        (123 to 789).stringifyJSON() shouldBe "[123,789]"
     }
 
     @Test fun `should stringify a Pair of strings`() {
-//        expect("""["back","front"]""") { JSONStringify.stringify("back" to "front") }
-        expect("""["back","front"]""") { ("back" to "front").stringifyJSON() }
+        ("back" to "front").stringifyJSON() shouldBe """["back","front"]"""
     }
 
     @Test fun `should stringify a Triple of integers`() {
-        expect("[123,789,0]") { Triple(123, 789, 0).stringifyJSON() }
+        Triple(123, 789, 0).stringifyJSON() shouldBe "[123,789,0]"
     }
 
     @Test fun `should stringify a class with a custom toJson`() {
-        expect("""{"dec":"49","hex":"31"}""") { DummyFromJSON(49).stringifyJSON() }
+        DummyFromJSON(49).stringifyJSON() shouldBe """{"dec":"49","hex":"31"}"""
     }
 
     @Test fun `should stringify a list of integers`() {
-        expect("[1234,4567,7890]") { listOf(1234, 4567, 7890).stringifyJSON() }
+        listOf(1234, 4567, 7890).stringifyJSON() shouldBe "[1234,4567,7890]"
     }
 
     @Test fun `should stringify a list of strings`() {
-        expect("""["alpha","beta","gamma"]""") { listOf("alpha", "beta", "gamma").stringifyJSON() }
+        listOf("alpha", "beta", "gamma").stringifyJSON() shouldBe """["alpha","beta","gamma"]"""
     }
 
     @Test fun `should stringify a list of strings including null`() {
-        expect("""["alpha","beta",null,"gamma"]""") { listOf("alpha", "beta", null, "gamma").stringifyJSON() }
+        listOf("alpha", "beta", null, "gamma").stringifyJSON() shouldBe """["alpha","beta",null,"gamma"]"""
     }
 
     @Test fun `should stringify a set of strings`() {
         // unfortunately, we don't know in what order a set iterator will return the entries, so...
         val str = setOf("alpha", "beta", "gamma").stringifyJSON()
-        expect(true) { str.startsWith('[') && str.endsWith(']')}
+        str shouldStartWith "["
+        str shouldEndWith "]"
         val items = str.drop(1).dropLast(1).split(',').sorted()
-        expect(3) { items.size }
-        expect("\"alpha\"") { items[0] }
-        expect("\"beta\"") { items[1] }
-        expect("\"gamma\"") { items[2] }
+        items.size shouldBe 3
+        items[0] shouldBe "\"alpha\""
+        items[1] shouldBe "\"beta\""
+        items[2] shouldBe "\"gamma\""
     }
 
     @Test fun `should stringify the results of an iterator`() {
         val list = listOf(1, 1, 2, 3, 5, 8, 13, 21)
-        expect("[1,1,2,3,5,8,13,21]") { list.iterator().stringifyJSON() }
+        list.iterator().stringifyJSON() shouldBe "[1,1,2,3,5,8,13,21]"
     }
 
     @Test fun `should stringify a sequence`() {
         val list = listOf(1, 1, 2, 3, 5, 8, 13, 21)
-        expect("[1,1,2,3,5,8,13,21]") { list.asSequence().stringifyJSON() }
+        list.asSequence().stringifyJSON() shouldBe "[1,1,2,3,5,8,13,21]"
     }
 
     @Test fun `should stringify the results of an enumeration`() {
         val list = listOf("tahi", "rua", "toru", "wh\u0101")
-        expect("""["tahi","rua","toru","wh\u0101"]""") { ListEnum(list).stringifyJSON() }
+        ListEnum(list).stringifyJSON() shouldBe """["tahi","rua","toru","wh\u0101"]"""
     }
 
     @Test fun `should stringify a Java Stream of strings`() {
         val stream = Stream.of("tahi", "rua", "toru", "wh\u0101")
-        expect("""["tahi","rua","toru","wh\u0101"]""") { stream.stringifyJSON() }
+        stream.stringifyJSON() shouldBe """["tahi","rua","toru","wh\u0101"]"""
     }
 
     @Test fun `should stringify a Java IntStream`() {
         val stream = IntStream.of(1, 1, 2, 3, 5, 8, 13, 21)
-        expect("[1,1,2,3,5,8,13,21]") { stream.stringifyJSON() }
+        stream.stringifyJSON() shouldBe "[1,1,2,3,5,8,13,21]"
     }
 
     @Test fun `should stringify a Java LongStream`() {
         val stream = LongStream.of(10_000_000_000, 10_000_000_000, 20_000_000_000, 30_000_000_000, 50_000_000_000)
-        expect("[10000000000,10000000000,20000000000,30000000000,50000000000]") { stream.stringifyJSON() }
+        stream.stringifyJSON() shouldBe "[10000000000,10000000000,20000000000,30000000000,50000000000]"
     }
 
     @Test fun `should stringify a map of string to string`() {
@@ -407,121 +408,121 @@ class JSONStringifyTest {
 
     @Test fun `should stringify an enum`() {
         val value = DummyEnum.ALPHA
-        expect("\"ALPHA\"") { value.stringifyJSON() }
+        value.stringifyJSON() shouldBe "\"ALPHA\""
     }
 
     @Test fun `should stringify an SQL date`() {
         val str = "2020-04-10"
         val date = java.sql.Date.valueOf(str)
-        expect("\"$str\"") { date.stringifyJSON() }
+        date.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify an SQL time`() {
         val str = "00:21:22"
         val time = java.sql.Time.valueOf(str)
-        expect("\"$str\"") { time.stringifyJSON() }
+        time.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify an SQL date-time`() {
         val str = "2020-04-10 00:21:22.0"
         val timeStamp = java.sql.Timestamp.valueOf(str)
-        expect("\"$str\"") { timeStamp.stringifyJSON() }
+        timeStamp.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify an Instant`() {
         val str = "2020-04-09T14:28:51.234Z"
         val instant = Instant.parse(str)
-        expect("\"$str\"") { instant.stringifyJSON() }
+        instant.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a LocalDate`() {
         val str = "2020-04-10"
         val localDate = LocalDate.parse(str)
-        expect("\"$str\"") { localDate.stringifyJSON() }
+        localDate.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a LocalDateTime`() {
         val str = "2020-04-10T00:09:26.123"
         val localDateTime = LocalDateTime.parse(str)
-        expect("\"$str\"") { localDateTime.stringifyJSON() }
+        localDateTime.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a LocalTime`() {
         val str = "00:09:26.123"
         val localTime = LocalTime.parse(str)
-        expect("\"$str\"") { localTime.stringifyJSON() }
+        localTime.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify an OffsetTime`() {
         val str = "10:15:06.543+10:00"
         val offsetTime = OffsetTime.parse(str)
-        expect("\"$str\"") { offsetTime.stringifyJSON() }
+        offsetTime.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify an OffsetDateTime`() {
         val str = "2020-04-10T10:15:06.543+10:00"
         val offsetDateTime = OffsetDateTime.parse(str)
-        expect("\"$str\"") { offsetDateTime.stringifyJSON() }
+        offsetDateTime.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a ZonedDateTime`() {
         val str = "2020-04-10T10:15:06.543+10:00[Australia/Sydney]"
         val zonedDateTime = ZonedDateTime.parse(str)
-        expect("\"$str\"") { zonedDateTime.stringifyJSON() }
+        zonedDateTime.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a Year`() {
         val str = "2020"
         val year = Year.parse(str)
-        expect("\"$str\"") { year.stringifyJSON() }
+        year.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a YearMonth`() {
         val str = "2020-04"
         val yearMonth = YearMonth.parse(str)
-        expect("\"$str\"") { yearMonth.stringifyJSON() }
+        yearMonth.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a MonthDay`() {
         val str = "--04-23"
         val monthDay = MonthDay.parse(str)
-        expect("\"$str\"") { monthDay.stringifyJSON() }
+        monthDay.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a Java Duration`() {
         val str = "PT2H"
         val duration = JavaDuration.parse(str)
-        expect("\"$str\"") { duration.stringifyJSON() }
+        duration.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a Period`() {
         val str = "P3M"
         val period = Period.parse(str)
-        expect("\"$str\"") { period.stringifyJSON() }
+        period.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a Duration`() {
         val str = "PT2H"
         val duration = Duration.parseIsoString(str)
-        expect("\"$str\"") { duration.stringifyJSON() }
+        duration.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a URI`() {
         val str = "http://pwall.net"
         val uri = URI(str)
-        expect("\"$str\"") { uri.stringifyJSON() }
+        uri.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a URL`() {
         val str = "http://pwall.net"
         val url = URL(str)
-        expect("\"$str\"") { url.stringifyJSON() }
+        url.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a UUID`() {
         val str = "e24b6740-7ac3-11ea-9e47-37640adfe63a"
         val uuid = UUID.fromString(str)
-        expect("\"$str\"") { uuid.stringifyJSON() }
+        uuid.stringifyJSON() shouldBe "\"$str\""
     }
 
     @Test fun `should stringify a Calendar`() {
@@ -535,7 +536,7 @@ class JSONStringifyTest {
             set(Calendar.MILLISECOND, 123)
             set(Calendar.ZONE_OFFSET, 10 * 60 * 60 * 1000)
         }
-        expect("\"2019-04-25T18:52:47.123+10:00\"") { cal.stringifyJSON() }
+        cal.stringifyJSON() shouldBe "\"2019-04-25T18:52:47.123+10:00\""
     }
 
     @Test fun `should stringify a Date`() {
@@ -554,8 +555,7 @@ class JSONStringifyTest {
         // while others preserve the time zone as supplied.  The test below allows for either.
         val expected1 = "\"2019-04-25T18:52:47.123+10:00\""
         val expected2 = "\"2019-04-25T08:52:47.123Z\""
-        val result = date.stringifyJSON()
-        assertTrue(result == expected1 || result == expected2, "error - result was $result")
+        date.stringifyJSON() shouldBeOneOf listOf(expected1, expected2)
     }
 
     @Test fun `should stringify a BitSet`() {
@@ -563,24 +563,24 @@ class JSONStringifyTest {
             set(1)
             set(3)
         }
-        expect("[1,3]") { bitSet.stringifyJSON() }
+        bitSet.stringifyJSON() shouldBe "[1,3]"
     }
 
     @Test fun `should stringify a simple object`() {
         val dummy1 = Dummy1("abcdef", 98765)
-        expect("""{"field1":"abcdef","field2":98765}""") { dummy1.stringifyJSON() }
+        dummy1.stringifyJSON() shouldBe """{"field1":"abcdef","field2":98765}"""
     }
 
     @Test fun `should stringify a simple object with extra property`() {
         val dummy2 = Dummy2("abcdef", 98765)
         dummy2.extra = "extra123"
-        expect("""{"field1":"abcdef","field2":98765,"extra":"extra123"}""") { dummy2.stringifyJSON() }
+        dummy2.stringifyJSON() shouldBe """{"field1":"abcdef","field2":98765,"extra":"extra123"}"""
     }
 
     @Test fun `should stringify a simple object with extra property omitting null field`() {
         val dummy2 = Dummy2("abcdef", 98765)
         dummy2.extra = null
-        expect("""{"field1":"abcdef","field2":98765}""") { dummy2.stringifyJSON() }
+        dummy2.stringifyJSON() shouldBe """{"field1":"abcdef","field2":98765}"""
     }
 
     @Test fun `should stringify a simple object with extra property including null field when config set`() {
@@ -589,7 +589,7 @@ class JSONStringifyTest {
         val config = JSONConfig {
             includeNulls = true
         }
-        expect("""{"field1":"abcdef","field2":98765,"extra":null}""") { dummy2.stringifyJSON(config) }
+        dummy2.stringifyJSON(config) shouldBe """{"field1":"abcdef","field2":98765,"extra":null}"""
     }
 
     @Test fun `should stringify an object of a derived class`() {
@@ -791,24 +791,24 @@ class JSONStringifyTest {
         val circular2 = Circular2()
         circular1.ref2 = circular2
         circular2.ref1 = circular1
-        assertFailsWith<JSONKotlinException> { circular1.stringifyJSON() }.let {
-            expect("Circular reference to Circular1, at /ref2/ref1") { it.message }
+        shouldThrow<JSONKotlinException>("Circular reference to Circular1, at /ref2/ref1") {
+            circular1.stringifyJSON()
         }
     }
 
     @Test fun `should fail on use of circular reference in List`() {
         val circularList = mutableListOf<Any>()
         circularList.add(circularList)
-        assertFailsWith<JSONKotlinException> { circularList.stringifyJSON() }.let {
-            expect("Circular reference to ArrayList, at /0") { it.message }
+        shouldThrow<JSONKotlinException>("Circular reference to ArrayList, at /0") {
+            circularList.stringifyJSON()
         }
     }
 
     @Test fun `should fail on use of circular reference in Map`() {
         val circularMap = mutableMapOf<String, Any>()
         circularMap["test1"] = circularMap
-        assertFailsWith<JSONKotlinException> { circularMap.stringifyJSON() }.let {
-            expect("Circular reference to LinkedHashMap, at /test1") { it.message }
+        shouldThrow<JSONKotlinException>("Circular reference to LinkedHashMap, at /test1") {
+            circularMap.stringifyJSON()
         }
     }
 
@@ -828,27 +828,27 @@ class JSONStringifyTest {
             innerValue = ValueClass("xyz"),
             number = 999,
         )
-        expect("""{"innerValue":{"string":"xyz"},"number":999}""") { holder.stringifyJSON() }
+        holder.stringifyJSON() shouldBe """{"innerValue":{"string":"xyz"},"number":999}"""
     }
 
     @Test fun `should stringify Opt`() {
         val opt = Opt.of(123)
-        expect("123") { opt.stringifyJSON() }
+        opt.stringifyJSON() shouldBe "123"
     }
 
     @Test fun `should stringify Opt missing`() {
         val opt = Opt.unset<Any>()
-        expect("""null""") { opt.stringifyJSON() }
+        opt.stringifyJSON() shouldBe """null"""
     }
 
     @Test fun `should stringify Opt property`() {
         val optData = OptData(Opt.of(123))
-        expect("""{"aaa":123}""") { optData.stringifyJSON() }
+        optData.stringifyJSON() shouldBe """{"aaa":123}"""
     }
 
     @Test fun `should stringify Opt property missing`() {
         val optData = OptData(Opt.unset())
-        expect("""{}""") { optData.stringifyJSON() }
+        optData.stringifyJSON() shouldBe """{}"""
     }
 
     @Test fun `should stringify a Java class`() {

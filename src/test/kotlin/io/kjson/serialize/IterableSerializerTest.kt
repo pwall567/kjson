@@ -26,15 +26,15 @@
 package io.kjson.serialize
 
 import kotlin.test.Test
-import kotlin.test.assertNull
 import kotlinx.coroutines.runBlocking
 
 import java.util.UUID
 
+import io.kstuff.test.shouldBe
+
 import io.kjson.JSONConfig
 import io.kjson.JSONString
 import io.kjson.util.CoCapture
-import io.kjson.util.shouldBe
 
 class IterableSerializerTest {
 
@@ -96,7 +96,7 @@ class IterableSerializerTest {
         with(serializer.serialize(list, config, mutableListOf())) {
             size shouldBe 3
             this[0] shouldBe JSONString(uuidString1)
-            assertNull(this[1])
+            this[1] shouldBe null
             this[2] shouldBe JSONString(uuidString2)
         }
     }

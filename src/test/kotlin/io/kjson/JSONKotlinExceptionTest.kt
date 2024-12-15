@@ -2,7 +2,7 @@
  * @(#) JSONKotlinExceptionTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,9 @@
 package io.kjson
 
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
-import kotlin.test.expect
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldThrow
 
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.pointer.JSONPointer
@@ -36,92 +37,100 @@ class JSONKotlinExceptionTest {
 
     @Test fun `should create simple exception`() {
         val e = JSONKotlinException("Test message")
-        expect("Test message") { e.text }
-        expect("Test message") { e.message }
-        expect(null) { e.pointer }
-        expect(null) { e.cause }
+        e.text shouldBe "Test message"
+        e.message shouldBe "Test message"
+        e.pointer shouldBe null
+        e.cause shouldBe null
     }
 
     @Test fun `should create exception with root pointer`() {
         val e = JSONKotlinException("Test message", JSONPointer.root)
-        expect("Test message") { e.text }
-        expect("Test message") { e.message }
-        expect(JSONPointer.root) { e.pointer }
-        expect(null) { e.cause }
+        e.text shouldBe "Test message"
+        e.message shouldBe "Test message"
+        e.pointer shouldBe JSONPointer.root
+        e.cause shouldBe null
     }
 
     @Test fun `should create exception with pointer`() {
         val e = JSONKotlinException("Test message", JSONPointer.root.child(0).child("ace"))
-        expect("Test message") { e.text }
-        expect("Test message, at /0/ace") { e.message }
-        expect(JSONPointer("/0/ace")) { e.pointer }
-        expect(null) { e.cause }
+        e.text shouldBe "Test message"
+        e.message shouldBe "Test message, at /0/ace"
+        e.pointer shouldBe JSONPointer("/0/ace")
+        e.cause shouldBe null
     }
 
     @Test fun `should create exception with cause`() {
         val nested = JSONException("Nested")
         val e = JSONKotlinException("Test message", cause = nested)
-        expect("Test message") { e.text }
-        expect("Test message") { e.message }
-        expect(null) { e.pointer }
-        expect(nested) { e.cause }
+        e.text shouldBe "Test message"
+        e.message shouldBe "Test message"
+        e.pointer shouldBe null
+        e.cause shouldBe nested
     }
 
     @Test fun `should create exception with pointer and cause`() {
         val nested = JSONException("Nested")
         val e = JSONKotlinException("Test message", JSONPointer.root.child(0).child("ace"), nested)
-        expect("Test message") { e.text }
-        expect("Test message, at /0/ace") { e.message }
-        expect(JSONPointer("/0/ace")) { e.pointer }
-        expect(nested) { e.cause }
+        e.text shouldBe "Test message"
+        e.message shouldBe "Test message, at /0/ace"
+        e.pointer shouldBe JSONPointer("/0/ace")
+        e.cause shouldBe nested
     }
 
+    @Suppress("UNREACHABLE_CODE")
     @Test fun `should throw simple exception`() {
-        assertFailsWith<JSONKotlinException> { fatal("Test message") }.let {
-            expect("Test message") { it.text }
-            expect("Test message") { it.message }
-            expect(null) { it.pointer }
-            expect(null) { it.cause }
+        shouldThrow<JSONKotlinException>("Test message") {
+            fatal("Test message")
+        }.let {
+            it.text shouldBe "Test message"
+            it.pointer shouldBe null
+            it.cause shouldBe null
         }
     }
 
+    @Suppress("UNREACHABLE_CODE")
     @Test fun `should throw exception with root pointer`() {
-        assertFailsWith<JSONKotlinException> { fatal("Test message", JSONPointer.root) }.let {
-            expect("Test message") { it.text }
-            expect("Test message") { it.message }
-            expect(JSONPointer.root) { it.pointer }
-            expect(null) { it.cause }
+        shouldThrow<JSONKotlinException>("Test message") {
+            fatal("Test message", JSONPointer.root)
+        }.let {
+            it.text shouldBe "Test message"
+            it.pointer shouldBe JSONPointer.root
+            it.cause shouldBe null
         }
     }
 
+    @Suppress("UNREACHABLE_CODE")
     @Test fun `should throw exception with pointer`() {
-        assertFailsWith<JSONKotlinException> { fatal("Test message", JSONPointer.root.child(0).child("ace")) }.let {
-            expect("Test message") { it.text }
-            expect("Test message, at /0/ace") { it.message }
-            expect(JSONPointer("/0/ace")) { it.pointer }
-            expect(null) { it.cause }
+        shouldThrow<JSONKotlinException>("Test message, at /0/ace") {
+            fatal("Test message", JSONPointer.root.child(0).child("ace"))
+        }.let {
+            it.text shouldBe "Test message"
+            it.pointer shouldBe JSONPointer("/0/ace")
+            it.cause shouldBe null
         }
     }
 
+    @Suppress("UNREACHABLE_CODE")
     @Test fun `should throw exception with cause`() {
         val nested = JSONException("Nested")
-        assertFailsWith<JSONKotlinException> { fatal("Test message", cause = nested) }.let {
-            expect("Test message") { it.text }
-            expect("Test message") { it.message }
-            expect(null) { it.pointer }
-            expect(nested) { it.cause }
+        shouldThrow<JSONKotlinException>("Test message") {
+            fatal("Test message", cause = nested)
+        }.let {
+            it.text shouldBe "Test message"
+            it.pointer shouldBe null
+            it.cause shouldBe nested
         }
     }
 
+    @Suppress("UNREACHABLE_CODE")
     @Test fun `should throw exception with pointer and cause`() {
         val nested = JSONException("Nested")
-        assertFailsWith<JSONKotlinException> {
+        shouldThrow<JSONKotlinException>("Test message, at /0/ace") {
             fatal("Test message", JSONPointer.root.child(0).child("ace"), nested)
         }.let {
-            expect("Test message") { it.text }
-            expect("Test message, at /0/ace") { it.message }
-            expect(JSONPointer("/0/ace")) { it.pointer }
-            expect(nested) { it.cause }
+            it.text shouldBe "Test message"
+            it.pointer shouldBe JSONPointer("/0/ace")
+            it.cause shouldBe nested
         }
     }
 

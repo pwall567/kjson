@@ -2,7 +2,7 @@
  * @(#) Constants.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,41 +25,13 @@
 
 package io.kjson
 
-import kotlin.reflect.KTypeProjection
-import kotlin.reflect.full.createType
-import kotlin.reflect.full.starProjectedType
-
-import java.util.LinkedList
-
 object Constants {
-
-    val stringType = String::class.starProjectedType
-    val stringTypeProjection = KTypeProjection.invariant(stringType)
-    private val intType = Int::class.starProjectedType
-    private val intTypeProjection = KTypeProjection.invariant(intType)
-
-    val listStringType = List::class.createType(listOf(stringTypeProjection))
-    val arrayListStringType = ArrayList::class.createType(listOf(stringTypeProjection))
-    val linkedListStringType = LinkedList::class.createType(listOf(stringTypeProjection))
-    val setStringType = Set::class.createType(listOf(stringTypeProjection))
-    val hashSetStringType = HashSet::class.createType(listOf(stringTypeProjection))
-    val linkedHashSetStringType = LinkedHashSet::class.createType(listOf(stringTypeProjection))
-
-    val pairStringStringType = Pair::class.createType(listOf(stringTypeProjection, stringTypeProjection))
-    val pairStringIntType = Pair::class.createType(listOf(stringTypeProjection, intTypeProjection))
-    val tripleStringStringStringType = Triple::class.createType(listOf(stringTypeProjection, stringTypeProjection,
-            stringTypeProjection))
-    val tripleStringIntStringType = Triple::class.createType(listOf(stringTypeProjection, intTypeProjection,
-            stringTypeProjection))
 
     val listStrings = listOf("abc", "def")
     val jsonArrayString = JSONArray.build {
         add("abc")
         add("def")
     }
-
-    val mapStringIntType = Map::class.createType(listOf(stringTypeProjection, intTypeProjection))
-    val linkedHashMapStringIntType = LinkedHashMap::class.createType(listOf(stringTypeProjection, intTypeProjection))
 
     val mapStringInt = mapOf("abc" to 123, "def" to 456, "ghi" to 789)
     val jsonObjectInt = JSONObject.build {

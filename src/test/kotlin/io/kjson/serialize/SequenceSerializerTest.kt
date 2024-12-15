@@ -30,10 +30,11 @@ import kotlinx.coroutines.runBlocking
 
 import java.util.UUID
 
+import io.kstuff.test.shouldBe
+
 import io.kjson.JSONConfig
 import io.kjson.JSONString
 import io.kjson.util.CoCapture
-import io.kjson.util.shouldBe
 
 class SequenceSerializerTest {
 

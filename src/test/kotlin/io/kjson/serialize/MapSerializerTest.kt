@@ -28,10 +28,11 @@ package io.kjson.serialize
 import kotlin.test.Test
 import kotlinx.coroutines.runBlocking
 
+import io.kstuff.test.shouldBe
+
 import io.kjson.JSONConfig
 import io.kjson.JSONInt
 import io.kjson.util.CoCapture
-import io.kjson.util.shouldBe
 
 class MapSerializerTest {
 

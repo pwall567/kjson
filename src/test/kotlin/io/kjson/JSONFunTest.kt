@@ -2,7 +2,7 @@
  * @(#) JSONFunTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,12 +29,13 @@ import kotlin.reflect.KTypeProjection
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.starProjectedType
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNull
-import kotlin.test.expect
 
 import java.io.File
 import java.lang.reflect.Type
+
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeEqual
+import io.kstuff.test.shouldThrow
 
 import io.kjson.parser.ParseOptions
 import io.kjson.testclasses.Dummy1
@@ -46,66 +47,66 @@ class JSONFunTest {
     @Test fun `should correctly parse string`() {
         val json = """{"field1":"Hi there!","field2":888}"""
         val expected = Dummy1("Hi there!", 888)
-        expect(expected) { json.parseJSON() }
+        shouldBeEqual(expected, json.parseJSON())
     }
 
     @Test fun `should parse null into nullable type`() {
         val string: String? = "null".parseJSON()
-        assertNull(string)
+        string shouldBe null
     }
 
     @Test fun `should throw exception parsing null into non-nullable type`() {
-        assertFailsWith<JSONKotlinException> {
+        shouldThrow<JSONKotlinException>("Can't deserialize null as String") {
             "null".parseJSON<String>()
-        }.let { expect("Can't deserialize null as String") { it.message } }
+        }
     }
 
     @Test fun `should correctly parse string using parameterised type`() {
         val json = """{"field1":"Hi there!","field2":888}"""
         val actual = json.parseJSON<Dummy1>()
-        expect(Dummy1("Hi there!", 888)) { actual }
+        actual shouldBe Dummy1("Hi there!", 888)
     }
 
     @Test fun `should correctly parse string using explicit KClass`() {
         val json = """{"field1":"Hi there!","field2":888}"""
-        expect(Dummy1("Hi there!", 888)) { json.parseJSON(Dummy1::class) }
+        json.parseJSON(Dummy1::class) shouldBe Dummy1("Hi there!", 888)
     }
 
     @Test fun `should correctly parse null using explicit KClass`() {
-        assertNull("null".parseJSON(String::class))
+        "null".parseJSON(String::class) shouldBe null
     }
 
     @Test fun `should correctly parse string using explicit KType`() {
         val json = """{"field1":"Hi there!","field2":888}"""
-        expect(Dummy1("Hi there!", 888)) { json.parseJSON(Dummy1::class.starProjectedType) }
+        json.parseJSON(Dummy1::class.starProjectedType) shouldBe Dummy1("Hi there!", 888)
     }
 
     @Test fun `should throw exception parsing null into non-nullable explicit KType`() {
-        assertFailsWith<JSONKotlinException> {
+        shouldThrow<JSONKotlinException>("Can't deserialize null as String") {
             "null".parseJSON(String::class.starProjectedType)
-        }.let { expect("Can't deserialize null as String") { it.message } }
+        }
     }
 
     @Test fun `should correctly parse from Reader`() {
         val reader = File("src/test/resources/testdata.json").reader()
         val expected = Dummy1("File test", 123)
-        expect(expected) { reader.parseJSON() }
+        shouldBeEqual(expected, reader.parseJSON())
     }
 
     @Test fun `should correctly parse from Reader using parameterised type`() {
         val reader = File("src/test/resources/testdata.json").reader()
         val actual = reader.parseJSON<Dummy1>()
-        expect(Dummy1("File test", 123)) { actual }
+        actual shouldBe Dummy1("File test", 123)
     }
 
     @Test fun `should correctly parse from Reader using explicit KClass`() {
         val reader = File("src/test/resources/testdata.json").reader()
-        expect(Dummy1("File test", 123)) { reader.parseJSON(Dummy1::class) }
+        reader.parseJSON(Dummy1::class) shouldBe Dummy1("File test", 123)
     }
 
     @Test fun `should correctly parse from Reader using explicit KType`() {
         val reader = File("src/test/resources/testdata.json").reader()
-        expect(Dummy1("File test", 123)) { reader.parseJSON(Dummy1::class.starProjectedType) }
+        reader.parseJSON(Dummy1::class.starProjectedType) shouldBe Dummy1("File test", 123)
     }
 
     @Test fun `should stringify any object`() {
@@ -114,12 +115,12 @@ class JSONFunTest {
             add("field1", "Hi there!")
             add("field2", 888)
         }
-        expect(expected) { JSON.parse(dummy1.stringifyJSON()) }
+        JSON.parse(dummy1.stringifyJSON()) shouldBe expected
     }
 
     @Test fun `should stringify null`() {
         val dummy1: Dummy1? = null
-        expect("null") { dummy1.stringifyJSON() }
+        dummy1.stringifyJSON() shouldBe "null"
     }
 
     @Test fun `targetKType should create correct type`() {
@@ -128,7 +129,7 @@ class JSONFunTest {
             add("abc")
             add("def")
         }
-        expect(listStrings) { JSONDeserializer.deserialize(targetKType(List::class, String::class), jsonArrayString) }
+        JSONDeserializer.deserialize(targetKType(List::class, String::class), jsonArrayString) shouldBe listStrings
     }
 
     @Test fun `targetKType should create correct complex type`() {
@@ -139,15 +140,13 @@ class JSONFunTest {
                 add("def")
             })
         }
-        expect(listStrings) {
-            JSONDeserializer.deserialize(targetKType(List::class, targetKType(List::class, String::class)),
-                jsonArrayArrayString)
-        }
+        val targetType = targetKType(List::class, targetKType(List::class, String::class))
+        JSONDeserializer.deserialize(targetType, jsonArrayArrayString) shouldBe listStrings
     }
 
     @Test fun `toKType should convert simple class`() {
         val type: Type = JavaClass1::class.java
-        expect(JavaClass1::class.starProjectedType) { type.toKType() }
+        type.toKType() shouldBe JavaClass1::class.starProjectedType
     }
 
     @Test fun `toKType should convert parameterized class`() {
@@ -155,7 +154,7 @@ class JSONFunTest {
         val type: Type = field.genericType
         val expected = java.util.List::class.createType(
             listOf(KTypeProjection.invariant(JavaClass1::class.createType(nullable = true))))
-        expect(expected) { type.toKType() }
+        type.toKType() shouldBe expected
     }
 
     @Test fun `toKType should convert parameterized class with extends`() {
@@ -163,7 +162,7 @@ class JSONFunTest {
         val type: Type = field.genericType
         val expected = java.util.List::class.createType(
             listOf(KTypeProjection.covariant(JavaClass1::class.createType(nullable = true))))
-        expect(expected) { type.toKType() }
+        type.toKType() shouldBe expected
     }
 
     @Test fun `toKType should convert parameterized class with super`() {
@@ -171,7 +170,7 @@ class JSONFunTest {
         val type: Type = field.genericType
         val expected = java.util.List::class.createType(
             listOf(KTypeProjection.contravariant(JavaClass1::class.createType(nullable = true))))
-        expect(expected) { type.toKType() }
+        type.toKType() shouldBe expected
     }
 
     @Test fun `toKType should convert nested parameterized class`() {
@@ -181,7 +180,7 @@ class JSONFunTest {
             listOf(KTypeProjection.invariant(java.util.List::class.createType(
                 listOf(KTypeProjection.invariant(JavaClass1::class.createType(nullable = true))),
                 nullable = true))))
-        expect(expected) { type.toKType() }
+        type.toKType() shouldBe expected
     }
 
     @Test fun `toKType should convert nested parameterized class with extends`() {
@@ -191,7 +190,7 @@ class JSONFunTest {
             listOf(KTypeProjection.invariant(java.util.List::class.createType(
                 listOf(KTypeProjection.covariant(JavaClass1::class.createType(nullable = true))),
                 nullable = true))))
-        expect(expected) { type.toKType() }
+        type.toKType() shouldBe expected
     }
 
     @Test fun `decode should convert a JSONObject to a specified type`() {
@@ -200,7 +199,7 @@ class JSONFunTest {
             add("field2", 54321)
         }
         val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.deserialize(Dummy1::class.starProjectedType) }
+        json.deserialize(Dummy1::class.starProjectedType) shouldBe expected
     }
 
     @Test fun `decode should convert a JSONObject to a specified class`() {
@@ -209,7 +208,7 @@ class JSONFunTest {
             add("field2", 54321)
         }
         val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.deserialize(Dummy1::class) }
+        json.deserialize(Dummy1::class) shouldBe expected
     }
 
     @Test fun `decode should convert a JSONObject to an implied class`() {
@@ -218,7 +217,7 @@ class JSONFunTest {
             add("field2", 54321)
         }
         val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.deserialize() }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `decode should convert a JSONObject to a specified Java class`() {
@@ -227,7 +226,7 @@ class JSONFunTest {
             add("field2", 54321)
         }
         val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.deserialize(Dummy1::class.java) }
+        json.deserialize(Dummy1::class.java) shouldBe expected
     }
 
     @Test fun `should convert a JSONArray to a specified Java type`() {
@@ -242,9 +241,7 @@ class JSONFunTest {
             })
         }
         val type: Type = JavaClass2::class.java.getField("field1").genericType
-        expect(listOf(JavaClass1(567, "abcdef"), JavaClass1(9999, "qwerty"))) {
-            json.deserialize(type)
-        }
+        shouldBeEqual(listOf(JavaClass1(567, "abcdef"), JavaClass1(9999, "qwerty")), json.deserialize(type))
     }
 
     @Test fun `should convert a JSONObject to a specified type using fromJSONValue`() {
@@ -253,7 +250,7 @@ class JSONFunTest {
             add("field2", 54321)
         }
         val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.fromJSONValue(Dummy1::class.starProjectedType) }
+        json.fromJSONValue(Dummy1::class.starProjectedType) shouldBe expected
     }
 
     @Test fun `should convert a JSONObject to a specified class using fromJSONValue`() {
@@ -262,7 +259,7 @@ class JSONFunTest {
             add("field2", 54321)
         }
         val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.fromJSONValue(Dummy1::class) }
+        json.fromJSONValue(Dummy1::class) shouldBe expected
     }
 
     @Test fun `should convert a JSONObject to an implied class using fromJSONValue`() {
@@ -271,7 +268,7 @@ class JSONFunTest {
             add("field2", 54321)
         }
         val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.fromJSONValue() }
+        shouldBeEqual(expected, json.fromJSONValue())
     }
 
     @Test fun `should convert a JSONObject to a specified Java class using fromJSONValue`() {
@@ -280,7 +277,7 @@ class JSONFunTest {
             add("field2", 54321)
         }
         val expected = Dummy1("abdef", 54321)
-        expect(expected) { json.fromJSONValue(Dummy1::class.java) }
+        json.fromJSONValue(Dummy1::class.java) shouldBe expected
     }
 
     @Test fun `should convert a JSONArray to a specified Java type using fromJSONValue`() {
@@ -295,9 +292,7 @@ class JSONFunTest {
             })
         }
         val type: Type = JavaClass2::class.java.getField("field1").genericType
-        expect(listOf(JavaClass1(567, "abcdef"), JavaClass1(9999, "qwerty"))) {
-            json.fromJSONValue(type)
-        }
+        shouldBeEqual(listOf(JavaClass1(567, "abcdef"), JavaClass1(9999, "qwerty")), json.fromJSONValue(type))
     }
 
     @Test fun `should use lenient parsing options if provided`() {
@@ -305,7 +300,7 @@ class JSONFunTest {
             parseOptions = ParseOptions(JSONObject.DuplicateKeyOption.CHECK_IDENTICAL)
         }
         val expected = Dummy1("abc", 987)
-        expect(expected) { """{"field1":"abc","field2":987,"field1":"abc"}""".parseJSON(config) }
+        shouldBeEqual(expected, """{"field1":"abc","field2":987,"field1":"abc"}""".parseJSON(config))
     }
 
 }

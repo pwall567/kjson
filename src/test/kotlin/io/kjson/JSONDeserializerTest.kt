@@ -27,16 +27,15 @@ package io.kjson
 
 import kotlin.reflect.full.createType
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNull
-import kotlin.test.assertSame
-import kotlin.test.assertTrue
-import kotlin.test.expect
 
 import java.math.BigDecimal
 
-import io.kjson.Constants.stringType
+import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeEqual
+import io.kstuff.test.shouldBeSameInstance
+import io.kstuff.test.shouldBeType
+import io.kstuff.test.shouldThrow
+
 import io.kjson.pointer.JSONPointer
 import io.kjson.testclasses.Const
 import io.kjson.testclasses.Const2
@@ -68,16 +67,16 @@ import io.kjson.testclasses.SealedClassContainer
 class JSONDeserializerTest {
 
     @Test fun `should return null from null input`() {
-        assertNull(JSONDeserializer.deserialize(String::class.createType(nullable = true), null))
+        JSONDeserializer.deserialize(String::class.createType(nullable = true), null) shouldBe null
     }
 
     @Test fun `should pass JSONValue through unchanged`() {
         val json = JSONDecimal("0.1")
-        assertSame(json, JSONDeserializer.deserialize(JSONValue::class,  json))
-        assertSame(json, JSONDeserializer.deserialize(JSONDecimal::class,  json))
+        JSONDeserializer.deserialize(JSONValue::class,  json) shouldBeSameInstance json
+        JSONDeserializer.deserialize(JSONDecimal::class,  json) shouldBeSameInstance json
         val json2 = JSONString("abc")
-        assertSame(json2, JSONDeserializer.deserialize(JSONValue::class,  json2))
-        assertSame(json2, JSONDeserializer.deserialize(JSONString::class,  json2))
+        JSONDeserializer.deserialize(JSONValue::class,  json2) shouldBeSameInstance json2
+        JSONDeserializer.deserialize(JSONString::class,  json2) shouldBeSameInstance json2
     }
 
     @Test fun `should use companion object fromJSON function`() {
@@ -86,7 +85,7 @@ class JSONDeserializerTest {
             add("hex", "11")
         }
         val expected = DummyFromJSON(17)
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should use companion object fromJSON with JSONContext receiver`() {
@@ -105,7 +104,7 @@ class JSONDeserializerTest {
             add("aaa", inner)
         }
         val expected = DummyFromJSONWithContext(Dummy1("Complex", 6789))
-        expect(expected) { JSONDeserializer.deserialize(json, config) }
+        shouldBeEqual(expected, json.deserialize(config))
     }
 
     @Test fun `should report errors correctly when using companion object fromJSON`() {
@@ -115,9 +114,10 @@ class JSONDeserializerTest {
                 add("field2", "xyz")
             })
         }
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<DummyFromJSONWithContext>(json) }.let {
-            expect("Incorrect type, expected Int but was \"xyz\", at /aaa/field2") { it.message }
-            expect(JSONPointer("/aaa/field2")) { it.pointer }
+        shouldThrow<JSONKotlinException>("Incorrect type, expected Int but was \"xyz\", at /aaa/field2") {
+            JSONDeserializer.deserialize<DummyFromJSONWithContext>(json)
+        }.let {
+            it.pointer shouldBe JSONPointer("/aaa/field2")
         }
     }
 
@@ -127,47 +127,47 @@ class JSONDeserializerTest {
             add("hex", "11")
         }
         val expected1 = DummyMultipleFromJSON(17)
-        expect(expected1) { JSONDeserializer.deserialize(json1) }
+        shouldBeEqual(expected1, json1.deserialize())
         val json2 = JSONInt(300)
         val expected2 = DummyMultipleFromJSON(300)
-        expect(expected2) { JSONDeserializer.deserialize(json2) }
+        shouldBeEqual(expected2, json2.deserialize())
         val json3 = JSONString("FF")
         val expected3 = DummyMultipleFromJSON(255)
-        expect(expected3) { JSONDeserializer.deserialize(json3) }
+        shouldBeEqual(expected3, json3.deserialize())
     }
 
     @Test fun `should return null for nullable type from null`() {
         val json: JSONValue? = null
-        assertNull(JSONDeserializer.deserialize<Dummy1?>(json))
+        JSONDeserializer.deserialize<Dummy1?>(json) shouldBe null
     }
 
     @Test fun `should return null for nullable String from null`() {
         val json: JSONValue? = null
-        assertNull(JSONDeserializer.deserialize(String::class.createType(emptyList(), true), json))
+        JSONDeserializer.deserialize<String?>(json) shouldBe null
     }
 
     @Test fun `should fail deserializing null for non-nullable String`() {
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize(stringType, null) }.let {
-            expect("Can't deserialize null as String") { it.message }
+        shouldThrow<JSONKotlinException>("Can't deserialize null as String") {
+            JSONDeserializer.deserialize<String>(null)
         }
     }
 
     @Test fun `should deserialize class with constant val correctly`() {
         val json = JSONObject.build { add("field8", "blert") }
-        expect(DummyWithVal()) { JSONDeserializer.deserialize(DummyWithVal::class, json) }
+        JSONDeserializer.deserialize<DummyWithVal>(json) shouldBe DummyWithVal()
     }
 
     @Test fun `should deserialize null as specified class correctly`() {
-        assertNull(JSONDeserializer.deserialize(Dummy1::class, null))
+        JSONDeserializer.deserialize(Dummy1::class, null) shouldBe null
     }
 
     @Test fun `should deserialize JSONBoolean to Any`() {
         val json1 = JSONBoolean.TRUE
-        val result1 = JSONDeserializer.deserializeAny(json1)
-        assertTrue(result1 is Boolean && result1)
+        val result1 = json1.deserializeAny()
+        result1.shouldBeType<Boolean>() shouldBe true
         val json2 = JSONBoolean.FALSE
-        val result2 = JSONDeserializer.deserializeAny(json2)
-        assertTrue(result2 is Boolean && !result2)
+        val result2 = json2.deserializeAny()
+        !result2.shouldBeType<Boolean>() shouldBe true
     }
 
     @Test fun `should deserialize sealed class to correct subclass`() {
@@ -175,14 +175,14 @@ class JSONDeserializerTest {
             add("class", "Const")
             add("number", BigDecimal("2.0"))
         }
-        expect(Const(2.0)) { JSONDeserializer.deserialize<Expr>(json) }
+        JSONDeserializer.deserialize<Expr>(json) shouldBe Const(2.0)
     }
 
     @Test fun `should deserialize sealed class to correct object subclass`() {
         val json = JSONObject.build {
             add("class", "NotANumber")
         }
-        expect(NotANumber) { JSONDeserializer.deserialize<Expr>(json) }
+        JSONDeserializer.deserialize<Expr>(json) shouldBe NotANumber
     }
 
     @Test fun `should deserialize sealed class with custom discriminator`() {
@@ -193,7 +193,7 @@ class JSONDeserializerTest {
             add("?", "Const")
             add("number", BigDecimal("2.0"))
         }
-        expect(Const(2.0)) { JSONDeserializer.deserialize<Expr>(json, config) }
+        JSONDeserializer.deserialize<Expr>(json, config) shouldBe Const(2.0)
     }
 
     @Test fun `should deserialize sealed class with class-specific discriminator`() {
@@ -201,7 +201,7 @@ class JSONDeserializerTest {
             add("type", "Const2")
             add("number", BigDecimal("2.0"))
         }
-        expect(Const2(2.0)) { JSONDeserializer.deserialize<Expr2>(json) }
+        JSONDeserializer.deserialize<Expr2>(json) shouldBe Const2(2.0)
     }
 
     @Test fun `should deserialize sealed class with class-specific discriminator and identifiers`() {
@@ -209,7 +209,7 @@ class JSONDeserializerTest {
             add("type", "CONST")
             add("number", BigDecimal("2.0"))
         }
-        expect(Const3(2.0)) { JSONDeserializer.deserialize<Expr3>(json) }
+        JSONDeserializer.deserialize<Expr3>(json) shouldBe Const3(2.0)
     }
 
     @Test fun `should deserialize sealed class with class-specific discriminator and identifier within class`() {
@@ -218,13 +218,13 @@ class JSONDeserializerTest {
             add("id", 123456)
             add("name", "Funny Company")
         }
-        expect(Organization("ORGANIZATION", 123456, "Funny Company")) { JSONDeserializer.deserialize<Party>(org) }
+        JSONDeserializer.deserialize<Party>(org) shouldBe Organization("ORGANIZATION", 123456, "Funny Company")
         val person = JSONObject.build {
             add("type", "PERSON")
             add("firstName", "William")
             add("lastName", "Wordsworth")
         }
-        expect(Person("PERSON", "William", "Wordsworth")) { JSONDeserializer.deserialize<Party>(person) }
+        JSONDeserializer.deserialize<Party>(person) shouldBe Person("PERSON", "William", "Wordsworth")
     }
 
     @Test fun `should ignore additional fields when allowExtra set in config`() {
@@ -236,7 +236,7 @@ class JSONDeserializerTest {
             add("field2", 123)
             add("extra", "allow")
         }
-        expect(Dummy1("Hello", 123)) { JSONDeserializer.deserialize(json, config) }
+        shouldBeEqual(Dummy1("Hello", 123), json.deserialize(config))
     }
 
     @Test fun `should ignore additional fields when class annotated with @JSONAllowExtra`() {
@@ -245,7 +245,7 @@ class JSONDeserializerTest {
             add("field2", 123)
             add("extra", "allow")
         }
-        expect(DummyWithAllowExtra("Hello", 123)) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(DummyWithAllowExtra("Hello", 123), json.deserialize())
     }
 
     @Test fun `should ignore additional fields when class annotated with custom allow extra`() {
@@ -257,7 +257,7 @@ class JSONDeserializerTest {
             add("field2", 123)
             add("extra", "allow")
         }
-        expect(DummyWithCustomAllowExtra("Hi", 123)) { JSONDeserializer.deserialize(json, config) }
+        shouldBeEqual(DummyWithCustomAllowExtra("Hi", 123), json.deserialize(config))
     }
 
     @Test fun `field annotated with @JSONIgnore should be ignored on deserialization`() {
@@ -266,7 +266,7 @@ class JSONDeserializerTest {
             add("field2", "two")
             add("field3", "three")
         }
-        expect(DummyWithIgnore(field1 = "one", field3 = "three")) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(DummyWithIgnore(field1 = "one", field3 = "three"), json.deserialize())
     }
 
     @Test fun `field annotated with custom ignore annotation should be ignored on deserialization`() {
@@ -278,12 +278,12 @@ class JSONDeserializerTest {
             add("field2", "two")
             add("field3", "three")
         }
-        expect(DummyWithCustomIgnore(field1 = "one", field3 = "three")) { JSONDeserializer.deserialize(json, config) }
+        shouldBeEqual(DummyWithCustomIgnore(field1 = "one", field3 = "three"), json.deserialize(config))
     }
 
     @Test fun `should deserialize missing members as null where allowed`() {
         val json = JSONObject.of("field2" to JSONInt(123))
-        expect(Dummy5(null, 123)) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(Dummy5(null, 123), json.deserialize())
     }
 
     @Test fun `should deserialize custom parameterised type`() {
@@ -291,7 +291,7 @@ class JSONDeserializerTest {
             add("lines", JSONArray.of(JSONString("abc"), JSONString("def")))
         }
         val expected = TestPage(lines = listOf("abc", "def"))
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should deserialize nested custom parameterised type`() {
@@ -300,7 +300,7 @@ class JSONDeserializerTest {
         }
         val json2 = JSONArray.of(json1, JSONString("xyz"))
         val expected = TestPage(lines = listOf("abc", "def")) to "xyz"
-        expect(expected) { JSONDeserializer.deserialize(json2) }
+        shouldBeEqual(expected, json2.deserialize())
     }
 
     @Test fun `should deserialize differently nested custom parameterised type`() {
@@ -309,7 +309,7 @@ class JSONDeserializerTest {
                 JSONArray.of(JSONString("def"), JSONString("DEF"))))
         }
         val expected = TestPage(lines = listOf("abc" to "ABC", "def" to "DEF"))
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should deserialize complex custom parameterised type`() {
@@ -325,7 +325,7 @@ class JSONDeserializerTest {
             add("lines", JSONArray.of(obj1, obj2))
         }
         val expected = TestPage(lines = listOf(Dummy1("abc", 123), Dummy1("def", 456)))
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should deserialize another form of custom parameterised type`() {
@@ -339,80 +339,79 @@ class JSONDeserializerTest {
         }
         val dummy1 = Dummy1("abc", 123)
         val expected = TestDataHolder("testing", dummy1)
-        expect(expected) { JSONDeserializer.deserialize(json) }
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should deserialize yet another form of custom parameterised type`() {
         val json = JSONObject.build {
             add("lineLists", JSONArray.of(JSONArray.of(JSONString("lineA1"), JSONString("lineA2")),
-                    JSONArray.of(JSONString("lineB1"), JSONString("lineB2"))))
+                JSONArray.of(JSONString("lineB1"), JSONString("lineB2"))))
         }
         val expected = TestPage2(lineLists = listOf(listOf("lineA1", "lineA2"), listOf("lineB1", "lineB2")))
-        expect(expected) { JSONDeserializer.deserialize(json)}
+        shouldBeEqual(expected, json.deserialize())
     }
 
     @Test fun `should give error message with pointer`() {
         val json = JSON.parse("""{"field1":"abc","field2":"def"}""")
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<Dummy1>(json) }.let {
-            expect("Incorrect type, expected Int but was \"def\", at /field2") { it.message }
+        shouldThrow<JSONKotlinException>("Incorrect type, expected Int but was \"def\", at /field2") {
+            JSONDeserializer.deserialize<Dummy1>(json)
         }
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<Dummy1>>(JSONArray.of(json)) }.let {
-            expect("Incorrect type, expected Int but was \"def\", at /0/field2") { it.message }
+        shouldThrow<JSONKotlinException>("Incorrect type, expected Int but was \"def\", at /0/field2") {
+            JSONDeserializer.deserialize<List<Dummy1>>(JSONArray.of(json))
         }
     }
 
     @Test fun `should give expanded error message with pointer`() {
         val json = JSON.parse("""{"field2":1}""")
         val className = Dummy1a::class.qualifiedName
-        assertFailsWith<JSONKotlinException> {
+        shouldThrow<JSONKotlinException>("Can't create $className - missing property field1") {
             JSONDeserializer.deserialize<Dummy1a>(json)
-        }.let {
-            expect("Can't create $className - missing property field1") { it.message }
         }
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<Dummy1a>>(JSONArray.of(json)) }.let {
-            expect("Can't create $className - missing property field1, at /0") { it.message }
+        shouldThrow<JSONKotlinException>("Can't create $className - missing property field1, at /0") {
+            JSONDeserializer.deserialize<List<Dummy1a>>(JSONArray.of(json))
         }
     }
 
     @Test fun `should give expanded error message for multiple constructors`() {
         val json = JSON.parse("""[{"aaa":"X"},{"bbb":1},{"ccc":true,"ddd":0}]""")
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<MultiConstructor>>(json) }.let {
-            val className = MultiConstructor::class.qualifiedName
-            expect("No matching constructor for class $className from { ccc, ddd }, at /2") { it.message }
+        val className = MultiConstructor::class.qualifiedName
+        shouldThrow<JSONKotlinException>("No matching constructor for class $className from { ccc, ddd }, at /2") {
+            JSONDeserializer.deserialize<List<MultiConstructor>>(json)
         }
     }
 
     @Test fun `should use type projection upperBounds`() {
         val json = JSON.parse("""{"expr":{"class":"Const","number":20.0}}""")
         val expr = JSONDeserializer.deserialize<SealedClassContainer<*>>(json).expr
-        assertTrue(expr is Const)
-        expect(20.0) { expr.number }
+        expr.shouldBeType<Const>()
+        expr.number shouldBe 20.0
     }
 
     @Test fun `should fail on use of private constructor`() {
         val json = JSON.parse("""{"xxx":123}""")
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<TestPrivate>(json) }.let {
-            val className = TestPrivate::class.qualifiedName
-            expect("Can't deserialize { xxx } as $className") { it.message }
+        val className = TestPrivate::class.qualifiedName
+        shouldThrow<JSONKotlinException>("Can't deserialize { xxx } as $className") {
+            JSONDeserializer.deserialize<TestPrivate>(json)
         }
     }
 
     @Test fun `should fail on attempt to deserialize impossible class`() {
         val json = JSON.parse("""{"xxx":123}""")
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<Unit>(json) }.let {
-            expect("Can't deserialize Unit") { it.message }
+        shouldThrow<JSONKotlinException>("Can't deserialize Unit") {
+            JSONDeserializer.deserialize<Unit>(json)
         }
     }
 
     @Test fun `should give helpful error message on deserialization error`() {
         val json = JSON.parse("""[{"field1":""}]""")
-        assertFailsWith<JSONKotlinException> { JSONDeserializer.deserialize<List<DummyValidated>>(json) }.let {
-            expect("Error deserializing io.kjson.testclasses.DummyValidated - field1 must not be empty, at /0") {
-                it.message
-            }
-            expect(JSONPointer("/0")) { it.pointer }
-            assertIs<IllegalArgumentException>(it.cause)
-            expect("field1 must not be empty") { it.cause?.message }
+        shouldThrow<JSONKotlinException>(
+            message = "Error deserializing io.kjson.testclasses.DummyValidated - field1 must not be empty, at /0",
+        ) {
+            JSONDeserializer.deserialize<List<DummyValidated>>(json)
+        }.let {
+            it.pointer shouldBe JSONPointer("/0")
+            it.cause.shouldBeType<IllegalArgumentException>()
+            it.cause?.message shouldBe "field1 must not be empty"
         }
     }
 
