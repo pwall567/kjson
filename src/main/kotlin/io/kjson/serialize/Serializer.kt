@@ -67,6 +67,9 @@ import java.util.stream.DoubleStream
 import java.util.stream.IntStream
 import java.util.stream.LongStream
 
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.JSON.appendTo
 import io.kjson.JSON.coOutputTo
 import io.kjson.JSONArray
@@ -90,8 +93,6 @@ import io.kjson.util.findSealedClassDiscriminator
 import io.kjson.util.getJavaClassHierarchy
 import io.kjson.util.isKotlinClass
 import io.kjson.util.isStaticOrTransient
-import net.pwall.util.CoOutput
-import net.pwall.util.output
 
 sealed interface Serializer<in T : Any> {
 

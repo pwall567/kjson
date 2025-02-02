@@ -25,11 +25,12 @@
 
 package io.kjson.serialize
 
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.JSONConfig
 import io.kjson.JSONValue
 import io.kjson.optional.Opt
-import net.pwall.util.CoOutput
-import net.pwall.util.output
 
 class OptSerializer<T : Any, O : Opt<T>>(
     private val optSerializer: Serializer<T>,

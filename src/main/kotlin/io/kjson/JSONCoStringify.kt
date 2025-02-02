@@ -28,9 +28,10 @@ package io.kjson
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.serialize.Serializer
-import net.pwall.util.CoOutput
-import net.pwall.util.output
 
 /**
  * Reflection-based non-blocking JSON serialization for Kotlin - serialize direct to a non-blocking function.

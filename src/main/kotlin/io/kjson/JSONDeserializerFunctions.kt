@@ -40,9 +40,9 @@ import java.util.Calendar
 import java.util.TimeZone
 import java.util.UUID
 
-import net.pwall.json.validation.JSONValidation
-import net.pwall.text.TextMatcher
-import net.pwall.util.IntOutput.append2Digits
+import io.jstuff.java.validation.JSONValidation
+import io.jstuff.text.TextMatcher
+import io.jstuff.util.IntOutput.append2Digits
 
 object JSONDeserializerFunctions {
 

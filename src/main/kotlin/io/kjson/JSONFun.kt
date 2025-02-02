@@ -37,9 +37,10 @@ import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.lang.reflect.WildcardType
 
+import io.kstuff.util.CoOutput
+
 import io.kjson.JSONKotlinException.Companion.fatal
 import io.kjson.parser.Parser
-import net.pwall.util.CoOutput
 
 /** Type alias to simplify the definition of `fromJSON` mapping functions. */
 typealias FromJSONMapping = JSONConfig.(JSONValue?) -> Any?

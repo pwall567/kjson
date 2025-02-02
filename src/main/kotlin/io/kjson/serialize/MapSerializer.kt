@@ -27,14 +27,15 @@ package io.kjson.serialize
 
 import kotlin.reflect.KClass
 
+import io.jstuff.json.JSONFunctions
+import io.kstuff.json.JSONCoFunctions.outputString
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.JSONConfig
 import io.kjson.JSONKotlinException
 import io.kjson.JSONObject
 import io.kjson.pointer.JSONPointer
-import net.pwall.json.JSONCoFunctions.outputString
-import net.pwall.json.JSONFunctions
-import net.pwall.util.CoOutput
-import net.pwall.util.output
 
 class MapSerializer<K : Any, V : Any, M : Map<K, V?>>(
     private val keyClass: KClass<K>,

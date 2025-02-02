@@ -28,14 +28,15 @@ package io.kjson.serialize
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.starProjectedType
 
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.JSONConfig
 import io.kjson.JSONException
 import io.kjson.JSONKotlinException
 import io.kjson.JSONValue
 import io.kjson.ToJSONMapping
 import io.kjson.serialize.Serializer.Companion.findSerializer
-import net.pwall.util.CoOutput
-import net.pwall.util.output
 
 class ConfigToJSONMappingSerializer(
     private val toJSONMapping: ToJSONMapping,

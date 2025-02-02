@@ -27,9 +27,10 @@ package io.kjson.serialize
 
 import java.util.Enumeration
 
+import io.kstuff.util.CoOutput
+
 import io.kjson.JSONArray
 import io.kjson.JSONConfig
-import net.pwall.util.CoOutput
 
 class EnumerationSerializer<I : Any, E : Enumeration<I>>(
     itemSerializer: Serializer<I>,

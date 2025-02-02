@@ -30,13 +30,16 @@ import kotlin.test.fail
 
 import java.net.URI
 import java.net.URL
-
 import java.time.LocalDate
 import java.util.UUID
 
 import io.kstuff.test.shouldBe
+import io.kstuff.test.shouldBeEqual
 import io.kstuff.test.shouldBeType
 import io.kstuff.test.shouldThrow
+
+import io.jstuff.util.ImmutableMap
+import io.jstuff.util.ImmutableMapEntry
 
 import io.kjson.Constants.jsonObjectInt
 import io.kjson.Constants.mapStringInt
@@ -59,9 +62,6 @@ import io.kjson.testclasses.TestGenericClass2
 import io.kjson.testclasses.TestMapClass
 import io.kjson.testclasses.TypeAliasData
 import io.kjson.testclasses.ValueClassHolder
-import io.kstuff.test.shouldBeEqual
-import net.pwall.util.ImmutableMap
-import net.pwall.util.ImmutableMapEntry
 
 class JSONDeserializerObjectTest {
 

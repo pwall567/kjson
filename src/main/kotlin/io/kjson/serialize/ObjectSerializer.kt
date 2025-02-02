@@ -30,6 +30,11 @@ import kotlin.reflect.KProperty
 
 import java.lang.reflect.Method
 
+import io.jstuff.json.JSONFunctions
+import io.kstuff.json.JSONCoFunctions.outputString
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.JSONConfig
 import io.kjson.JSONException
 import io.kjson.JSONKotlinException
@@ -37,10 +42,6 @@ import io.kjson.JSONObject
 import io.kjson.JSONValue
 import io.kjson.optional.Opt
 import io.kjson.util.NameValuePair
-import net.pwall.json.JSONCoFunctions.outputString
-import net.pwall.json.JSONFunctions
-import net.pwall.util.CoOutput
-import net.pwall.util.output
 
 class ObjectSerializer<T : Any>(
     private val kClass: KClass<T>,

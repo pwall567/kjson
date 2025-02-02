@@ -25,10 +25,11 @@
 
 package io.kjson.serialize
 
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.JSONArray
 import io.kjson.JSONConfig
-import net.pwall.util.CoOutput
-import net.pwall.util.output
 
 class PairSerializer<F : Any, S : Any, P : Pair<F, S>>(
     private val firstSerializer: Serializer<F>,

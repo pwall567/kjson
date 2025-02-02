@@ -42,15 +42,16 @@ import io.kstuff.test.shouldBeType
 import io.kstuff.test.shouldContain
 import io.kstuff.test.shouldThrow
 
+import io.jstuff.util.ImmutableCollection
+import io.jstuff.util.ImmutableList
+import io.jstuff.util.ImmutableSet
+
 import io.kjson.Constants.jsonArrayString
 import io.kjson.Constants.listStrings
 import io.kjson.util.SizedSequence
 import io.kjson.testclasses.DummyList
 import io.kjson.testclasses.DummyList2
 import io.kjson.testclasses.DummyList3
-import net.pwall.util.ImmutableCollection
-import net.pwall.util.ImmutableList
-import net.pwall.util.ImmutableSet
 
 class JSONDeserializerArrayTest {
 

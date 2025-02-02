@@ -25,12 +25,13 @@
 
 package io.kjson.serialize
 
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.JSONConfig
 import io.kjson.JSONObject
 import io.kjson.JSONValue
 import io.kjson.serialize.Serializer.Companion.findSerializer
-import net.pwall.util.CoOutput
-import net.pwall.util.output
 
 data object AnySerializer : Serializer<Any> {
 

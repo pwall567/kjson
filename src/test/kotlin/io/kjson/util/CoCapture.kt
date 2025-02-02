@@ -25,7 +25,7 @@
 
 package io.kjson.util
 
-import net.pwall.util.CoOutput
+import io.kstuff.util.CoOutput
 
 class CoCapture(size: Int = 256) : CoOutput {
 

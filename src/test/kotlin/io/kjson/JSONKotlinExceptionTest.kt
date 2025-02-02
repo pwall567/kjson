@@ -77,7 +77,6 @@ class JSONKotlinExceptionTest {
         e.cause shouldBe nested
     }
 
-    @Suppress("UNREACHABLE_CODE")
     @Test fun `should throw simple exception`() {
         shouldThrow<JSONKotlinException>("Test message") {
             fatal("Test message")
@@ -88,7 +87,6 @@ class JSONKotlinExceptionTest {
         }
     }
 
-    @Suppress("UNREACHABLE_CODE")
     @Test fun `should throw exception with root pointer`() {
         shouldThrow<JSONKotlinException>("Test message") {
             fatal("Test message", JSONPointer.root)
@@ -99,7 +97,6 @@ class JSONKotlinExceptionTest {
         }
     }
 
-    @Suppress("UNREACHABLE_CODE")
     @Test fun `should throw exception with pointer`() {
         shouldThrow<JSONKotlinException>("Test message, at /0/ace") {
             fatal("Test message", JSONPointer.root.child(0).child("ace"))
@@ -110,7 +107,6 @@ class JSONKotlinExceptionTest {
         }
     }
 
-    @Suppress("UNREACHABLE_CODE")
     @Test fun `should throw exception with cause`() {
         val nested = JSONException("Nested")
         shouldThrow<JSONKotlinException>("Test message") {
@@ -122,7 +118,6 @@ class JSONKotlinExceptionTest {
         }
     }
 
-    @Suppress("UNREACHABLE_CODE")
     @Test fun `should throw exception with pointer and cause`() {
         val nested = JSONException("Nested")
         shouldThrow<JSONKotlinException>("Test message, at /0/ace") {

@@ -25,9 +25,10 @@
 
 package io.kjson.serialize
 
+import io.kstuff.util.CoOutput
+
 import io.kjson.JSONArray
 import io.kjson.JSONConfig
-import net.pwall.util.CoOutput
 
 class IterableSerializer<I : Any, L : Iterable<I?>>(
     itemSerializer: Serializer<I>,

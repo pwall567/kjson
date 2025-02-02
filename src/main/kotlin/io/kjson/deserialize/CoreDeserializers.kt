@@ -28,6 +28,9 @@ package io.kjson.deserialize
 import java.math.BigDecimal
 import java.math.BigInteger
 
+import io.jstuff.util.ImmutableList
+import io.jstuff.util.ImmutableMap
+
 import io.kjson.JSON.asBooleanOr
 import io.kjson.JSON.asByteOr
 import io.kjson.JSON.asDecimalOr
@@ -50,8 +53,6 @@ import io.kjson.JSONNumber
 import io.kjson.JSONObject
 import io.kjson.JSONString
 import io.kjson.JSONValue
-import net.pwall.util.ImmutableList
-import net.pwall.util.ImmutableMap
 
 data object AnyDeserializer : Deserializer<Any> {
     override fun deserialize(json: JSONValue?): Any? = when (json) {

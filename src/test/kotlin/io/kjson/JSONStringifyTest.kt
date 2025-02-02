@@ -54,6 +54,8 @@ import java.util.stream.Stream
 
 import io.kstuff.test.shouldBe
 import io.kstuff.test.shouldBeOneOf
+import io.kstuff.test.shouldEndWith
+import io.kstuff.test.shouldStartWith
 import io.kstuff.test.shouldThrow
 
 import io.kjson.JSONStringify.appendJSON
@@ -94,8 +96,6 @@ import io.kjson.testclasses.TestGenericClass
 import io.kjson.testclasses.TestGenericClass2
 import io.kjson.testclasses.ValueClass
 import io.kjson.testclasses.ValueClassHolder
-import io.kstuff.test.shouldEndWith
-import io.kstuff.test.shouldStartWith
 
 class JSONStringifyTest {
 

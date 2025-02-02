@@ -27,13 +27,14 @@ package io.kjson.serialize
 
 import kotlin.reflect.KClass
 
+import io.jstuff.json.JSONFunctions
+import io.kstuff.json.JSONCoFunctions.outputChar
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.JSONConfig
 import io.kjson.JSONString
 import io.kjson.JSONValue
-import net.pwall.json.JSONCoFunctions.outputChar
-import net.pwall.json.JSONFunctions
-import net.pwall.util.CoOutput
-import net.pwall.util.output
 
 class ArraySerializer<I : Any>(
     private val itemClass: KClass<I>,

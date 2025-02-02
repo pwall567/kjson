@@ -30,6 +30,17 @@ import java.math.BigInteger
 import java.util.BitSet
 import java.util.UUID
 
+import io.jstuff.json.JSONFunctions
+import io.jstuff.util.IntOutput
+import io.kstuff.json.JSONCoFunctions.outputChar
+import io.kstuff.json.JSONCoFunctions.outputString
+import io.kstuff.util.CoIntOutput.outputInt
+import io.kstuff.util.CoIntOutput.outputLong
+import io.kstuff.util.CoIntOutput.outputUnsignedInt
+import io.kstuff.util.CoIntOutput.outputUnsignedLong
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.JSONArray
 import io.kjson.JSONBoolean
 import io.kjson.JSONConfig
@@ -41,16 +52,6 @@ import io.kjson.JSONSerializerFunctions.appendUUID
 import io.kjson.JSONSerializerFunctions.outputUUID
 import io.kjson.JSONString
 import io.kjson.JSONValue
-import net.pwall.json.JSONCoFunctions.outputChar
-import net.pwall.json.JSONCoFunctions.outputString
-import net.pwall.json.JSONFunctions
-import net.pwall.util.CoIntOutput.outputInt
-import net.pwall.util.CoIntOutput.outputLong
-import net.pwall.util.CoIntOutput.outputUnsignedInt
-import net.pwall.util.CoIntOutput.outputUnsignedLong
-import net.pwall.util.CoOutput
-import net.pwall.util.IntOutput
-import net.pwall.util.output
 
 data object IntSerializer : Serializer<Int> {
 

@@ -29,13 +29,14 @@ import kotlin.reflect.KCallable
 import kotlin.reflect.KFunction
 import kotlin.reflect.KProperty
 
+import io.jstuff.util.ImmutableMap
+import io.jstuff.util.ImmutableMapEntry
+
 import io.kjson.JSONConfig
 import io.kjson.JSONDeserializer.findDeserializer
 import io.kjson.JSONDeserializerFunctions.callWithSingle
 import io.kjson.JSONObject
 import io.kjson.JSONValue
-import net.pwall.util.ImmutableMap
-import net.pwall.util.ImmutableMapEntry
 
 class MapConstructorDeserializer<T>(
     private val constructor: KFunction<T>,

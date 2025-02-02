@@ -62,6 +62,8 @@ import io.kstuff.test.shouldEndWith
 import io.kstuff.test.shouldStartWith
 import io.kstuff.test.shouldThrow
 
+import io.kstuff.util.output
+
 import io.kjson.JSONCoStringify.outputJSON
 import io.kjson.optional.Opt
 import io.kjson.test.JSONExpect.Companion.expectJSON
@@ -101,7 +103,6 @@ import io.kjson.testclasses.ValueClass
 import io.kjson.testclasses.ValueClassHolder
 import io.kjson.util.CoCapture
 import io.kjson.util.OutputCapture
-import net.pwall.util.output
 
 class JSONCoStringifyTest {
 

@@ -50,13 +50,13 @@ import java.time.ZonedDateTime
 import java.util.LinkedList
 import java.util.UUID
 
-import net.pwall.util.CoIntOutput.output4HexLC
-import net.pwall.util.CoIntOutput.output8HexLC
-import net.pwall.util.CoOutput
-import net.pwall.util.IntOutput.append4HexLC
-import net.pwall.util.IntOutput.append8HexLC
-import net.pwall.util.MiniSet
-import net.pwall.util.output
+import io.jstuff.util.IntOutput.append4HexLC
+import io.jstuff.util.IntOutput.append8HexLC
+import io.jstuff.util.MiniSet
+import io.kstuff.util.CoIntOutput.output4HexLC
+import io.kstuff.util.CoIntOutput.output8HexLC
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
 
 /**
  * Utility functions for JSON Serialization.  These functions are not expected to be of use outside the `kjson` family

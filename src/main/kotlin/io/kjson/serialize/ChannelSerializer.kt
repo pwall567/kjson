@@ -27,12 +27,13 @@ package io.kjson.serialize
 
 import kotlinx.coroutines.channels.Channel
 
+import io.kstuff.util.CoOutput
+import io.kstuff.util.CoOutputFlushable
+import io.kstuff.util.output
+
 import io.kjson.JSONConfig
 import io.kjson.JSONKotlinException
 import io.kjson.JSONValue
-import net.pwall.util.CoOutput
-import net.pwall.util.CoOutputFlushable
-import net.pwall.util.output
 
 class ChannelSerializer<I : Any>(
     private val itemSerializer: Serializer<I>,

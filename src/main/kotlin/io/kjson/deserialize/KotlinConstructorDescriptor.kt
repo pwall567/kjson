@@ -31,12 +31,13 @@ import kotlin.reflect.KType
 
 import java.lang.reflect.InvocationTargetException
 
+import io.jstuff.util.ImmutableMap
+import io.jstuff.util.ImmutableMapEntry
+
 import io.kjson.JSONDeserializer.deserializeFields
 import io.kjson.JSONObject
 import io.kjson.JSONValue
 import io.kjson.optional.Opt
-import net.pwall.util.ImmutableMap
-import net.pwall.util.ImmutableMapEntry
 
 data class KotlinConstructorDescriptor<T : Any>(
     val resultType: KType,

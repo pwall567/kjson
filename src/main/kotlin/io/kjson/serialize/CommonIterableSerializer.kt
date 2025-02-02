@@ -25,10 +25,11 @@
 
 package io.kjson.serialize
 
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.JSONArray
 import io.kjson.JSONConfig
-import net.pwall.util.CoOutput
-import net.pwall.util.output
 
 abstract class CommonIterableSerializer<I : Any>( // use this for List, Sequence etc.
     private val itemSerializer: Serializer<I>,

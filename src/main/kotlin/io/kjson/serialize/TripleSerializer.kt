@@ -25,10 +25,11 @@
 
 package io.kjson.serialize
 
+import io.kstuff.util.CoOutput
+import io.kstuff.util.output
+
 import io.kjson.JSONArray
 import io.kjson.JSONConfig
-import net.pwall.util.CoOutput
-import net.pwall.util.output
 
 class TripleSerializer<A : Any, B : Any, C : Any, T : Triple<A, B, C>>(
     private val firstSerializer: Serializer<A>,

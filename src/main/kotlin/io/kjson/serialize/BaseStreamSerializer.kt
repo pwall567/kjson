@@ -27,9 +27,10 @@ package io.kjson.serialize
 
 import java.util.stream.BaseStream
 
+import io.kstuff.util.CoOutput
+
 import io.kjson.JSONArray
 import io.kjson.JSONConfig
-import net.pwall.util.CoOutput
 
 class BaseStreamSerializer<I : Any, B : BaseStream<I, *>>(
     itemSerializer: Serializer<I>,

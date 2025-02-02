@@ -495,6 +495,7 @@ object JSONDeserializer {
                         parameterDescriptors = parameterDescriptors.ifEmpty { emptyList() },
                         fieldDescriptors = fields.filter { f ->
                             parameterDescriptors.none { p -> f.propertyName == p.propertyName  }
+                            // TODO - consider filtering out immutable fields
                         },
                         allowExtra = config.allowExtra ||
                                 config.hasAllowExtraPropertiesAnnotation(resultClass.annotations),
