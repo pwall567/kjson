@@ -271,25 +271,25 @@ See the [Custom Serialization and Deserialization](CUSTOM.md) guide for more inf
 
 ## Dependency Specification
 
-The latest version of the library is 9.4, and it may be obtained from the Maven Central repository.
+The latest version of the library is 9.5, and it may be obtained from the Maven Central repository.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson</artifactId>
-      <version>9.4</version>
+      <version>9.5</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson:9.4'
+    implementation 'io.kjson:kjson:9.5'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson:9.4")
+    implementation("io.kjson:kjson:9.5")
 ```
 
 Peter Wall
 
-2025-02-02
+2025-02-03

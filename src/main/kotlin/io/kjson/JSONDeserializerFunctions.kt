@@ -40,7 +40,7 @@ import java.util.Calendar
 import java.util.TimeZone
 import java.util.UUID
 
-import io.jstuff.java.validation.JSONValidation
+import io.jstuff.json.validation.JSONValidation
 import io.jstuff.text.TextMatcher
 import io.jstuff.util.IntOutput.append2Digits
 
