@@ -52,6 +52,7 @@ import io.kjson.util.SizedSequence
 import io.kjson.testclasses.DummyList
 import io.kjson.testclasses.DummyList2
 import io.kjson.testclasses.DummyList3
+import io.kjson.testclasses.DummySet
 
 class JSONDeserializerArrayTest {
 
@@ -459,6 +460,16 @@ class JSONDeserializerArrayTest {
             add("abc")
         }
         json.deserialize<DummyList3>() shouldBe DummyList3(listOf("aaa", "ccc", "bbb", "abc"))
+    }
+
+    @Test fun `should deserialize object taking Set constructor parameter`() {
+        val json = JSONArray.build {
+            add("aaa")
+            add("ccc")
+            add("bbb")
+            add("abc")
+        }
+        json.deserialize<DummySet>() shouldBe DummySet(setOf("aaa", "ccc", "bbb", "abc"))
     }
 
     @Test fun `should deserialize ImmutableList`() {

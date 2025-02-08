@@ -2,6 +2,11 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [9.6] - 2025-02-08
+### Changed
+- `JSONDeserializer`: added deserializer taking set constructor parameter (for consistency)
+- `pom.xml`: updated dependency versions
+
 ## [9.5] - 2025-02-03
 ### Changed
 - `pom.xml`: updated dependency versions

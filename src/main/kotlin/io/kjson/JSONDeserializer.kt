@@ -2,7 +2,7 @@
  * @(#) JSONDeserializer.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -551,10 +551,14 @@ object JSONDeserializer {
                         Double::class -> add(constructor, DoubleDeserializer) { it is JSONNumber }
                         Float::class -> add(constructor, FloatDeserializer) { it is JSONNumber }
                         List::class -> {
-                            val listDeserializer =
-                                    createCollectionDeserializer(parameterType, config, references) { ArrayList(it) }
-                            if (listDeserializer != null)
-                                add(constructor, listDeserializer) { it is JSONArray }
+                            createCollectionDeserializer(parameterType, config, references) { ArrayList(it) }?.let {
+                                add(constructor, it) { json -> json is JSONArray }
+                            }
+                        }
+                        Set::class -> {
+                            createCollectionDeserializer(parameterType, config, references) { LinkedHashSet(it) }?.let {
+                                add(constructor, it) { json -> json is JSONArray }
+                            }
                         }
                     }
                     if (classifier.java.isArray) {
