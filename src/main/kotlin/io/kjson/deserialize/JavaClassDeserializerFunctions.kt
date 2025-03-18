@@ -2,7 +2,7 @@
  * @(#) JavaClassDeserializerFunctions.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2024 Peter Wall
+ * Copyright (c) 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -62,7 +62,7 @@ object JavaClassDeserializerFunctions {
         resultType: KType,
         config: JSONConfig,
         references: MutableList<KType>,
-    ): Deserializer<T>? {
+    ): Deserializer<T> {
         val resultJavaClass = resultClass.java
         val constructorDescriptors = mutableListOf<JavaConstructorDescriptor<T>>()
         for (constructor in resultJavaClass.constructors) {
@@ -196,11 +196,29 @@ object JavaClassDeserializerFunctions {
                         if (parameterType is Class<*> && parameterType.isArray) {
                             val itemClass = parameterType.componentType
                             val itemDeserializer = findDeserializer<Any>(itemClass.toKType(), config, references)
-                            if (itemDeserializer != null) {
+                            val arrayDeserializer = ArrayDeserializer(
+                                itemClass = itemClass.kotlin as KClass<Any>,
+                                itemDeserializer = itemDeserializer,
+                                itemNullable = true,
+                            )
+                            constructorDescriptors.add(
+                                JavaSingleArgConstructorDescriptor(
+                                    resultClass = resultJavaClass,
+                                    constructor = constructor as Constructor<T>,
+                                    deserializer = arrayDeserializer as Deserializer<*>,
+                                ) { it is JSONArray }
+                            )
+                        }
+                        if (parameterType is GenericArrayType) {
+                            val genericType = parameterType.genericComponentType
+                            val index = resultJavaClass.typeParameters.indexOfFirst { it.name == genericType.typeName }
+                            if (index >= 0) {
+                                val itemType = getTypeParam(resultType, index).applyTypeParameters(resultType)
+                                val itemDeserializer = findDeserializer<Any>(itemType, config, references)
                                 val arrayDeserializer = ArrayDeserializer(
-                                    itemClass = itemClass.kotlin as KClass<Any>,
+                                    itemClass = itemType.classifier as KClass<Any>,
                                     itemDeserializer = itemDeserializer,
-                                    itemNullable = true,
+                                    itemNullable = itemType.isMarkedNullable,
                                 )
                                 constructorDescriptors.add(
                                     JavaSingleArgConstructorDescriptor(
@@ -209,28 +227,6 @@ object JavaClassDeserializerFunctions {
                                         deserializer = arrayDeserializer as Deserializer<*>,
                                     ) { it is JSONArray }
                                 )
-                            }
-                        }
-                        if (parameterType is GenericArrayType) {
-                            val genericType = parameterType.genericComponentType
-                            val index = resultJavaClass.typeParameters.indexOfFirst { it.name == genericType.typeName }
-                            if (index >= 0) {
-                                val itemType = getTypeParam(resultType, index).applyTypeParameters(resultType)
-                                val itemDeserializer = findDeserializer<Any>(itemType, config, references)
-                                if (itemDeserializer != null) {
-                                    val arrayDeserializer = ArrayDeserializer(
-                                        itemClass = itemType.classifier as KClass<Any>,
-                                        itemDeserializer = itemDeserializer,
-                                        itemNullable = itemType.isMarkedNullable,
-                                    )
-                                    constructorDescriptors.add(
-                                        JavaSingleArgConstructorDescriptor(
-                                            resultClass = resultJavaClass,
-                                            constructor = constructor as Constructor<T>,
-                                            deserializer = arrayDeserializer as Deserializer<*>,
-                                        ) { it is JSONArray }
-                                    )
-                                }
                             }
                         }
                     }
@@ -249,7 +245,7 @@ object JavaClassDeserializerFunctions {
                                     resultType = parameterType.toKType(),
                                     config = config,
                                     references = references,
-                                ) as Deserializer
+                                )
                             val name = parameterNames[index]
                             val notNull = parameterType is Class<*> && parameterType.isPrimitive
                             JavaParameterDescriptor(
@@ -277,7 +273,7 @@ object JavaClassDeserializerFunctions {
             }
         }
         return when (constructorDescriptors.size) {
-            0 -> null
+            0 -> ImpossibleDeserializer(resultType)
             1 -> ClassSingleConstructorDeserializer(constructorDescriptors[0])
             else -> ClassMultiConstructorDeserializer(constructorDescriptors)
         }

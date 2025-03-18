@@ -370,7 +370,7 @@ class JSONDeserializerObjectTest {
     @Test fun `should report error when deserializing into generic class within another generic class`() {
         // TODO - find a way to handle this situation correctly - see comment in JSONDeserializer.applyTypeParameters
         val json = """{"name":"ZZZ","data":{"field1":"ace","field2":777}}"""
-        shouldThrow<JSONKotlinException>("Can't deserialize TT - insufficient type information, at /data") {
+        shouldThrow<JSONKotlinException>("Can't deserialize { field1, field2 } as TT, at /data") {
             GenericCreator<Dummy1>().parseString(json)
         }
     }

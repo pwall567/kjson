@@ -2,6 +2,13 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [9.7] - 2025-03-18
+### Added
+- `ImpossibleDeserializer`: deserializes `null` as `null` but otherwise throws exception
+### Changed
+- `JSONDeserializer`, `CollectionDeserializers`, `JavaClassDeserializerFunctions`, `KotlinParameterDescriptor`: improved
+   handling of classes that can't be deserialized (allow null references, or empty arrays)
+
 ## [9.6] - 2025-02-08
 ### Changed
 - `JSONDeserializer`: added deserializer taking set constructor parameter (for consistency)

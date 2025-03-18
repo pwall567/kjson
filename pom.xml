@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>kjson</artifactId>
-  <version>9.6</version>
+  <version>9.7</version>
   <name>Reflection-based JSON serialization and deserialization for Kotlin</name>
   <description>Reflection-based JSON serialization and deserialization for Kotlin</description>
   <packaging>jar</packaging>
@@ -147,7 +147,7 @@
     <dependency>
       <groupId>io.kstuff</groupId>
       <artifactId>should-test</artifactId>
-      <version>4.4</version>
+      <version>4.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>

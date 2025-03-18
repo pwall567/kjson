@@ -2,7 +2,7 @@
  * @(#) KotlinParameterDescriptor.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2024 Peter Wall
+ * Copyright (c) 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -63,7 +63,7 @@ data class KotlinParameterDescriptor<T>(
             val ignore = config.hasIgnoreAnnotation(parameter.annotations)
             val typeExOpt = if (optClass) JSONDeserializer.getTypeParam(type.arguments) else type
             val targetType = typeExOpt.applyTypeParameters(resultType)
-            val deserializer = findDeserializer<TT>(targetType, config, references) ?: return null
+            val deserializer = findDeserializer<TT>(targetType, config, references)
             return KotlinParameterDescriptor(
                 propertyName = propertyName,
                 kParameter = parameter,

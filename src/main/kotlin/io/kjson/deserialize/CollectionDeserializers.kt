@@ -2,7 +2,7 @@
  * @(#) CollectionDeserializers.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2024 Peter Wall
+ * Copyright (c) 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -331,9 +331,9 @@ fun <T : Any, L : MutableCollection<T?>> createCollectionDeserializer(
     config: JSONConfig,
     references: MutableList<KType>,
     constructor: (Int) -> L,
-): Deserializer<L>? {
+): Deserializer<L> {
     val itemType = getTypeParam(resultType.arguments).applyTypeParameters(resultType)
-    val itemDeserializer = findDeserializer<T>(itemType, config, references) ?: return null
+    val itemDeserializer = findDeserializer<T>(itemType, config, references)
     return CollectionDeserializer(
         itemDeserializer = itemDeserializer,
         itemNullable = itemType.isMarkedNullable,
@@ -345,9 +345,9 @@ fun <T : Any> createSequenceDeserializer(
     resultType: KType,
     config: JSONConfig,
     references: MutableList<KType>,
-): Deserializer<Sequence<T?>>? {
+): Deserializer<Sequence<T?>> {
     val itemType = getTypeParam(resultType.arguments).applyTypeParameters(resultType)
-    val itemDeserializer = findDeserializer<T>(itemType, config, references) ?: return null
+    val itemDeserializer = findDeserializer<T>(itemType, config, references)
     return SequenceDeserializer(
         itemDeserializer = itemDeserializer,
         itemType = itemType,
@@ -358,9 +358,9 @@ fun <T : Any> createStreamDeserializer(
     resultType: KType,
     config: JSONConfig,
     references: MutableList<KType>,
-): Deserializer<Stream<T?>>? {
+): Deserializer<Stream<T?>> {
     val itemType = getTypeParam(resultType.arguments).applyTypeParameters(resultType)
-    val itemDeserializer = findDeserializer<T>(itemType, config, references) ?: return null
+    val itemDeserializer = findDeserializer<T>(itemType, config, references)
     return StreamDeserializer(
         itemDeserializer = itemDeserializer,
         itemNullable = itemType.isMarkedNullable,
@@ -372,12 +372,12 @@ fun <K : Any, V : Any, M : MutableMap<K?, V?>> createMapDeserializer(
     config: JSONConfig,
     references: MutableList<KType>,
     constructor: (Int) -> M,
-): Deserializer<M>? {
+): Deserializer<M> {
     val typeArguments = resultType.arguments
     val keyType = getTypeParam(typeArguments, 0).applyTypeParameters(resultType)
-    val keyDeserializer = findDeserializer<K>(keyType, config, references) ?: return null
+    val keyDeserializer = findDeserializer<K>(keyType, config, references)
     val valueType = getTypeParam(typeArguments, 1).applyTypeParameters(resultType)
-    val valueDeserializer = findDeserializer<V>(valueType, config, references) ?: return null
+    val valueDeserializer = findDeserializer<V>(valueType, config, references)
     return MapDeserializer(
         keyDeserializer = keyDeserializer,
         keyNullable = keyType.isMarkedNullable,
