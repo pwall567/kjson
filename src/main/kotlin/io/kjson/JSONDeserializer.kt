@@ -97,6 +97,7 @@ import io.kjson.deserialize.createCollectionDeserializer
 import io.kjson.deserialize.createMapDeserializer
 import io.kjson.deserialize.createSequenceDeserializer
 import io.kjson.deserialize.createStreamDeserializer
+import io.kjson.deserialize.deserializeValue
 import io.kjson.optional.Opt
 import io.kjson.pointer.JSONPointer
 import io.kjson.pointer.find
@@ -429,8 +430,12 @@ object JSONDeserializer {
                         constructor = constructor,
                         valueDeserializer = valueDeserializer,
                         valueNullable = valueType.isMarkedNullable,
-                        members = resultClass.members,
-                        config = config,
+                        members = resultClass.members.filterIsInstance<KProperty<*>>().filter {
+                            it.isPublic() && it.name !in mapIgnoredNames &&
+                                    it.returnType.applyTypeParameters(resultType) != mapType
+                        }.map {
+                            KotlinFieldDescriptor.create(it, resultType, config, references)
+                        },
                     )
                 else
                     MapConstructorDeserializer(
@@ -511,6 +516,8 @@ object JSONDeserializer {
 
         return ImpossibleDeserializer(resultType)
     }
+
+    val mapIgnoredNames = setOf("size", "entries", "keys", "values", "emptyEntryArray")
 
     class ConstructorDescriptorList<T : Any>(
         val resultClass: KClass<T>,
@@ -603,18 +610,8 @@ object JSONDeserializer {
         config: JSONConfig,
         references: MutableList<KType>,
     ): List<FieldDescriptor<*>> = members.mapNotNull { member ->
-        if (member is KProperty<*> && member.visibility == KVisibility.PUBLIC) {
-            val propertyName = config.findNameFromAnnotation(member.annotations) ?: member.name
-            val fieldType = member.getter.returnType.applyTypeParameters(resultType)
-            val deserializer = findDeserializer<Any>(fieldType, config, references)
-            KotlinFieldDescriptor(
-                propertyName = propertyName,
-                ignore = config.hasIgnoreAnnotation(member.annotations),
-                nullable = fieldType.isMarkedNullable,
-                deserializer = deserializer,
-                kProperty = member,
-            )
-        }
+        if (member is KProperty<*> && member.visibility == KVisibility.PUBLIC)
+            KotlinFieldDescriptor.create(member, resultType, config, references)
         else
             null
     }
@@ -629,11 +626,8 @@ object JSONDeserializer {
         for (property in json) {
             fieldDescriptors.find { it.propertyName == property.name }?.let { field ->
                 if (!field.ignore) {
-                    val value = try {
-                        field.deserializer.deserialize(property.value)
-                    } catch (de: DeserializationException) {
-                        throw de.nested(property.name)
-                    }
+                    val value = field.deserializer.deserializeValue(property.value, field.nullable,"Property",
+                            property.name)
                     if (field.isMutable()) {
                         try {
                             field.setValue(instance, value)

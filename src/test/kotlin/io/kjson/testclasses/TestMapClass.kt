@@ -27,7 +27,7 @@ package io.kjson.testclasses
 
 import java.util.UUID
 
-class TestMapClass(private val map: Map<String, Any?>) : Map<String, Any?> by map {
+class TestMapClass(map: Map<String, Any?>) : Map<String, Any?> by map {
 
     val field1: String by map
 

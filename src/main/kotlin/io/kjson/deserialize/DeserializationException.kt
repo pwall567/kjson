@@ -31,7 +31,7 @@ import io.kjson.JSONValue
 import io.kjson.pointer.JSONPointer
 
 class DeserializationException(
-    val text: String = "dynamicException",
+    val text: String = "Deserialization error",
     val pointer: JSONPointer = JSONPointer.root,
     val underlying: Throwable? = null,
     val messageFunction: (JSONValue?) -> String = { text }
@@ -45,6 +45,7 @@ class DeserializationException(
         DeserializationException(text, this.pointer.withParent(pointer), underlying, messageFunction)
 
     fun nested(name: String): DeserializationException = nested(JSONPointer.root.child(name))
+
 }
 
 fun cantDeserializeException(expected: String) = DeserializationException { json: JSONValue? ->

@@ -2,7 +2,7 @@
  * @(#) JSONConfigTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -60,6 +60,7 @@ import io.kjson.testclasses.PolymorphicBase
 import io.kjson.testclasses.PolymorphicDerived1
 import io.kjson.testclasses.PolymorphicDerived2
 import io.kjson.testclasses.PolymorphicGeneric
+import io.kjson.testclasses.TestGenericClass
 
 class JSONConfigTest {
 
@@ -627,6 +628,75 @@ class JSONConfigTest {
         result.shouldBeType<DummyImplementation>()
         result.name shouldBe "Fred"
         result.number shouldBe 123
+    }
+
+    @Test fun `should serialise generic class with custom serialisation`() {
+        val config = JSONConfig {
+            addTestGenericToJSON<Int>()
+        }
+        val test = TestGenericClass(name = "Fred", data = 27)
+        val json = JSONSerializer.serialize(test, config)
+        json.shouldBeType<JSONObject>()
+        json.size shouldBe 2
+        json["NAME"] shouldBe JSONString("Fred")
+        json["data"] shouldBe JSONInt(27)
+    }
+
+    @Test fun `should deserialise generic class with custom deserialisation`() {
+        val config = JSONConfig {
+            fromJSON { json ->
+                require(json is JSONObject) { "Must be JSONObject" }
+                val data = JSONDeserializer.deserialize<Int>(json["data"])
+                TestGenericClass(
+                    name = json["NAME"].asString,
+                    data = data,
+                )
+            }
+        }
+        val json = JSONObject.build {
+            add("NAME", "Fred")
+            add("data", 27)
+        }
+        val test = JSONDeserializer.deserialize<TestGenericClass<Int>>(json, config)
+        test.name shouldBe "Fred"
+        test.data shouldBe 27
+    }
+
+    @Test fun `should deserialise generic class with custom deserialisation in function`() {
+        val config = JSONConfig {
+            addTestGenericFromJSON<Int>()
+        }
+        val json = JSONObject.build {
+            add("NAME", "Fred")
+            add("data", 27)
+        }
+        val test = JSONDeserializer.deserialize<TestGenericClass<Int>>(json, config)
+        test.name shouldBe "Fred"
+        test.data shouldBe 27
+    }
+
+    companion object {
+
+        inline fun <reified T : Number> JSONConfig.addTestGenericToJSON() {
+            toJSON<TestGenericClass<T>> {
+                JSONObject.build {
+                    addProperty("NAME", it.name)
+                    addProperty("data", it.data)
+                }
+            }
+        }
+
+        inline fun <reified T : Number> JSONConfig.addTestGenericFromJSON() {
+            fromJSON { json ->
+                require(json is JSONObject) { "Must be JSONObject" }
+                val data = JSONDeserializer.deserialize<T>(json["data"])
+                TestGenericClass(
+                    name = json["NAME"].asString,
+                    data = data,
+                )
+            }
+        }
+
     }
 
     interface DummyInterface {

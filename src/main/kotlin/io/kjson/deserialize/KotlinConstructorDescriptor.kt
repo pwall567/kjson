@@ -2,7 +2,7 @@
  * @(#) KotlinConstructorDescriptor.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2024 Peter Wall
+ * Copyright (c) 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,7 @@ import io.jstuff.util.ImmutableMap
 import io.jstuff.util.ImmutableMapEntry
 
 import io.kjson.JSONDeserializer.deserializeFields
+import io.kjson.JSONKotlinException
 import io.kjson.JSONObject
 import io.kjson.JSONValue
 import io.kjson.optional.Opt
@@ -80,13 +81,8 @@ data class KotlinConstructorDescriptor<T : Any>(
                 if (propertyIndex >= 0) {
                     val deserializer = parameterDescriptor.deserializer
                     val property = properties[propertyIndex].value
-                    val value = try {
-                        deserializer.deserialize(property)
-                    } catch (de: DeserializationException) {
-                        throw de.nested(parameterDescriptor.propertyName)
-                    }
-                    if (value == null && !parameterDescriptor.nullable)
-                        throw DeserializationException("Property may not be null", parameterDescriptor.propertyName)
+                    val value = deserializer.deserializeValue(property, parameterDescriptor.nullable, "Property",
+                            parameterDescriptor.propertyName)
                     val parameterValue = if (parameterDescriptor.optClass) Opt.of(value) else value
                     args.add(ImmutableMap.entry(kParameter, parameterValue))
                 }

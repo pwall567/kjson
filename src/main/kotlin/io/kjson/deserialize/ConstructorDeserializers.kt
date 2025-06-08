@@ -2,7 +2,7 @@
  * @(#) ConstructorDeserializers.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2024 Peter Wall
+ * Copyright (c) 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,15 +25,11 @@
 
 package io.kjson.deserialize
 
-import kotlin.reflect.KCallable
 import kotlin.reflect.KFunction
-import kotlin.reflect.KProperty
 
 import io.jstuff.util.ImmutableMap
 import io.jstuff.util.ImmutableMapEntry
 
-import io.kjson.JSONConfig
-import io.kjson.JSONDeserializer.findDeserializer
 import io.kjson.JSONDeserializerFunctions.callWithSingle
 import io.kjson.JSONObject
 import io.kjson.JSONValue
@@ -67,8 +63,7 @@ class DelegatingMapConstructorDeserializer<T>(
     private val constructor: KFunction<T>,
     private val valueDeserializer: Deserializer<Any>,
     private val valueNullable: Boolean,
-    private val members: Collection<KCallable<*>>,
-    private val config: JSONConfig,
+    private val members: Collection<FieldDescriptor<*>>,
 ): Deserializer<T> {
 
     override fun deserialize(json: JSONValue?): T? {
@@ -81,19 +76,11 @@ class DelegatingMapConstructorDeserializer<T>(
             val property = json[index]
             val name = property.name
             val member = members.find {
-                it is KProperty<*> && (config.findNameFromAnnotation(it.annotations) ?: it.name) == name
+                it.propertyName == name
             }
-            val memberType = member?.returnType
-            val memberDeserializer = memberType?.let { findDeserializer(it, config, mutableListOf()) } ?:
-                    valueDeserializer
-            val memberNullable = memberType?.isMarkedNullable ?: valueNullable
-            val value = try {
-                memberDeserializer.deserialize(property.value)
-            } catch (de: DeserializationException) {
-                throw de.nested(name)
-            }
-            if (value == null && !memberNullable)
-                throw DeserializationException("Property may not be null", name)
+            val memberDeserializer = member?.deserializer ?: valueDeserializer
+            val memberNullable = member?.nullable ?: valueNullable
+            val value = memberDeserializer.deserializeValue(property.value, memberNullable, "Property", name)
             array[index] = ImmutableMap.entry(name, value)
         }
         return constructor.callWithSingle(ImmutableMap(array))

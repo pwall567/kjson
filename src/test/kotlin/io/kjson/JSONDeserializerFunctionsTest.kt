@@ -212,31 +212,31 @@ class JSONDeserializerFunctionsTest {
     }
 
     @Test fun `should report error on incorrect Calendar`() {
-        shouldThrow<IllegalArgumentException>("Error in calendar string at offset 4 - 2021") {
+        shouldThrow<JSONKotlinException>("Error in calendar string at offset 4 - 2021") {
             parseCalendar("2021")
         }
-        shouldThrow<IllegalArgumentException>("Error in calendar string at offset 4 - 2021/08/16") {
+        shouldThrow<JSONKotlinException>("Error in calendar string at offset 4 - 2021/08/16") {
             parseCalendar("2021/08/16")
         }
-        shouldThrow<IllegalArgumentException>("Error in calendar string at offset 7 - 2021-16-08") {
+        shouldThrow<JSONKotlinException>("Error in calendar string at offset 7 - 2021-16-08") {
             parseCalendar("2021-16-08")
         }
-        shouldThrow<IllegalArgumentException>("Error in calendar string at offset 10 - 2021-02-30") {
+        shouldThrow<JSONKotlinException>("Error in calendar string at offset 10 - 2021-02-30") {
             parseCalendar("2021-02-30")
         }
-        shouldThrow<IllegalArgumentException>("Error in calendar string at offset 10 - 2021-02-14 12:30") {
+        shouldThrow<JSONKotlinException>("Error in calendar string at offset 10 - 2021-02-14 12:30") {
             parseCalendar("2021-02-14 12:30")
         }
-        shouldThrow<IllegalArgumentException>("Error in calendar string at offset 11 - 2021-02-14T") {
+        shouldThrow<JSONKotlinException>("Error in calendar string at offset 11 - 2021-02-14T") {
             parseCalendar("2021-02-14T")
         }
-        shouldThrow<IllegalArgumentException>("Error in calendar string at offset 16 - 2021-08-16T18:46") {
+        shouldThrow<JSONKotlinException>("Error in calendar string at offset 16 - 2021-08-16T18:46") {
             parseCalendar("2021-08-16T18:46")
         }
-        shouldThrow<IllegalArgumentException>("Error in calendar string at offset 13 - 2021-02-14T32:30:00") {
+        shouldThrow<JSONKotlinException>("Error in calendar string at offset 13 - 2021-02-14T32:30:00") {
             parseCalendar("2021-02-14T32:30:00")
         }
-        shouldThrow<IllegalArgumentException>("Error in calendar string at offset 16 - 2021-02-14T12:88:00") {
+        shouldThrow<JSONKotlinException>("Error in calendar string at offset 16 - 2021-02-14T12:88:00") {
             parseCalendar("2021-02-14T12:88:00")
         }
     }

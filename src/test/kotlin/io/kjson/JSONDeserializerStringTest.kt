@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerStringTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -213,10 +213,19 @@ class JSONDeserializerStringTest {
 
     @Test fun `should fail on invalid UUID`() {
         val json = JSONString("b082b046-ac9b-11eb-8ea7-5fc81989f1") // 2 bytes too short
-        shouldThrow<JSONException>(
-            message = "Error deserializing java.util.UUID - Not a valid UUID - b082b046-ac9b-11eb-8ea7-5fc81989f1",
-        ) {
+        shouldThrow<JSONException>("Not a valid UUID - \"b082b046-ac9b-11eb-8ea7-5fc81989f1\"") {
             JSONDeserializer.deserialize<UUID>(json)
+        }
+    }
+
+    @Test fun `should fail on invalid UUID in nested structure`() {
+        val json = JSONArray.build {
+            add(JSONObject.build {
+                add("wrong", JSONString("b082b046-ac9b-11eb-8ea7-5fc81989f1")) // 2 bytes too short
+            })
+        }
+        shouldThrow<JSONException>("Not a valid UUID - \"b082b046-ac9b-11eb-8ea7-5fc81989f1\", at /0/wrong") {
+            JSONDeserializer.deserialize<List<Map<String, UUID>>>(json)
         }
     }
 

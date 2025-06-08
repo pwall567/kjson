@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerObjectTest.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -59,6 +59,7 @@ import io.kjson.testclasses.GenericCreator
 import io.kjson.testclasses.Super
 import io.kjson.testclasses.TestGenericClass
 import io.kjson.testclasses.TestGenericClass2
+import io.kjson.testclasses.TestGenericMapClass
 import io.kjson.testclasses.TestMapClass
 import io.kjson.testclasses.TypeAliasData
 import io.kjson.testclasses.ValueClassHolder
@@ -334,6 +335,18 @@ class JSONDeserializerObjectTest {
             add("field3", 12345)
         }
         val mapClass: TestMapClass = json.deserialize()
+        mapClass.field1 shouldBe "Hello"
+        mapClass.field2 shouldBe UUID.fromString("a20449ac-ade3-11ee-bdf5-139f8439485a")
+        mapClass["field3"] shouldBe 12345
+    }
+
+    @Test fun `should deserialize into map using delegation and generic field`() {
+        val json = JSONObject.build {
+            add("field1", "Hello")
+            add("field2", "a20449ac-ade3-11ee-bdf5-139f8439485a")
+            add("field3", 12345)
+        }
+        val mapClass: TestGenericMapClass<UUID> = json.deserialize()
         mapClass.field1 shouldBe "Hello"
         mapClass.field2 shouldBe UUID.fromString("a20449ac-ade3-11ee-bdf5-139f8439485a")
         mapClass["field3"] shouldBe 12345

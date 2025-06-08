@@ -2,7 +2,7 @@
  * @(#) CoreDeserializers.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2024 Peter Wall
+ * Copyright (c) 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -63,12 +63,12 @@ data object AnyDeserializer : Deserializer<Any> {
         is JSONString -> json.value
         is JSONBoolean -> json.value
         is JSONArray -> ImmutableList(
-            Array(json.size) { index -> deserialize(json[index]) }
+            Array(json.size) { index -> deserializeValue(json[index], true, "Array item", index) }
         )
         is JSONObject -> ImmutableMap(
             Array(json.size) { index ->
                 val property = json[index]
-                ImmutableMap.entry(property.name, deserialize(property.value))
+                ImmutableMap.entry(property.name, deserializeValue(property.value, true, "Property", property.name))
             }
         )
     }

@@ -136,7 +136,7 @@ class JSONDeserializerJavaTest {
         val json = JSONObject.build {
             add("field1", "Fred")
         }
-        shouldThrow<JSONKotlinException>("Property may not be null - field2") {
+        shouldThrow<JSONKotlinException>("Mandatory constructor parameter missing - field2") {
             json.deserialize<JavaNamedArg>()
         }
     }
@@ -146,7 +146,7 @@ class JSONDeserializerJavaTest {
             add("field1", "Fred")
             add("field22", 1234)
         }
-        shouldThrow<JSONKotlinException>("Property may not be null - field2") {
+        shouldThrow<JSONKotlinException>("Mandatory constructor parameter missing - field2") {
             json.deserialize<JavaNamedArg>()
         }
     }

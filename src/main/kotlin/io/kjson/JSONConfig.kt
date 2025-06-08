@@ -2,7 +2,7 @@
  * @(#) JSONConfig.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,8 @@ package io.kjson
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 import kotlin.reflect.KType
+import kotlin.reflect.KTypeProjection
+import kotlin.reflect.KVariance
 import kotlin.reflect.typeOf
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.isSubclassOf
@@ -265,7 +267,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * Add custom mapping from a specified type to JSON.
      */
     fun toJSON(type: KType, mapping: ToJSONMapping) {
-        toJSONMap[type] = mapping
+        toJSONMap[type.resolveParameters()] = mapping
         serializerMapReset()
     }
 
@@ -760,13 +762,13 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
     /**
      * Serialize a value using this `JSONConfig`.
      */
-    fun serialize(obj: Any?): JSONValue? = JSONSerializer.serialize(obj, this)
+    inline fun <reified T : Any> serialize(obj: T?): JSONValue? = JSONSerializer.serialize(obj, this)
 
     /**
      * Serialize a property using this `JSONConfig` and add it to a [JSONObject.Builder] with that name.  Exceptions
      * will have the property name added.
      */
-    fun JSONObject.Builder.addProperty(name: String, obj: Any?) {
+    inline fun <reified T : Any> JSONObject.Builder.addProperty(name: String, obj: T?) {
         when {
             obj != null -> try {
                 add(name, JSONSerializer.serialize(obj, this@JSONConfig))
@@ -781,7 +783,7 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
      * Serialize an array item using this `JSONConfig` and add it to a [JSONArray.Builder] with that name.  Exceptions
      * will have the array index added.
      */
-    fun JSONArray.Builder.addItem(index: Int, obj: Any?) {
+    inline fun <reified T : Any> JSONArray.Builder.addItem(index: Int, obj: T?) {
         when {
             obj != null -> try {
                 add(JSONSerializer.serialize(obj, this@JSONConfig))
@@ -869,6 +871,23 @@ class JSONConfig(configurator: JSONConfig.() -> Unit = {}) {
             } catch (_ : Exception) {
                 fatal("$propertyName property invalid - $property")
             }
+        }
+
+        fun KType.resolveParameters(): KType {
+            val kClass = classifier as? KClass<*> ?: return this // can't do anything if classifier isn't a KClass
+            if (arguments.all { it.type?.classifier is KClass<*> })
+                return this
+            if (kClass.typeParameters.size != arguments.size)
+                return this // should never happen
+            val projections = kClass.typeParameters.indices.map {
+                val parameter = kClass.typeParameters[it]
+                val argument = arguments[it]
+                if (argument.type?.classifier is KClass<*>)
+                    argument
+                else
+                    KTypeProjection(KVariance.OUT, parameter.upperBounds[0].resolveParameters())
+            }
+            return kClass.createType(projections, isMarkedNullable, annotations)
         }
 
     }

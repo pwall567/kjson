@@ -2,7 +2,7 @@
  * @(#) JSONDeserializerFunctions.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024 Peter Wall
+ * Copyright (c) 2019, 2020, 2021, 2022, 2023, 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -213,7 +213,7 @@ object JSONDeserializerFunctions {
 
     fun createUUID(string: String): UUID {
         if (!JSONValidation.isUUID(string))
-            throw IllegalArgumentException("Not a valid UUID - $string")
+            throw JSONKotlinException("Not a valid UUID - \"$string\"")
         return UUID.fromString(string)
     }
 
@@ -290,7 +290,7 @@ object JSONDeserializerFunctions {
     }
 
     private fun calendarError(tm: TextMatcher): Nothing {
-        throw IllegalArgumentException("Error in calendar string at offset ${tm.index} - ${tm.getString(0, tm.length)}")
+        throw JSONKotlinException("Error in calendar string at offset ${tm.index} - ${tm.getString(0, tm.length)}")
     }
 
 }

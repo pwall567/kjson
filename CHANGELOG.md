@@ -2,6 +2,15 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [9.8] - 2025-06-09
+### Changed
+- `JSONDeserializer`, `ConstructorDeserializers`, `KotlinFieldDescriptor`: fix bug in deserialization of delegating Map
+  classes
+- `JSONConfig`: improved handling of custom serialization of generic types
+- `JSONDeserializer`, `JSONDeserializerFunctions`, `KotlinConstructorDescriptor`, `CoreDeserializers`,
+  `JavaNamedArgConstructorDescriptor`: improved error reporting
+- `pom.xml`: updated dependency versions
+
 ## [9.7] - 2025-03-18
 ### Added
 - `ImpossibleDeserializer`: deserializes `null` as `null` but otherwise throws exception

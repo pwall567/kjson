@@ -74,9 +74,9 @@ class JSONDeserializerTest {
         val json = JSONDecimal("0.1")
         JSONDeserializer.deserialize(JSONValue::class,  json) shouldBeSameInstance json
         JSONDeserializer.deserialize(JSONDecimal::class,  json) shouldBeSameInstance json
-        val json2 = JSONString("abc")
+        val json2 = JSONArray(JSONInt(123))
         JSONDeserializer.deserialize(JSONValue::class,  json2) shouldBeSameInstance json2
-        JSONDeserializer.deserialize(JSONString::class,  json2) shouldBeSameInstance json2
+        JSONDeserializer.deserialize(JSONArray::class,  json2) shouldBeSameInstance json2
     }
 
     @Test fun `should use companion object fromJSON function`() {

@@ -1,8 +1,8 @@
 /*
- * @(#) DeferredDeserializer.kt
+ * @(#) TestGenericMapClass.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2024 Peter Wall
+ * Copyright (c) 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,30 +23,12 @@
  * SOFTWARE.
  */
 
-package io.kjson.deserialize
+package io.kjson.testclasses
 
-import kotlin.reflect.KType
+class TestGenericMapClass<T>(map: Map<String, Any?>) : Map<String, Any?> by map {
 
-import io.kjson.JSONConfig
-import io.kjson.JSONDeserializer.findDeserializer
-import io.kjson.JSONValue
+    val field1: String by map
 
-class DeferredDeserializer<T : Any>(
-    val resultType: KType,
-    val config: JSONConfig,
-) : Deserializer<T> {
-
-    private var targetDeserializer: Deserializer<T>? = null
-
-    override fun deserialize(json: JSONValue?): T? {
-        return getDeserializer().deserialize(json)
-    }
-
-    private fun getDeserializer(): Deserializer<T> {
-        targetDeserializer?.let { return it }
-        return (findDeserializer<T>(resultType, config, references = mutableListOf())).also {
-            targetDeserializer = it
-        }
-    }
+    val field2: T by map
 
 }

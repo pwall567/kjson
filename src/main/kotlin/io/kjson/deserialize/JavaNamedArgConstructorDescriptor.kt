@@ -2,7 +2,7 @@
  * @(#) JavaNamedArgConstructorDescriptor.kt
  *
  * kjson  Reflection-based JSON serialization and deserialization for Kotlin
- * Copyright (c) 2024 Peter Wall
+ * Copyright (c) 2024, 2025 Peter Wall
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -51,13 +51,16 @@ class JavaNamedArgConstructorDescriptor<T : Any>(
         val properties = json.toMutableList()
         val parameterValues = mutableListOf<Any?>()
         for (parameter in parameters) {
-            val index = properties.indexOfFirst { it.name == parameter.propertyName }
-            val property = if (index < 0) null else properties[index].value.also { properties.removeAt(index) }
-            val propertyValue = parameter.deserializer.deserialize(property)
-            if (propertyValue == null && !parameter.nullable)
-                throw DeserializationException("Property may not be null - ${parameter.propertyName}")
-            parameterValues.add(if (parameter.ignore) parameter.defaultValue else
-                    parameter.deserializer.deserialize(property))
+            val parameterName = parameter.propertyName
+            val index = properties.indexOfFirst { it.name == parameterName }
+            if (index < 0 && !parameter.nullable)
+                throw DeserializationException("Mandatory constructor parameter missing - $parameterName")
+            val property = if (index < 0) null else properties[index].value
+            val propertyValue = parameter.deserializer.deserializeValue(property, parameter.nullable, "Property",
+                parameterName)
+            parameterValues.add(if (parameter.ignore) parameter.defaultValue else propertyValue)
+            if (index >= 0)
+                properties.removeAt(index)
         }
         val instance = invokeConstructor(parameterValues)
         deserializeFields(properties, targetName, fieldDescriptors, allowExtra, instance)
