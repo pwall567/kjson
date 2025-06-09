@@ -2,6 +2,10 @@
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [9.9] - 2025-06-10
+### Changed
+- `pom.xml`: updated dependency versions
+
 ## [9.8] - 2025-06-09
 ### Changed
 - `JSONDeserializer`, `ConstructorDeserializers`, `KotlinFieldDescriptor`: fix bug in deserialization of delegating Map
